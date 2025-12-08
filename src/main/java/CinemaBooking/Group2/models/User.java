@@ -9,7 +9,7 @@ public class User {
 	    TICKET_CHECKER,
 	    CLEANER,
 	    SECURITY,
-	    TECHNICIAN
+	    TECHNICIAN,
 	}
 	
 	private int id;
