@@ -15,8 +15,12 @@ public class UserRepository {
 
 	public boolean existsByEmail(String email) {
 		String sql = "SELECT COUNT(*) FROM user WHERE email = ?";
-		Integer count = jdbc.queryForObject(sql, Integer.class, email);
-		return count != null && count > 0;
+		try {
+			Integer count = jdbc.queryForObject(sql, Integer.class, email);
+			return count != null && count > 0;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	public int createUser(RegisterRequestDTO u, String hashedPassword) {
@@ -25,14 +29,33 @@ public class UserRepository {
 				    VALUES (4, ?, ?, ?, ?, 1)
 				""";
 
-		jdbc.update(sql, u.getFullName(), u.getEmail(), hashedPassword, u.getPhone());
-
-		return jdbc.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
+		try {
+			return jdbc.update(sql, u.getFullName(), u.getEmail(), hashedPassword, u.getPhone());
+		} catch (Exception e) {
+			return 0;
+		}
 	}
 
 	public User findByEmail(String email) {
-		String sql = "SELECT * FROM user WHERE email = ?";
-		var list = jdbc.query(sql, new CinemaBooking.Group2.mappers.UserMapper(), email);
-		return list.isEmpty() ? null : list.get(0);
+	    String sql = """
+	        SELECT u.*, r.name AS role_name 
+	        FROM user u
+	        JOIN role r ON u.role_id = r.id
+	        WHERE u.email = ?
+	    """;
+	    try {
+	        return jdbc.queryForObject(sql, new CinemaBooking.Group2.mappers.UserMapper(), email);
+	    } catch (Exception e) {
+	        return null;
+	    }
 	}
+	public User findById(int id) {
+	    String sql = "SELECT u.*, r.name AS role_name FROM user u JOIN role r ON u.role_id = r.id WHERE u.id = ?";
+	    try {
+	        return jdbc.queryForObject(sql, new CinemaBooking.Group2.mappers.UserMapper(), id);
+	    } catch (Exception ex) {
+	        return null;
+	    }
+	}
+
 }
