@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.dto.movie;
+package CinemaBooking.Group2.dtos.movie;
 
 import java.util.Date;
 

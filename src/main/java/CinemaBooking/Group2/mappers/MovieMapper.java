@@ -1,6 +1,6 @@
-package CinemaBooking.Group2.mapper;
+package CinemaBooking.Group2.mappers;
 
-import CinemaBooking.Group2.dto.movie.MovieResponse;
+import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.models.Movie;
 
 public class MovieMapper {

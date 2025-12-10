@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dto.movie.MovieResponse;
-import CinemaBooking.Group2.mapper.MovieMapper;
+import CinemaBooking.Group2.dtos.movie.MovieResponse;
+import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.repositories.MovieRepository;
 
