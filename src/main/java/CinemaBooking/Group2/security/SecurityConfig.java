@@ -26,15 +26,26 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Public routes
-                .requestMatchers("/api/auth/**").permitAll()
-                
-                // Protected routes
-                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN","MANAGER")
-                .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN","MANAGER","STAFF")
-                .anyRequest().authenticated()
-            )
+            	    // Public routes
+            	    .requestMatchers(
+            	        "/api/auth/register/**",
+            	        "/api/auth/login",
+            	        "/api/auth/refresh",
+            	        "/api/auth/logout",
+            	        "/api/auth/forgot/**"
+            	    ).permitAll()
+
+            	    // Protected (login required)
+            	    .requestMatchers("/api/auth/password/**").authenticated()
+
+            	    // Roles
+            	    .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+            	    .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN","MANAGER")
+            	    .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN","MANAGER","STAFF")
+
+            	    .anyRequest().authenticated()
+            	)
+
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .httpBasic(httpBasic -> httpBasic.disable());
 

@@ -22,29 +22,39 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws IOException, jakarta.servlet.ServletException {
 
-        String header = request.getHeader("Authorization");
+        try {
+            String header = request.getHeader("Authorization");
 
-        if (header != null && header.startsWith("Bearer ")) {
+            // Check Bearer token
+            if (header != null && header.startsWith("Bearer ")) {
+                String token = header.substring(7);
 
-            String token = header.substring(7);
+                // Validate token
+                if (jwtService.validateToken(token) && 
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if (jwtService.validateToken(token)) {
-                String email = jwtService.getEmail(token);
-                String role = jwtService.getRole(token);
-                Integer cinemaId = jwtService.getCinemaId(token);
+                    String email = jwtService.getEmail(token);
+                    String role = jwtService.getRole(token);
+                    Integer cinemaId = jwtService.getCinemaId(token);
 
-                var auth = new UsernamePasswordAuthenticationToken(
-                        new AuthUserPrincipal(email, role, cinemaId), 
-                        null,
-                        java.util.List.of(() -> role) // GrantedAuthority
-                );
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            new AuthUserPrincipal(email, role, cinemaId),
+                            null,
+                            java.util.List.of(() -> role)
+                    );
 
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    auth.setDetails(new org.springframework.security.web.authentication.WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
-
+        } catch (Exception e) {
+            // Token invalid → clear context, avoid 500 error
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
     }
 }
+
 
