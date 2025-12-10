@@ -1,0 +1,4 @@
+CinemaBooking:Cinema-booking-BE:war:0.0.1
++- io.jsonwebtoken:jjwt-api:jar:0.12.6:compile
++- io.jsonwebtoken:jjwt-impl:jar:0.12.6:runtime
+\- io.jsonwebtoken:jjwt-jackson:jar:0.12.6:runtime
