@@ -27,14 +27,16 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                // Swagger UI endpoints
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 // Public routes
                 .requestMatchers("/api/auth/**").permitAll()
-                
+                .anyRequest().permitAll()
                 // Protected routes
-                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN","MANAGER")
-                .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN","MANAGER","STAFF")
-                .anyRequest().authenticated()
+//                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+//                .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN","MANAGER")
+//                .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN","MANAGER","STAFF")
+//                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .httpBasic(httpBasic -> httpBasic.disable());
