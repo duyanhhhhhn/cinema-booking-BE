@@ -8,11 +8,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import CinemaBooking.Group2.dto.movie.MovieResponse;
+import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.service.MovieService;
 
 @Controller
-@RequestMapping("/movie")
+@RequestMapping("/api/movie")
 public class MovieController {
 	@Autowired 
 	private MovieService movieService;
@@ -20,6 +20,12 @@ public class MovieController {
 	@GetMapping("/")
 	public ResponseEntity<List<MovieResponse>> getAllMovies() {
 		List<MovieResponse> movies = movieService.getAllMovie();
+		return ResponseEntity.ok(movies);
+	}
+	
+	@GetMapping("/test")
+	public ResponseEntity<List<MovieResponse>> getAllMovieStatus() {
+		List<MovieResponse> movies = movieService.getAllMovieStatus();
 		return ResponseEntity.ok(movies);
 	}
 }

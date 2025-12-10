@@ -20,7 +20,7 @@ public class TestConnectDB {
                 System.out.println("=> Catalog: " + connection.getCatalog());
             } catch (SQLException e) {
                 System.out.println("=> Kết nối MySQL THẤT BẠI!");
-                System.out.println("=> Lý do: " + e.getMessage());
+                System.out.println("=> Lý do: " + e.getMessage() + "note: anh em nhớ kiểm tra mật khẩu bên trong properties nhé");
                 e.printStackTrace();
             }
             System.out.println("=== Kiểm tra kết nối MySQL xong. ===");

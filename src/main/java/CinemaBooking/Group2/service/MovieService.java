@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dto.movie.MovieResponse;
-import CinemaBooking.Group2.mapper.MovieMapper;
+import CinemaBooking.Group2.dtos.movie.MovieResponse;
+import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.repositories.MovieRepository;
 
@@ -20,6 +20,17 @@ public class MovieService {
 	public List<MovieResponse> getAllMovie() {
 		try {
 			List<Movie> movies = movieRepository.getAllMovie();
+			return movies.stream()
+						 .map(MovieMapper::toResponseDto)
+						 .collect(Collectors.toList());
+		}
+		catch (Exception e) {
+		   throw new RuntimeException("Lỗi khi lấy danh sách phim, kiểm tra lại repository", e);
+		}
+	}
+	public List<MovieResponse> getAllMovieStatus() {
+		try {
+			List<Movie> movies = movieRepository.getAllMovieCommingSoon();
 			return movies.stream()
 						 .map(MovieMapper::toResponseDto)
 						 .collect(Collectors.toList());
