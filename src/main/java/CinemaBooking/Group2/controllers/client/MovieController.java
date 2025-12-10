@@ -1,0 +1,25 @@
+package CinemaBooking.Group2.controllers.client;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import CinemaBooking.Group2.dto.movie.MovieResponse;
+import CinemaBooking.Group2.service.MovieService;
+
+@Controller
+@RequestMapping("/movie")
+public class MovieController {
+	@Autowired 
+	private MovieService movieService;
+	
+	@GetMapping("/")
+	public ResponseEntity<List<MovieResponse>> getAllMovies() {
+		List<MovieResponse> movies = movieService.getAllMovie();
+		return ResponseEntity.ok(movies);
+	}
+}
