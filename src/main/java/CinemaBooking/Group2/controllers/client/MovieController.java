@@ -12,7 +12,7 @@ import CinemaBooking.Group2.dto.movie.MovieResponse;
 import CinemaBooking.Group2.service.MovieService;
 
 @Controller
-@RequestMapping("/movie")
+@RequestMapping("/api/movie")
 public class MovieController {
 	@Autowired 
 	private MovieService movieService;
