@@ -28,5 +28,16 @@ public class MovieService {
 		   throw new RuntimeException("Lỗi khi lấy danh sách phim, kiểm tra lại repository", e);
 		}
 	}
+	public List<MovieResponse> getAllMovieStatus() {
+		try {
+			List<Movie> movies = movieRepository.getAllMovieCommingSoon();
+			return movies.stream()
+						 .map(MovieMapper::toResponseDto)
+						 .collect(Collectors.toList());
+		}
+		catch (Exception e) {
+		   throw new RuntimeException("Lỗi khi lấy danh sách phim, kiểm tra lại repository", e);
+		}
+	}
 }
  

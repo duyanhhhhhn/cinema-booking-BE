@@ -23,6 +23,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // REST API -> disable CSRF
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/movie/test").permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(basic -> basic.disable()); // tắt http mac dinh

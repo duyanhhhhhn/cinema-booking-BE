@@ -58,5 +58,42 @@ public class MovieRepository {
 		}
 		return movies;
 	}
+	
+	// function get all data movie if status = comming_soon
+	public List<Movie> getAllMovieCommingSoon() {
+		String sql = "SELECT * FROM movie WHERE status = 'COMMING_SOON'";
+		List<Movie> movies = new ArrayList<>();
+		try(Connection conn = dataSource.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ResultSet rs = ps.executeQuery()) {
+			while(rs.next()) {
+				Movie movie = new Movie();
+                movie.setId(rs.getInt("id"));
+                movie.setTitle(rs.getString("title"));
+                movie.setShortDescription(rs.getString("short_description"));
+                movie.setDescription(rs.getString("description"));
+                movie.setDurationMinutes(rs.getInt("duration_minutes"));
+                movie.setGenre(rs.getString("genre"));
+                movie.setLanguage(rs.getString("language"));
+                movie.setFormat(rs.getString("format"));
+                movie.setDirector(rs.getString("director"));
+                movie.setCast(rs.getString("cast"));
+                movie.setPosterUrl(rs.getString("poster_url"));
+                movie.setBannerUrl(rs.getString("banner_url"));
+                movie.setTrailerUrl(rs.getString("trailer_url"));
+                movie.setReleaseDate(rs.getDate("release_date"));
+                movie.setEndDate(rs.getDate("end_date"));
+                // tuỳ kiểu cột status trong DB mà map:
+                // movie.setStatus(Movie.MovieStatus.valueOf(rs.getString("status")));
+                movie.setCreatedAt(rs.getTimestamp("created_at"));
+
+                movies.add(movie);
+			}
+		}
+		catch(SQLException e) {
+			throw new RuntimeException("Lỗi khi lấy danh sách movie từ database theo status = Comming soon", e);
+		}
+		return movies;
+	}
 	 
 }

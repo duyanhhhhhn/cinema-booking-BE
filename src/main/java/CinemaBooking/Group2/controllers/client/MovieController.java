@@ -22,4 +22,10 @@ public class MovieController {
 		List<MovieResponse> movies = movieService.getAllMovie();
 		return ResponseEntity.ok(movies);
 	}
+	
+	@GetMapping("/test")
+	public ResponseEntity<List<MovieResponse>> getAllMovieStatus() {
+		List<MovieResponse> movies = movieService.getAllMovieStatus();
+		return ResponseEntity.ok(movies);
+	}
 }
