@@ -1,5 +1,5 @@
 package CinemaBooking.Group2.service;
-
+import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +28,7 @@ public class MovieService {
 		   throw new RuntimeException("Lỗi khi lấy danh sách phim, kiểm tra lại repository", e);
 		}
 	}
+	
 	public List<MovieResponse> getAllMovieStatus() {
 		try {
 			List<Movie> movies = movieRepository.getAllMovieCommingSoon();
@@ -39,5 +40,7 @@ public class MovieService {
 		   throw new RuntimeException("Lỗi khi lấy danh sách phim, kiểm tra lại repository", e);
 		}
 	}
+	 
+
 }
  

@@ -14,19 +14,7 @@ public class MovieMapper {
         dto.setId(movie.getId());
         dto.setTitle(movie.getTitle());
         dto.setShortDescription(movie.getShortDescription());
-        dto.setDescription(movie.getDescription());
         dto.setDurationMinutes(movie.getDurationMinutes());
-        dto.setGenre(movie.getGenre());
-        dto.setLanguage(movie.getLanguage());
-        dto.setFormat(movie.getFormat());
-        dto.setDirector(movie.getDirector());
-        dto.setCast(movie.getCast());
-        dto.setPosterUrl(movie.getPosterUrl());
-        dto.setBannerUrl(movie.getBannerUrl());
-        dto.setTrailerUrl(movie.getTrailerUrl());
-        dto.setReleaseDate(movie.getReleaseDate());
-        dto.setEndDate(movie.getEndDate());
-        dto.setCreatedAt(movie.getCreatedAt());
         if (movie.getStatus() != null) {
             dto.setStatus(
                 MovieResponse.MovieStatus.valueOf(movie.getStatus().name())
