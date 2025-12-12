@@ -122,5 +122,6 @@ public class MovieRepository {
 		catch(SQLException e) {
 			throw new RuntimeException("Lỗi khi lấy danh sách movie detail từ database theo status = Comming soon", e);
 		}
+		return null;
 	}
 }
