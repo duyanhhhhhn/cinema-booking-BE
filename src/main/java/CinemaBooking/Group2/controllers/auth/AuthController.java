@@ -21,7 +21,7 @@ public class AuthController {
     @Autowired private ForgotPasswordService forgotService;
     @Autowired private ChangePasswordService changeService;
 
-    // ========== REGISTER ===========
+
     @PostMapping("/register/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody RegisterRequestDTO req) {
         registerService.sendOtp(req);

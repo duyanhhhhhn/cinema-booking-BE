@@ -38,6 +38,7 @@ public class SecurityConfig {
 
             	    // Protected (login required)
             	    .requestMatchers("/api/auth/password/**").authenticated()
+            	    .requestMatchers("/api/user/me").authenticated()
 
             	    // Roles
             	    .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
