@@ -46,7 +46,10 @@ public class JwtService {
                 .compact();
     }
     public Integer getCinemaId(String token) {
-        return parseClaims(token).get("cinemaId", Integer.class);
+        Claims claims = parseClaims(token);
+        Object value = claims.get("cinemaId");
+        if (value == null) return null;
+        return (Integer) value;
     }
 
     public String generateRefreshToken(String email) {

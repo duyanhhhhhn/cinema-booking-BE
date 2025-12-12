@@ -1,9 +1,5 @@
 package CinemaBooking.Group2.dtos.auth;
 
-
-
-
-
 public class OtpVerifyRequestDTO {
     private String email;
     private String otpCode;

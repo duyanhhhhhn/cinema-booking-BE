@@ -36,9 +36,17 @@ public class ResendClient {
         }
     }
 
+    // Clean API key to remove control characters that are invalid in HTTP headers
+    private String getCleanApiKey() {
+        if (apiKey == null) return "";
+        // remove CR/LF and trim surrounding whitespace
+        return apiKey.replace("\r", "").replace("\n", "").trim();
+    }
+
     public void sendEmail(String to, String subject, String htmlContent) {
-        if (apiKey == null || apiKey.isBlank()) {
-            logger.error("Cannot send email: resend.api.key is not configured.");
+        String cleanKey = getCleanApiKey();
+        if (cleanKey.isEmpty()) {
+            logger.error("Cannot send email: resend.api.key is not configured or contains invalid characters.");
             return;
         }
 
@@ -49,7 +57,7 @@ public class ResendClient {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.resend.com/emails"))
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + cleanKey)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
                     .build();
