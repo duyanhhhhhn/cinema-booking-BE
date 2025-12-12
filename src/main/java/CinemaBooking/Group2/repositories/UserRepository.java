@@ -57,5 +57,14 @@ public class UserRepository {
 	        return null;
 	    }
 	}
+	
+	public int updatePassword(int userId, String hashedPassword) {
+	    String sql = "UPDATE user SET password = ? WHERE id = ?";
+	    try {
+	        return jdbc.update(sql, hashedPassword, userId);
+	    } catch (Exception e) {
+	        return 0;
+	    }
+	}
 
 }

@@ -1,5 +1,8 @@
 package CinemaBooking.Group2.dtos.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RegisterRequestDTO {
     private String fullName;
     private String email;

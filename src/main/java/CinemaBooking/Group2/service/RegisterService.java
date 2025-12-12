@@ -35,21 +35,26 @@ public class RegisterService {
             throw new RuntimeException("Email đã tồn tại");
         }
 
-        String otp = String.format("%06d", new Random().nextInt(999999));
-        
-        // Lưu OTP vào DB (email, code, expires)
-        otpRepo.save(
-        	    new Otp(
-        	        req.getEmail(),
-        	        otp,
-        	        Otp.OtpPurpose.REGISTER,
-        	        LocalDateTime.now().plusMinutes(5)
-        	    )
-        	);
+        // Rate Limit: 3 OTP / 10 phút
+        int count = otpRepo.countRecentRequests(req.getEmail(), 10, Otp.OtpPurpose.REGISTER);
+        if (count >= 3) {
+            throw new RuntimeException("Bạn đã gửi quá nhiều OTP, vui lòng thử lại sau ít phút.");
+        }
 
-        // Gửi mail
+        String otp = String.format("%06d", new Random().nextInt(999999));
+
+        otpRepo.save(
+            new Otp(
+                req.getEmail(),
+                otp,
+                Otp.OtpPurpose.REGISTER,
+                LocalDateTime.now().plusMinutes(5)
+            )
+        );
+
         emailService.sendOtp(req.getEmail(), otp);
     }
+
 
     /**
      * Xác thực OTP & tạo user
