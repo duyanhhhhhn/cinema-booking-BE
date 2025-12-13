@@ -33,7 +33,6 @@ public class ComboRepository {
 			item.setPrice(rs.getBigDecimal("price"));
 			item.setImageUrl(rs.getNString("image_url"));
 			item.setIsActive(rs.getInt("is_active"));
-			item.setCreatedAt(rs.getDate("created_at"));
 			item.setComboItems(rep.getByCombo(item.getId()));
 			return item;
 		}
@@ -86,7 +85,7 @@ public class ComboRepository {
 	}
 	public int Update(Combo item) {
 		try {
-			int rs = db.update("update `combos` set name=?,description=?,price=?,image_url=?,is_active=?,create_at=? where id=?",
+			int rs = db.update("update `combos` set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
 					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
 							item.getImageUrl(),item.getIsActive(),item.getCreatedAt(),item.getId()});
 			return rs;

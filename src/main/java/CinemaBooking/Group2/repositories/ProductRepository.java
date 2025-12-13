@@ -77,8 +77,8 @@ public class ProductRepository {
 	}
 	public int CreateProduct(Product product) {
 		try {
-			int rs = db.update("insert into `products`(id,name,description,price,image_url,stock,is_active,create_at) value(?,?,?,?,?,?,?,?)",
-					new Object[] {product.getId(),product.getName(),product.getDescription(),product.getPrice(),product.getImageUrl(),
+			int rs = db.update("insert into `products`(name,description,price,image_url,stock,is_active,created_at) value(?,?,?,?,?,?,?)",
+					new Object[] {product.getName(),product.getDescription(),product.getPrice(),product.getImageUrl(),
 							product.getStock(),product.getIsActive(),product.getCreatedAt()});
 			return rs;
 		}

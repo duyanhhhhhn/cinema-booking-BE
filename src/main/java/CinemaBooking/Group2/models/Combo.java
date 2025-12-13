@@ -1,20 +1,27 @@
 package CinemaBooking.Group2.models;
 
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class Combo {
 
 	private int id;
-    private String name="";
-    private String description="";  // text, có thể null
+    private String name;
+    private String description;  // text, có thể null
     private BigDecimal price;
     private String imageUrl="no_img.jpg";
     private int isActive = 0;
-    private LocalDateTime createdAt;
+	@JsonFormat(
+	        shape = JsonFormat.Shape.STRING,
+	        pattern = "yyyy-MM-dd",
+	        timezone = "Asia/Ho_Chi_Minh"
+	    )
+    private LocalDate createdAt;
     private List<ComboItem> comboItems = new ArrayList<>();
 	public List<ComboItem> getComboItems() {
 		return comboItems;
@@ -58,10 +65,10 @@ public class Combo {
 	public void setIsActive(int isActive) {
 		this.isActive = isActive;
 	}
-	public LocalDateTime getCreatedAt() {
+	public LocalDate getCreatedAt() {
 		return createdAt;
 	}
-	public void setCreatedAt(LocalDateTime createdAt) {
+	public void setCreatedAt(LocalDate createdAt) {
 		this.createdAt = createdAt;
 	}
 	/**
@@ -73,28 +80,8 @@ public class Combo {
 	 * @param isActive
 	 * @param createdAt
 	 */
-	public Combo(int id, String name, String description, BigDecimal price, String imageUrl, int isActive,
-			LocalDateTime createdAt) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.description = description;
-		this.price = price;
-		this.imageUrl = imageUrl;
-		this.isActive = isActive;
-		this.createdAt = createdAt;
-	}
-	/**
-	 * 
-	 */
 	public Combo() {
-		super();
 		// TODO Auto-generated constructor stub
+		super();
 	}
-	public void setCreatedAt(Date date) {
-		// TODO Auto-generated method stub
-	}
-    
-    
-
 }

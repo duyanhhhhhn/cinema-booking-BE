@@ -51,8 +51,19 @@ public class ComboService {
 	public int AddCombo(Combo combo) {
 		return rep.Create(combo);
 	}
-	public int EditCombo(Combo combo) {
-		return rep.Update(combo);
+	public String EditCombo(Combo combo) {
+		String s = "Error";
+		try {
+			int rs = rep.Update(combo);
+			if(rs==1) {
+				s="Success";
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
+		return s;
 	}
 	public int DeleteCombo(int id) {
 		return rep.Delete(id);

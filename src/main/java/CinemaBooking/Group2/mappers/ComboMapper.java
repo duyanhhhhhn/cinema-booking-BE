@@ -17,7 +17,6 @@ public class ComboMapper {
 			res.setCreatedAt(item.getCreatedAt());
 			res.setIsActive(item.getIsActive());
 			res.setImageUrl(item.getImageUrl());
-			res.setCreatedAt(item.getCreatedAt());
 			return res;
 		}
 		catch (Exception e) {

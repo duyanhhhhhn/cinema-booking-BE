@@ -17,6 +17,7 @@ public class ProductMapper {
 			res.setIsActive(item.getIsActive());
 			res.setStock(item.getStock());
 			res.setImageUrl(item.getImageUrl());
+			res.setPrice(item.getPrice());
 			return res;
 		}
 		catch (Exception e) {

@@ -37,4 +37,17 @@ public class ProductService {
 			throw new RuntimeException();
 		}
 	}
+	public String createProduct(Product item) {
+		String s = "Failed to create a new product";
+		try {
+			int rs = rep.CreateProduct(item);
+			if(rs==1) {
+				s = "Success";
+			}
+		}
+		catch(Exception e) {
+			System.out.print(e);
+		}
+		return s;
+	}
 }
