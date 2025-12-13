@@ -84,4 +84,17 @@ public class Combo {
 		// TODO Auto-generated constructor stub
 		super();
 	}
+	@Override
+	public String toString() {
+	    return "Combo{" +
+	            "id=" + id +
+	            ", name='" + name + '\'' +
+	            ", description='" + description + '\'' +
+	            ", price=" + price +
+	            ", imageUrl='" + imageUrl + '\'' +
+	            ", isActive=" + isActive +
+	            ", createdAt=" + createdAt +
+	            ", comboItems=" + comboItems +
+	            '}';
+	}
 }
