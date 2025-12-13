@@ -1,27 +1,25 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-public class Combo {
+import CinemaBooking.Group2.models.ComboItem;
 
+public class ComboResponseDTO {
+	
+	private enum status{
+		Available,
+		Unvailable
+	}
 	private int id;
-    private String name="";
-    private String description="";  // text, có thể null
+    private String name;
+    private String description;  // text, có thể null
     private BigDecimal price;
-    private String imageUrl="no_img.jpg";
-    private int isActive = 0;
+    private String imageUrl;
+    private status isActive;
     private LocalDateTime createdAt;
-    private List<ComboItem> comboItems = new ArrayList<>();
-	public List<ComboItem> getComboItems() {
-		return comboItems;
-	}
-	public void setComboItems(List<ComboItem> comboItems) {
-		this.comboItems = comboItems;
-	}
+    private List<ComboItem> comboItems;
 	public int getId() {
 		return id;
 	}
@@ -52,11 +50,17 @@ public class Combo {
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
 	}
-	public int getIsActive() {
+	public status getIsActive() {
 		return isActive;
 	}
 	public void setIsActive(int isActive) {
-		this.isActive = isActive;
+		if(isActive==0) {
+			this.isActive = status.Unvailable;
+		}
+		else {
+			this.isActive = status.Available;
+		}
+		
 	}
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
@@ -64,17 +68,14 @@ public class Combo {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-	/**
-	 * @param id
-	 * @param name
-	 * @param description
-	 * @param price
-	 * @param imageUrl
-	 * @param isActive
-	 * @param createdAt
-	 */
-	public Combo(int id, String name, String description, BigDecimal price, String imageUrl, int isActive,
-			LocalDateTime createdAt) {
+	public List<ComboItem> getComboItems() {
+		return comboItems;
+	}
+	public void setComboItems(List<ComboItem> comboItems) {
+		this.comboItems = comboItems;
+	}
+	public ComboResponseDTO(int id, String name, String description, BigDecimal price, String imageUrl, status isActive,
+			LocalDateTime createdAt, List<ComboItem> comboItems) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -83,18 +84,9 @@ public class Combo {
 		this.imageUrl = imageUrl;
 		this.isActive = isActive;
 		this.createdAt = createdAt;
+		this.comboItems = comboItems;
 	}
-	/**
-	 * 
-	 */
-	public Combo() {
+	public ComboResponseDTO() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
-	public void setCreatedAt(Date date) {
-		// TODO Auto-generated method stub
-	}
-    
-    
-
 }

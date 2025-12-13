@@ -1,27 +1,17 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-public class Combo {
-
+public class ProductResponseDTO {
 	private int id;
-    private String name="";
-    private String description="";  // text, có thể null
+    private String name;
+    private String description;
     private BigDecimal price;
-    private String imageUrl="no_img.jpg";
-    private int isActive = 0;
+    private String imageUrl;
+    private int stock;
+    private int isActive;
     private LocalDateTime createdAt;
-    private List<ComboItem> comboItems = new ArrayList<>();
-	public List<ComboItem> getComboItems() {
-		return comboItems;
-	}
-	public void setComboItems(List<ComboItem> comboItems) {
-		this.comboItems = comboItems;
-	}
 	public int getId() {
 		return id;
 	}
@@ -52,6 +42,12 @@ public class Combo {
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
 	}
+	public int getStock() {
+		return stock;
+	}
+	public void setStock(int stock) {
+		this.stock = stock;
+	}
 	public int getIsActive() {
 		return isActive;
 	}
@@ -70,10 +66,11 @@ public class Combo {
 	 * @param description
 	 * @param price
 	 * @param imageUrl
+	 * @param stock
 	 * @param isActive
 	 * @param createdAt
 	 */
-	public Combo(int id, String name, String description, BigDecimal price, String imageUrl, int isActive,
+	public ProductResponseDTO(int id, String name, String description, BigDecimal price, String imageUrl, int stock, int isActive,
 			LocalDateTime createdAt) {
 		super();
 		this.id = id;
@@ -81,20 +78,14 @@ public class Combo {
 		this.description = description;
 		this.price = price;
 		this.imageUrl = imageUrl;
+		this.stock = stock;
 		this.isActive = isActive;
 		this.createdAt = createdAt;
 	}
 	/**
 	 * 
 	 */
-	public Combo() {
+	public ProductResponseDTO() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
-	public void setCreatedAt(Date date) {
-		// TODO Auto-generated method stub
-	}
-    
-    
-
 }
