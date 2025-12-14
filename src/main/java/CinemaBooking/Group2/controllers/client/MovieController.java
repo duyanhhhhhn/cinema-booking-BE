@@ -17,7 +17,7 @@ import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.service.MovieService;
 
 @RestController
-@RequestMapping("/api/movie")
+@RequestMapping("/api/movies")
 public class MovieController {
 
     @Autowired
