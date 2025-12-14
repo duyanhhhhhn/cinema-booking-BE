@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.mappers.MovieMapper;
@@ -117,6 +118,66 @@ public class MovieService {
             return MovieMapper.toDetailDto(movie);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get movie detail in service layer.", e);
+        }
+    }
+    
+    /**
+     * Create new movie (Admin only - Security/Controller will handle permission).
+     *
+     * Flow:
+     * - Repository: insert Movie model into DB
+     * - Service: validate + map DTO -> Model, then call repository
+     *
+     * @param dto MovieCreateDtos request from FE
+     * @return true if insert success, false if validation fails or insert fails
+     */
+    public boolean createNewMovie(MovieCreateDtos dto) {
+        try {
+            // 0) Null request
+            if (dto == null) {
+                System.out.println("[CREATE_MOVIE] dto is null");
+                return false;
+            }
+
+            // 1) Validate title
+            String title = dto.getTitle();
+            if (title == null || title.trim().isEmpty()) {
+                System.out.println("[CREATE_MOVIE] invalid title: " + title);
+                return false;
+            }
+
+            // 2) Validate duration
+            int duration = dto.getDurationMinutes();
+            if (duration <= 0) {
+                System.out.println("[CREATE_MOVIE] invalid durationMinutes: " + duration);
+                return false;
+            }
+
+            // (optional) log important fields
+            System.out.println("[CREATE_MOVIE] title=" + title);
+            System.out.println("[CREATE_MOVIE] duration=" + duration);
+            System.out.println("[CREATE_MOVIE] endDate=" + dto.getEndDate());
+
+            // 3) Map DTO -> Model
+            Movie movie = MovieMapper.toModel(dto);
+            if (movie == null) {
+                System.out.println("[CREATE_MOVIE] mapper returned null Movie");
+                return false;
+            }
+
+            // 4) Default status
+            if (movie.getStatus() == null) {
+                movie.setStatus(Movie.MovieStatus.COMING_SOON);
+            }
+
+            // 5) Insert DB
+            boolean inserted = movieRepository.createNewMovie(movie);
+            System.out.println("[CREATE_MOVIE] repository inserted=" + inserted);
+            return inserted;
+
+        } catch (Exception e) {
+            e.printStackTrace(); // để thấy lỗi thật nếu repository/mapper throw
+            throw new RuntimeException("Failed to create new movie in service layer.", e);
         }
     }
 

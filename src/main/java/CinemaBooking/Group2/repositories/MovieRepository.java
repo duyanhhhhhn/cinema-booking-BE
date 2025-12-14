@@ -161,4 +161,49 @@ public class MovieRepository {
 	    }
 	}
 
+	// function create new film
+	public boolean createNewMovie(Movie movie) {
+	    String sql = "INSERT INTO movie " +
+	            "(title, short_description, description, duration_minutes, genre, language, format, " +
+	            "director, `cast`, poster_url, banner_url, trailer_url, release_date, end_date, status) " +
+	            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+	    try (Connection conn = dataSource.getConnection();
+	         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+	        ps.setString(1,  movie.getTitle());
+	        ps.setString(2,  movie.getShortDescription());
+	        ps.setString(3,  movie.getDescription());
+	        ps.setInt(4,     movie.getDurationMinutes());
+	        ps.setString(5,  movie.getGenre());
+	        ps.setString(6,  movie.getLanguage());
+	        ps.setString(7,  movie.getFormat());
+	        ps.setString(8,  movie.getDirector());
+	        ps.setString(9,  movie.getCast());
+	        ps.setString(10, movie.getPosterUrl());
+	        ps.setString(11, movie.getBannerUrl());
+	        ps.setString(12, movie.getTrailerUrl());
+
+	        if (movie.getReleaseDate() != null) {
+	            ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
+	        } else {
+	            ps.setNull(13, java.sql.Types.DATE);
+	        }
+
+	        if (movie.getEndDate() != null) {
+	            ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
+	        } else {
+	            ps.setNull(14, java.sql.Types.DATE);
+	        }
+
+	        // param 15: status (default)
+	        ps.setString(15, movie.getStatus() == null ? "COMING_SOON" : movie.getStatus().name());
+
+	        return ps.executeUpdate() > 0;
+
+	    } catch (SQLException e) {
+	        throw new RuntimeException("error when add new movie: -> repositories", e);
+	    }
+	}
+
 }

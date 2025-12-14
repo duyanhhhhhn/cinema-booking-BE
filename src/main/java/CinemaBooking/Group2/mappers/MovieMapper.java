@@ -1,8 +1,10 @@
 package CinemaBooking.Group2.mappers;
 
+import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieStatus;
 
 public class MovieMapper {
 	// Mapping data của dto với lại models nha cac anh trả về cho FE
@@ -53,5 +55,33 @@ public class MovieMapper {
 
         return dto;
     }
+    public static Movie toModel(MovieCreateDtos dto) {
+        if (dto == null) return null;
+
+        Movie movie = new Movie();
+        movie.setTitle(dto.getTitle());
+        movie.setShortDescription(dto.getShortDescription());
+        movie.setDescription(dto.getDescription());
+        movie.setDurationMinutes(dto.getDurationMinutes());
+
+        movie.setGenre(dto.getGenre());
+        movie.setLanguage(dto.getLanguage());
+        movie.setFormat(dto.getFormat());
+        movie.setDirector(dto.getDirector());
+        movie.setCast(dto.getCast());
+
+        movie.setPosterUrl(dto.getPosterUrl());
+        movie.setBannerUrl(dto.getBannerUrl());
+        movie.setTrailerUrl(dto.getTrailerUrl());
+
+        movie.setReleaseDate(dto.getReleaseDate());
+        movie.setEndDate(dto.getEndDate());
+
+        // status is same enum type (Movie.MovieStatus) in DTO now
+        movie.setStatus(dto.getStatus());
+
+        return movie;
+    }
+
 
 }

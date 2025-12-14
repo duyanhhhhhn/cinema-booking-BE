@@ -117,6 +117,26 @@ public class Movie {
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
 	}
+	public Movie(String title, String shortDescription, String description, int durationMinutes, String genre,
+			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
+			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status) {
+		super();
+		this.title = title;
+		this.shortDescription = shortDescription;
+		this.description = description;
+		this.durationMinutes = durationMinutes;
+		this.genre = genre;
+		this.language = language;
+		this.format = format;
+		this.director = director;
+		this.cast = cast;
+		this.posterUrl = posterUrl;
+		this.bannerUrl = bannerUrl;
+		this.trailerUrl = trailerUrl;
+		this.releaseDate = releaseDate;
+		this.endDate = endDate;
+		this.status = status;
+	}
 	public MovieStatus getStatus() {
 		return status;
 	}
