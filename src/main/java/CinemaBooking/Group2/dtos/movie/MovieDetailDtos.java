@@ -1,8 +1,10 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos.movie;
 
 import java.util.Date;
 
-public class Movie {
+import CinemaBooking.Group2.models.Movie.MovieStatus;
+
+public class MovieDetailDtos {
 
 	public enum MovieStatus {
 	    COMING_SOON,
@@ -117,26 +119,6 @@ public class Movie {
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
 	}
-	public Movie(String title, String shortDescription, String description, int durationMinutes, String genre,
-			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
-			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status) {
-		super();
-		this.title = title;
-		this.shortDescription = shortDescription;
-		this.description = description;
-		this.durationMinutes = durationMinutes;
-		this.genre = genre;
-		this.language = language;
-		this.format = format;
-		this.director = director;
-		this.cast = cast;
-		this.posterUrl = posterUrl;
-		this.bannerUrl = bannerUrl;
-		this.trailerUrl = trailerUrl;
-		this.releaseDate = releaseDate;
-		this.endDate = endDate;
-		this.status = status;
-	}
 	public MovieStatus getStatus() {
 		return status;
 	}
@@ -168,7 +150,7 @@ public class Movie {
 	 * @param status
 	 * @param createdAt
 	 */
-	public Movie(int id, String title, String shortDescription, String description, int durationMinutes, String genre,
+	public MovieDetailDtos(int id, String title, String shortDescription, String description, int durationMinutes, String genre,
 			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
 			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
 		super();
@@ -193,7 +175,7 @@ public class Movie {
 	/**
 	 * 
 	 */
-	public Movie() {
+	public MovieDetailDtos() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
