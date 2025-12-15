@@ -11,7 +11,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.ComboItem;
-import jakarta.activation.DataSource;
 
 @Repository
 public class ComboItemRepository {
