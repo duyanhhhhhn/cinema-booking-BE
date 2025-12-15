@@ -27,8 +27,8 @@ public class ComboController {
 		return ResponseEntity.ok(item);
 	}
 	@GetMapping("/combo/{id}")
-	public ResponseEntity<List<ComboResponseDTO>> comboInfo(@PathVariable("id")int id){
-		List<ComboResponseDTO> item=service.comboInfo(id);
+	public ResponseEntity<ComboResponseDTO> comboInfo(@PathVariable("id")int id){
+		ComboResponseDTO item=service.comboInfo(id);
 		return ResponseEntity.ok(item);
 	}
 	@GetMapping("/products")

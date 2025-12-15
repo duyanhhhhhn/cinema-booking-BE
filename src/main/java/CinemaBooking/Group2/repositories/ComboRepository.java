@@ -11,14 +11,20 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.DbConnection;
 
-@Repository
-public class ComboRepository {
-	@Autowired
-	private JdbcTemplate db;
+public class ComboRepository implements Icrud<Combo>{
+	private JdbcTemplate db = DbConnection.Instance().getDb();
 	@Autowired
 	private ComboItemRepository rep;
-    public ComboRepository() {
+	private static ComboRepository _instance = null;
+	public static ComboRepository Instance() {
+		if(_instance==null) {
+			_instance = new ComboRepository();
+		}
+		return _instance;
+	}
+    private ComboRepository() {
 		
 	}
 	public class ComboRowMapper implements RowMapper<Combo>{
@@ -33,7 +39,7 @@ public class ComboRepository {
 			item.setPrice(rs.getBigDecimal("price"));
 			item.setImageUrl(rs.getNString("image_url"));
 			item.setIsActive(rs.getInt("is_active"));
-			item.setComboItems(rep.getByCombo(item.getId()));
+			//item.setComboItems(rep.getByCombo(item.getId()));
 			return item;
 		}
 		
@@ -61,17 +67,18 @@ public class ComboRepository {
 		}
 		return list;
 	}
-	public List<Combo> findById(int id){
-		List<Combo> list = new ArrayList<>();
+	public Combo findById(int id){
+		Combo item = new Combo();
 		try {
-			list = db.query("select * from `combos` where id=?", new ComboRowMapper(),new Object[] {id});
+			item = db.query("select * from `combos` where id=?", new ComboRowMapper(),new Object[] {id}).get(0);
 		}
 		catch(Exception e) {
 			System.out.print(e);
 		}
-		return list;
+		return item;
 	}
-	public int Create(Combo item) {
+	@Override
+	public int create(Combo item) {
 		try {
 			int rs = db.update("insert into `combo`(name,description,price,image_url,is_active,create_at) values(?,?,?,?,?,?)",
 					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
@@ -83,7 +90,8 @@ public class ComboRepository {
 		}
 		return 0;
 	}
-	public int Update(Combo item) {
+	@Override
+	public int update(Combo item) {
 		try {
 			int rs = db.update("update `combos` set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
 					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
@@ -96,7 +104,8 @@ public class ComboRepository {
 		}
 		return 0;
 	}
-	public int Delete(int id) {
+	@Override
+	public int delete(int id) {
 		try {
 			int rs=db.update("delete from `combos` where id=?",
 					new Object[] {id});
@@ -118,5 +127,10 @@ public class ComboRepository {
 			System.out.print(e);
 		}
 		return 0;
+	}
+	@Override
+	public List<Combo> search(String key) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
