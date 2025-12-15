@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import CinemaBooking.Group2.dtos.auth.RegisterRequestDTO;
+import CinemaBooking.Group2.dtos.auth.SendOtpRequestDTO;
 import CinemaBooking.Group2.service.RegisterService;
 import CinemaBooking.Group2.service.AuthService;
 import CinemaBooking.Group2.service.ChangePasswordService;
@@ -23,8 +24,8 @@ public class AuthController {
 
 
     @PostMapping("/register/send-otp")
-    public ResponseEntity<?> sendOtp(@RequestBody RegisterRequestDTO req) {
-        registerService.sendOtp(req);
+    public ResponseEntity<?> sendOtp(@RequestBody SendOtpRequestDTO req) {
+        registerService.sendOtp(req.getEmail());
         return ResponseEntity.ok(Map.of("message", "Đã gửi OTP"));
     }
 
