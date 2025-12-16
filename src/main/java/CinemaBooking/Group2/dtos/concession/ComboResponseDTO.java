@@ -1,7 +1,7 @@
 package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import CinemaBooking.Group2.models.ComboItem;
@@ -18,7 +18,7 @@ public class ComboResponseDTO {
     private BigDecimal price;
     private String imageUrl;
     private status isActive;
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     private List<ComboItem> comboItems;
 	public int getId() {
 		return id;
@@ -62,10 +62,10 @@ public class ComboResponseDTO {
 		}
 		
 	}
-	public LocalDate getCreatedAt() {
+	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
-	public void setCreatedAt(LocalDate createdAt) {
+	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
 	public List<ComboItem> getComboItems() {
@@ -75,7 +75,7 @@ public class ComboResponseDTO {
 		this.comboItems = comboItems;
 	}
 	public ComboResponseDTO(int id, String name, String description, BigDecimal price, String imageUrl, status isActive,
-			LocalDate createdAt, List<ComboItem> comboItems) {
+			LocalDateTime createdAt, List<ComboItem> comboItems) {
 		super();
 		this.id = id;
 		this.name = name;

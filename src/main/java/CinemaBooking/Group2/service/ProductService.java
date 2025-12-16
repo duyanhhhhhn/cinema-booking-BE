@@ -3,21 +3,18 @@ package CinemaBooking.Group2.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.mappers.ProductMapper;
 import CinemaBooking.Group2.models.Product;
-import CinemaBooking.Group2.repositories.ProductRepository;
+import CinemaBooking.Group2.repositories.ModelMaker;
 
 @Service
 public class ProductService {
-	@Autowired
-	ProductRepository rep;
 	public List<ProductResponseDTO> getProducts (){
 		try{
-			List<Product> item = rep.getAll();
+			List<Product> item = ModelMaker.Instance().getProduct();
 			return item.stream().map(ProductMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}
@@ -26,11 +23,10 @@ public class ProductService {
 			throw new RuntimeException();
 		}
 	}
-	public List<ProductResponseDTO> productInfo (int id){
+	public ProductResponseDTO productInfo (int id){
 		try{
-			List<Product> item = rep.findById(id);
-			return item.stream().map(ProductMapper::toResponseDTO)
-					.collect(Collectors.toList());
+			Product item = ModelMaker.Instance().productInfo(id);
+			return ProductMapper.toResponseDTO(item);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -40,7 +36,7 @@ public class ProductService {
 	public String createProduct(Product item) {
 		String s = "Failed to create a new product";
 		try {
-			int rs = rep.CreateProduct(item);
+			int rs = ModelMaker.Instance().createProduct(item);
 			if(rs==1) {
 				s = "Success";
 			}

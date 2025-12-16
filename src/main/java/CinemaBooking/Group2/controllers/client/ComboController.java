@@ -37,8 +37,8 @@ public class ComboController {
 		return ResponseEntity.ok(item);
 	}
 	@GetMapping("/products/{id}")
-	public ResponseEntity<List<ProductResponseDTO>> productInfo(@PathVariable("id") int id){
-		List<ProductResponseDTO> item = pro.productInfo(id);
+	public ResponseEntity<ProductResponseDTO> productInfo(@PathVariable("id") int id){
+		ProductResponseDTO item = pro.productInfo(id);
 		return ResponseEntity.ok(item);
 	}
 }

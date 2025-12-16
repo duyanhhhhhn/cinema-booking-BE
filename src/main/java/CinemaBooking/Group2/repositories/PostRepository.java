@@ -5,18 +5,24 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Post;
 
-@Repository
 public class PostRepository {
-	@Autowired
-	JdbcTemplate db;
-	public PostRepository() {};
+	private JdbcTemplate db;
+	private static PostRepository _instance=null;
+	public static PostRepository Instance() {
+		if(_instance==null) {
+			_instance=new PostRepository();
+		}
+		return _instance;
+	}
+	private PostRepository() {
+		db=DbConnection.Instance().getDb();
+	};
 	class PostMapper implements RowMapper<Post>{
 
 		@Override

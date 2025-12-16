@@ -3,13 +3,11 @@ package CinemaBooking.Group2.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
-import CinemaBooking.Group2.repositories.ComboRepository;
 import CinemaBooking.Group2.repositories.ModelMaker;
 
 @Service

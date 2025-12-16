@@ -5,18 +5,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.DbConnection;
 
 public class ComboRepository implements Icrud<Combo>{
 	private JdbcTemplate db = DbConnection.Instance().getDb();
-	@Autowired
-	private ComboItemRepository rep;
 	private static ComboRepository _instance = null;
 	public static ComboRepository Instance() {
 		if(_instance==null) {
@@ -39,6 +35,7 @@ public class ComboRepository implements Icrud<Combo>{
 			item.setPrice(rs.getBigDecimal("price"));
 			item.setImageUrl(rs.getNString("image_url"));
 			item.setIsActive(rs.getInt("is_active"));
+			item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
 			//item.setComboItems(rep.getByCombo(item.getId()));
 			return item;
 		}

@@ -1,24 +1,20 @@
 package CinemaBooking.Group2.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.models.Post;
-import CinemaBooking.Group2.repositories.PostRepository;
+import CinemaBooking.Group2.repositories.ModelMaker;
 
 @Service
 public class PostService {
-	@Autowired
-	private PostRepository rep;
 	public List<PostResponseDTO> getAllPost() {
 		try {
-			List<Post> item = rep.getAll();
+			List<Post> item = ModelMaker.Instance().getPost();
 			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -29,7 +25,7 @@ public class PostService {
 	public String newPost(Post post) {
 		String s = "Failed to Create New Post";
 		try {
-			int rs=rep.newPost(post);
+			int rs=ModelMaker.Instance().createPost(post);
 			if(rs==1) {
 				s="Success";
 			}

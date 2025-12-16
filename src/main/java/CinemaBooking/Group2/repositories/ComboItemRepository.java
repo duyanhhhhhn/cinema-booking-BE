@@ -5,20 +5,23 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.ComboItem;
+import CinemaBooking.Group2.models.DbConnection;
 
-@Repository
-public class ComboItemRepository {
-	@Autowired
-	private JdbcTemplate db;
-	public ComboItemRepository() {
+public class ComboItemRepository implements Icrud<ComboItem>{
+	private JdbcTemplate db = DbConnection.Instance().getDb();
+	private static ComboItemRepository _instance=null;
+	private ComboItemRepository() {
 	}
-
+	public static ComboItemRepository Instance() {
+		if(_instance==null) {
+			_instance= new ComboItemRepository();
+		}
+		return _instance;
+	}
 	public class ComboItemRowMapper implements RowMapper<ComboItem> {
 		@Override
 		public ComboItem mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -63,7 +66,7 @@ public class ComboItemRepository {
 		}
 		return item;
 	}
-	public int Create(ComboItem item) {
+	public int create(ComboItem item) {
 		try {
 			int rs = db.update("insert into `combo_items`(combo_id,product_id,quantity) values(?,?,?)",
 					new Object[] {item.getComboId(),item.getProductId(),item.getQuantity()});
@@ -74,7 +77,7 @@ public class ComboItemRepository {
 		}
 		return 0;
 	}
-	public int Update(ComboItem item) {
+	public int update(ComboItem item) {
 		try {
 			int rs = db.update("update `combo_items` set combo_id=?,product_id=?,quantity=? where id=?",
 					new Object[] {item.getComboId(),item.getProductId(),item.getQuantity(),item.getId()});
@@ -97,15 +100,40 @@ public class ComboItemRepository {
 		}
 		return 0;
 	}
-	public int Delete(ComboItem item) {
+	public int delete(int id) {
 		try {
+			if (checkExist(id)) {
+				return 0;
+			}
 			int rs = db.update("delete from `combo_items` where id=?",
-					new Object[] {item.getId()});
+					new Object[] {id});
 			return rs;
 		}
 		catch(Exception e) {
 			System.out.print(e);
 		}
 		return 0;
+	}
+	@Override
+	public List<ComboItem> search(String key) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	public boolean checkExist(int id) {
+		try {
+			ComboItem item=null;
+			item = db.query("select * from `combo_items` where id=?", new ComboItemRowMapper(),new Object[] {id}).get(0);
+			if(item!=null) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
+		return false;
 	}
 }

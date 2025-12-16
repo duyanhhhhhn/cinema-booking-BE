@@ -1,11 +1,11 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import CinemaBooking.Group2.models.Enum.DiscountType;
 
-public class Voucher {
+public class VoucherResponseDTO {	
 	private int id;
     private String code;
     private String description;
@@ -99,7 +99,7 @@ public class Voucher {
 	 * @param usedCount
 	 * @param createdAt
 	 */
-	public Voucher(int id, String code, String description, DiscountType discountType, BigDecimal discountValue,
+	public VoucherResponseDTO(int id, String code, String description, DiscountType discountType, BigDecimal discountValue,
 			BigDecimal minOrderAmount, LocalDate startAt, LocalDate endAt, int usageLimit, int usedCount,
 			LocalDate createdAt) {
 		super();
@@ -118,10 +118,9 @@ public class Voucher {
 	/**
 	 * 
 	 */
-	public Voucher() {
+	public VoucherResponseDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-    
     
 }

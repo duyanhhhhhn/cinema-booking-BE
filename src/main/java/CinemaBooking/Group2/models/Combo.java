@@ -1,12 +1,9 @@
 package CinemaBooking.Group2.models;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class Combo {
 
@@ -16,12 +13,7 @@ public class Combo {
     private BigDecimal price;
     private String imageUrl="no_img.jpg";
     private int isActive = 0;
-	@JsonFormat(
-	        shape = JsonFormat.Shape.STRING,
-	        pattern = "yyyy-MM-dd",
-	        timezone = "Asia/Ho_Chi_Minh"
-	    )
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     private List<ComboItem> comboItems = new ArrayList<>();
 	public List<ComboItem> getComboItems() {
 		return comboItems;
@@ -65,10 +57,10 @@ public class Combo {
 	public void setIsActive(int isActive) {
 		this.isActive = isActive;
 	}
-	public LocalDate getCreatedAt() {
+	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
-	public void setCreatedAt(LocalDate createdAt) {
+	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
 	/**
