@@ -116,7 +116,6 @@ public class MovieRepository {
 	    }
 	}
 
-	 
 	// function get movie by id and show detail
 	public Movie getMovieDetailById(int id) {
 	    String sql = "SELECT * FROM movie WHERE id = ?";
@@ -205,5 +204,16 @@ public class MovieRepository {
 	        throw new RuntimeException("error when add new movie: -> repositories", e);
 	    }
 	}
-
+	
+	// function delete movie by id 
+	public boolean deleteMovieById(int id) {
+		String sql = "DELETE FROM movie WHERE id=?";
+		try(Connection conn = dataSource.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setInt(1, id);
+			return ps.executeUpdate() == 1;
+		} catch (SQLException e) {
+	        throw new RuntimeException("error when delete movie: -> repositories", e);
+		}
+	}
 }

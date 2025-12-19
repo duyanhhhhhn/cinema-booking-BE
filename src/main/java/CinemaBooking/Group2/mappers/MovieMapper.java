@@ -1,6 +1,7 @@
 package CinemaBooking.Group2.mappers;
 
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
+import CinemaBooking.Group2.dtos.movie.MovieDeleteDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.models.Movie;
@@ -82,6 +83,9 @@ public class MovieMapper {
 
         return movie;
     }
-
+    
+    public static int toId(MovieDeleteDtos dto) {
+    	return dto == null ? 0 : dto.getId();
+    }
 
 }
