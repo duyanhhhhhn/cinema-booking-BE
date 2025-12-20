@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
+import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
@@ -120,4 +121,34 @@ public class MovieService {
     		throw new RuntimeException("Failed to delete movie by id", e);
     	}
     }
+    
+    public MovieDetailDtos updateMovie(int id, MovieEditDtos dto) {
+        // 1) check tồn tại
+        if (!movieRepository.existsById(id)) {
+            throw new RuntimeException("Movie not found with id = " + id);
+        }
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            throw new RuntimeException("Title is required.");
+        }
+        if (dto.getDurationMinutes() <= 0) {
+            throw new RuntimeException("Duration must be > 0.");
+        }
+        if (dto.getReleaseDate() != null && dto.getEndDate() != null
+                && dto.getReleaseDate().after(dto.getEndDate())) {
+            throw new RuntimeException("ReleaseDate must be before EndDate.");
+        }
+        Movie movieToUpdate = MovieMapper.toModelEdit(dto);
+        boolean ok = movieRepository.updateMovieById(id, movieToUpdate);
+        if (!ok) {
+            throw new RuntimeException("Update movie failed.");
+        }
+
+        Movie updated = movieRepository.getMovieDetailById(id);
+        if (updated == null) {
+            throw new RuntimeException("Updated but cannot load movie.");
+        }
+
+        return MovieMapper.toDetailDto(updated);
+    }
+
 }

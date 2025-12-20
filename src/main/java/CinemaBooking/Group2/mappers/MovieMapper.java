@@ -1,11 +1,10 @@
 package CinemaBooking.Group2.mappers;
 
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
-import CinemaBooking.Group2.dtos.movie.MovieDeleteDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
+import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieResponse;
 import CinemaBooking.Group2.models.Movie;
-import CinemaBooking.Group2.models.Movie.MovieStatus;
 
 public class MovieMapper {
 	// Mapping data của dto với lại models nha cac anh trả về cho FE
@@ -84,8 +83,30 @@ public class MovieMapper {
         return movie;
     }
     
-    public static int toId(MovieDeleteDtos dto) {
-    	return dto == null ? 0 : dto.getId();
+    public static Movie toModelEdit(MovieEditDtos dto) {
+        if (dto == null) return null;
+
+        Movie movie = new Movie();
+        movie.setTitle(dto.getTitle());
+        movie.setShortDescription(dto.getShortDescription());
+        movie.setDescription(dto.getDescription());
+        movie.setDurationMinutes(dto.getDurationMinutes());
+
+        movie.setGenre(dto.getGenre());
+        movie.setLanguage(dto.getLanguage());
+        movie.setFormat(dto.getFormat());
+        movie.setDirector(dto.getDirector());
+        movie.setCast(dto.getCast());
+
+        movie.setPosterUrl(dto.getPosterUrl());
+        movie.setBannerUrl(dto.getBannerUrl());
+        movie.setTrailerUrl(dto.getTrailerUrl());
+
+        movie.setReleaseDate(dto.getReleaseDate());
+        movie.setEndDate(dto.getEndDate());
+
+        movie.setStatus(dto.getStatus());
+        return movie;
     }
 
 }
