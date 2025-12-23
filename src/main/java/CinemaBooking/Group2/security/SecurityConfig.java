@@ -33,7 +33,8 @@ public class SecurityConfig {
             	        "/api/auth/login",
             	        "/api/auth/refresh",
             	        "/api/auth/logout",
-            	        "/api/auth/forgot/**"
+            	        "/api/auth/forgot/**",
+            	        "/swagger-ui/index.html#/"
             	    ).permitAll()
 
             	    // Protected (login required)
@@ -43,6 +44,7 @@ public class SecurityConfig {
             	    // Roles
             	    .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
             	    .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN","MANAGER")
+            	    .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN","MANAGER")
             	    .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN","MANAGER","STAFF")
 
             	    .anyRequest().authenticated()
