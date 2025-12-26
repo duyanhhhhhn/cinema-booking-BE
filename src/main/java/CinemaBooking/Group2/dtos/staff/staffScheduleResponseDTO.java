@@ -1,11 +1,12 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos.staff;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 
-public class StaffSchedule {
+public class staffScheduleResponseDTO {
+
 	private int id;
 	private int staffId;
 	private int shiftId;
@@ -56,7 +57,7 @@ public class StaffSchedule {
 	 * @param status
 	 * @param createdAt
 	 */
-	public StaffSchedule(int id, int staffId, int shiftId, LocalDate workDate, StaffScheduleStatus status,
+	public staffScheduleResponseDTO(int id, int staffId, int shiftId, LocalDate workDate, StaffScheduleStatus status,
 			LocalDateTime createdAt) {
 		super();
 		this.id = id;
@@ -66,14 +67,7 @@ public class StaffSchedule {
 		this.status = status;
 		this.createdAt = createdAt;
 	}
-	/**
-	 * 
-	 */
-	public StaffSchedule() {
+	public staffScheduleResponseDTO() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
-	
-	
-
 }
