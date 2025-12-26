@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.mappers.ProductMapper;
 import CinemaBooking.Group2.models.Product;
-import CinemaBooking.Group2.repositories.ModelMaker;
+import CinemaBooking.Group2.pattern.ModelMaker;
 
 @Service
 public class ProductService {

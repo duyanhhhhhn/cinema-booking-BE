@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.models.Post;
-import CinemaBooking.Group2.repositories.ModelMaker;
+import CinemaBooking.Group2.pattern.ModelMaker;
 
 @Service
 public class PostService {
