@@ -1,12 +1,22 @@
-package CinemaBooking.Group2.repositories;
+package CinemaBooking.Group2.pattern;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import CinemaBooking.Group2.models.AuditLog;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.Product;
+import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.Voucher;
+import CinemaBooking.Group2.models.WorkShift;
+import CinemaBooking.Group2.repositories.AuditLogRepository;
+import CinemaBooking.Group2.repositories.ComboRepository;
+import CinemaBooking.Group2.repositories.PostRepository;
+import CinemaBooking.Group2.repositories.ProductRepository;
+import CinemaBooking.Group2.repositories.ScheduleRepository;
+import CinemaBooking.Group2.repositories.ShiftRepository;
+import CinemaBooking.Group2.repositories.VoucherRepository;
 
 public class ModelMaker {
 	private static ModelMaker _instance = null;
@@ -14,12 +24,17 @@ public class ModelMaker {
 	private ProductRepository proRep;
 	private PostRepository postRep;
 	private VoucherRepository vouchRep;
+	private ScheduleRepository scheRep;
+	private ShiftRepository shiftRep;
+	private AuditLogRepository logRep;
 	private ModelMaker() {
 		comboRep = ComboRepository.Instance();
 		proRep = ProductRepository.Instance();
 		postRep=PostRepository.Instance();
 		vouchRep = VoucherRepository.Instance();
-		
+		scheRep = ScheduleRepository.Instance();
+		shiftRep = ShiftRepository.Instance();
+		logRep = AuditLogRepository.Instance();
 	}
 	public static ModelMaker Instance () {
 		if(_instance==null) {
@@ -165,5 +180,73 @@ public class ModelMaker {
 			// TODO: handle exception
 		}
 		return rs;
+	}
+	public int checkVoucher(int id) {
+		try {
+		   boolean rs = vouchRep.checkAvailableVoucher(id);
+		   if(rs) {
+			   return 1;
+		   }
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	//Staff Schedule
+	public List<StaffSchedule> getSchedule(){
+		try {
+			return scheRep.getAll();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	};
+	public List<StaffSchedule> getScheduleByStaffId(int staff_id){
+		try {
+			return scheRep.getByStaffId(staff_id);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	};
+	public List<StaffSchedule> getScheduleByShiftId(int shift_id){
+		try {
+			return scheRep.getByShift(shift_id);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	public int assignStaff(StaffSchedule item) {
+		try {
+			return scheRep.assignSchedule(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	//Work Shift
+	public List<WorkShift> getShift(){
+		try {
+			return shiftRep.getAll();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	//Audit Log
+	public List<AuditLog> getAuditLog(){
+		try {
+			return logRep.getAll();
+		}catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
 	}
 }

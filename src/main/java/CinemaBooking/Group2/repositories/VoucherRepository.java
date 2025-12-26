@@ -2,17 +2,16 @@ package CinemaBooking.Group2.repositories;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
 
-@Repository
 public class VoucherRepository implements Icrud<Voucher>{
 	private JdbcTemplate db;
 	private VoucherRepository() {
@@ -64,6 +63,14 @@ public class VoucherRepository implements Icrud<Voucher>{
 	@Override
 	public Voucher findById(int id) {
 		// TODO Auto-generated method stub
+		try {
+			Voucher item = db.query("select * from `vouchers` where id=?", new VoucherMapper()
+					,new Object[] {id}).get(0);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
 		return null;
 	}
 
@@ -80,7 +87,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 			int rs =  db.update("insert into `vouchers`(code ,description,discount_type,discount_value,"
 					+ "min_order_amount,start_at,end_at,usage_limit,used_count,created_at) "
 					+ "values(?,?,?,?,?,?,?,?,?,?)",new Object[] {item.getCode(),item.getDescription(),
-							item.getDiscountType(),item.getDiscountValue(),item.getMinOrderAmount(),
+							item.getDiscountType().name(),item.getDiscountValue(),item.getMinOrderAmount(),
 							item.getStartAt(),item.getEndAt(),item.getUsageLimit(),item.getUsedCount(),
 							item.getCreatedAt()});
 			return rs;
@@ -102,5 +109,24 @@ public class VoucherRepository implements Icrud<Voucher>{
 	public int delete(int id) {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+	public boolean checkAvailableVoucher(int id) {
+		try {
+			Voucher item = findById(id);
+			LocalDate date = LocalDate.now();
+			if(item!=null) {
+				if(date.isAfter(item.getStartAt())&&
+						date.isBefore(item.getEndAt())) {
+					if(item.getUsageLimit()>item.getUsedCount()) {
+						return true;
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
+		return false;
 	}
 }
