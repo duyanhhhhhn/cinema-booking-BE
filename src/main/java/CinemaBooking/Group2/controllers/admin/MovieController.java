@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.controllers.client;
+package CinemaBooking.Group2.controllers.admin;
 
 import java.util.HashMap;
 import java.util.List;
