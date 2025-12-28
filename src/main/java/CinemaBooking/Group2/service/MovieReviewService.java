@@ -5,7 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dtos.movie_review.MovieReviewDtos;
+import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
+import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.repositories.MovieReviewRepository;
 
 @Service
@@ -20,5 +21,14 @@ public class MovieReviewService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch movie review list. Please check repository/database.", e);
         }
+    }
+    
+    public List<MovieReviewClientDtos> getAllReviewClient() {
+    	try {
+    		return mvRepositories.getAllRating();
+    	} 
+    	catch (Exception e) {
+            throw new RuntimeException("Failed to fetch movie review list. Please check repository/database.", e);
+		}
     }
 }

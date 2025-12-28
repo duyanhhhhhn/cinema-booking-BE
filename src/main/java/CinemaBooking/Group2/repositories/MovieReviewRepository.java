@@ -12,7 +12,8 @@ import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import CinemaBooking.Group2.dtos.movie_review.MovieReviewDtos;
+import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
+import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.MovieReview;
 import CinemaBooking.Group2.models.User;
@@ -25,17 +26,16 @@ public class MovieReviewRepository {
 		this.dataSource = dataSouce;
 	}
 	
-	// This function help get all movies review by id movie (movie detail)-> role admin 
+	// This function help get all movies review by id movie (movie detail) -> role admin 
     public List<MovieReviewDtos> getAllReview() {
-        String sql =
-            "SELECT " +
-            "  u.email, u.full_name, " +
-            "  m.title, m.short_description, m.duration_minutes, m.genre, " +
-            "  mr.id AS review_id, mr.rating, mr.comment, mr.created_at " +
-            "FROM movie_review AS mr " +
-            "JOIN movie AS m ON m.id = mr.movie_id " +
-            "JOIN `user` AS u ON u.id = mr.user_id " +
-            "ORDER BY mr.created_at DESC, mr.id DESC";
+        String sql = "SELECT " +
+		             "  u.email, u.full_name, " +
+		             "  m.title, m.short_description, m.duration_minutes, m.genre, " +
+		             "  mr.id AS review_id, mr.rating, mr.comment, mr.created_at " +
+		             "FROM movie_review AS mr " +
+		             "JOIN movie AS m ON m.id = mr.movie_id " +
+		             "JOIN `user` AS u ON u.id = mr.user_id " +
+		             "ORDER BY mr.created_at DESC, mr.id DESC";
 
         List<MovieReviewDtos> movieReviews = new ArrayList<>();
 
@@ -57,18 +57,44 @@ public class MovieReviewRepository {
                 dto.setCreated_at(rs.getTimestamp("created_at"));
                 movieReviews.add(dto);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách movie review từ database", e);
+        } 
+        catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi lấy danh sách movie review từ database role -> admin", e);
         }
 
         return movieReviews;
     }
     
     // This function get all review show on frontend -> role: client
-    public List<MovieReview> getAllRating() {
-    	try {
-    		
+    public List<MovieReviewClientDtos> getAllRating() {
+    	String sql = "SELECT" +
+    				 " mr.*, " +
+    				 " u.full_name, " +
+    				 " u.role_id " +
+    				 "FROM movie_review AS mr " + 
+    				 "JOIN user AS u ON u.id = mr.user_id " +
+    				 "WHERE u.role_id = 2";
+    	List<MovieReviewClientDtos> list_mr = new ArrayList<>();
+    	try(Connection conn = dataSource.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql);
+    		ResultSet rs = ps.executeQuery()) {
+    		while(rs.next()) {
+    			MovieReviewClientDtos dtos = new MovieReviewClientDtos();
+    			dtos.setId(rs.getInt("id"));
+    			dtos.setUserId(rs.getInt("user_id"));
+    			dtos.setMovieId(rs.getInt("movie_id"));
+    			dtos.setRating(rs.getInt("rating"));
+    			dtos.setComment(rs.getString("comment"));
+    			dtos.setCreatedAt(rs.getDate("created_at"));
+    			dtos.setFull_name(rs.getString("full_name"));
+    			dtos.setRole_id(rs.getInt("role_id"));
+    			list_mr.add(dtos);
+    		}
+    	} 
+    	catch(SQLException e) {
+            throw new RuntimeException("Lỗi khi lấy danh sách movie review từ database role -> users", e);
     	}
+    	return list_mr;
     }
 
 }
