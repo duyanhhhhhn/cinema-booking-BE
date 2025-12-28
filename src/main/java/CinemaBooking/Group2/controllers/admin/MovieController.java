@@ -35,15 +35,16 @@ public class MovieController {
         List<MovieResponse> movies = movieService.getAllMovie();
         return ResponseEntity.ok(movies);
     }
-    
+
     // get all movie if status = "Comming soon"
     @GetMapping("/public")
     public ResponseEntity<Map<String, Object>> getAllMovieStatus(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int perPage
-    ) {
-        if (page < 1) page = 1;
-        if (perPage < 1) perPage = 10;
+            @RequestParam(defaultValue = "10") int perPage) {
+        if (page < 1)
+            page = 1;
+        if (perPage < 1)
+            perPage = 10;
 
         List<MovieResponse> data = movieService.getAllMovieStatus(page, perPage);
         int total = movieService.countMovieStatus();
@@ -60,7 +61,7 @@ public class MovieController {
 
         return ResponseEntity.ok(res);
     }
-    
+
     // get movie detail by id when user click see detail
     @GetMapping("/movie-detail/{id}")
     public ResponseEntity<Map<String, Object>> getMovieDetailById(@PathVariable int id) {
@@ -78,7 +79,7 @@ public class MovieController {
         res.put("data", data);
         return ResponseEntity.ok(res);
     }
- 
+
     // create new film
     @PostMapping("/create-movies")
     public ResponseEntity<Boolean> createNewMovie(@RequestBody MovieCreateDtos dto) {
@@ -93,24 +94,24 @@ public class MovieController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
         }
     }
-    
-    // delete movie by id get on link 
+
+    // delete movie by id get on link
     @DeleteMapping("/delete-movies/{id}")
     public ResponseEntity<Boolean> deleteMovie(@PathVariable int id) {
-    	try {
-    		boolean ok = movieService.deleteMovie(id);
-    		if (ok) return ResponseEntity.status(HttpStatus.CREATED).body(true);
-    		return ResponseEntity.badRequest().body(false);
-    	} catch (Exception e) {
+        try {
+            boolean ok = movieService.deleteMovie(id);
+            if (ok)
+                return ResponseEntity.status(HttpStatus.CREATED).body(true);
+            return ResponseEntity.badRequest().body(false);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
         }
     }
-    
+
     @PutMapping("/edit-movies/{id}")
     public ResponseEntity<?> updateMovie(
             @PathVariable int id,
-            @RequestBody MovieEditDtos dto
-    ) {
+            @RequestBody MovieEditDtos dto) {
         try {
             MovieDetailDtos updated = movieService.updateMovie(id, dto);
             return ResponseEntity.ok(updated);

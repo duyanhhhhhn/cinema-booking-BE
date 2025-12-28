@@ -65,30 +65,54 @@ public class MovieReviewRepository {
         return movieReviews;
     }
     
+    public long countByRoleId() {
+        String sql =
+            "SELECT COUNT(*) " +
+            "FROM movie_review mr " +
+            "JOIN `user` u ON u.id = mr.user_id " +
+            "WHERE u.role_id = 2";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            return rs.next() ? rs.getLong(1) : 0L;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi count movie_review theo role_id=2", e);
+        }
+    }
+
+
+    
     // This function get all review show on frontend -> role: client
-    public List<MovieReviewClientDtos> getAllRating() {
-    	String sql = "SELECT" +
-    				 " mr.*, " +
-    				 " u.full_name, " +
-    				 " u.role_id " +
-    				 "FROM movie_review AS mr " + 
-    				 "JOIN user AS u ON u.id = mr.user_id " +
-    				 "WHERE u.role_id = 2";
+    public List<MovieReviewClientDtos> getAllRating(int limit, int offset) {
+    	String sql =
+    		    "SELECT mr.*, u.full_name, u.role_id " +
+    		    "FROM movie_review AS mr " +
+    		    "JOIN `user` AS u ON u.id = mr.user_id " +
+    		    "WHERE u.role_id = 2 " +
+    		    "ORDER BY mr.created_at DESC, mr.id DESC " +
+    		    "LIMIT ? OFFSET ?";
+
     	List<MovieReviewClientDtos> list_mr = new ArrayList<>();
     	try(Connection conn = dataSource.getConnection();
-    		PreparedStatement ps = conn.prepareStatement(sql);
-    		ResultSet rs = ps.executeQuery()) {
-    		while(rs.next()) {
-    			MovieReviewClientDtos dtos = new MovieReviewClientDtos();
-    			dtos.setId(rs.getInt("id"));
-    			dtos.setUserId(rs.getInt("user_id"));
-    			dtos.setMovieId(rs.getInt("movie_id"));
-    			dtos.setRating(rs.getInt("rating"));
-    			dtos.setComment(rs.getString("comment"));
-    			dtos.setCreatedAt(rs.getDate("created_at"));
-    			dtos.setFull_name(rs.getString("full_name"));
-    			dtos.setRole_id(rs.getInt("role_id"));
-    			list_mr.add(dtos);
+    		PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, limit);
+            ps.setInt(2, offset);
+    		try(ResultSet rs = ps.executeQuery()) {
+	    		while(rs.next()) {
+	    			MovieReviewClientDtos dtos = new MovieReviewClientDtos();
+	    			dtos.setId(rs.getInt("id"));
+	    			dtos.setUserId(rs.getInt("user_id"));
+	    			dtos.setMovieId(rs.getInt("movie_id"));
+	    			dtos.setRating(rs.getInt("rating"));
+	    			dtos.setComment(rs.getString("comment"));
+	    			dtos.setCreatedAt(rs.getDate("created_at"));
+	    			dtos.setFull_name(rs.getString("full_name"));
+	    			dtos.setRole_id(rs.getInt("role_id"));
+	    			list_mr.add(dtos);
+	    		}
     		}
     	} 
     	catch(SQLException e) {
