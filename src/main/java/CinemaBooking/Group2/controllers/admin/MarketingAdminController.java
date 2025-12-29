@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
-import CinemaBooking.Group2.service.VoucherService;
+import CinemaBooking.Group2.service.MarketingService;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,12 +21,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 public class MarketingAdminController {
 	@Autowired
-	private VoucherService vouchService;
+	private MarketingService service;
 	@GetMapping("/admin/api/vouchers")
+	@CrossOrigin
 	public ResponseEntity<List<VoucherResponseDTO>> getVoucher(){
 		List<VoucherResponseDTO> item=null;
 		try {
-			item= vouchService.getVoucher();
+			item= service.getVoucher();
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -33,10 +35,11 @@ public class MarketingAdminController {
 		return ResponseEntity.ok(item);
 		}
 	@GetMapping("/api/vouchers/check")
+	@CrossOrigin
 	public ResponseEntity<BigDecimal> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
 		BigDecimal rs = BigDecimal.valueOf(0);
 		try {
-			 rs = vouchService.checkDiscount(id, price);
+			 rs = service.checkDiscount(id, price);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -44,6 +47,7 @@ public class MarketingAdminController {
 		return ResponseEntity.ok(rs);
 	}
 	@PostMapping("/admin/api/vouchers")
+	@CrossOrigin
 	public ResponseEntity<String> addVoucher(@RequestParam("code") String code,
 			@RequestParam("description") String description,@RequestParam("discount_type") DiscountType type,
 			@RequestParam("discount_value") BigDecimal value,@RequestParam("min_order_amount") BigDecimal min_order,
@@ -62,7 +66,7 @@ public class MarketingAdminController {
 		item.setUsedCount(count);
 		item.setCreatedAt(LocalDate.now());
 		try {
-			ms = vouchService.addVoucher(item);
+			ms = service.addVoucher(item);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

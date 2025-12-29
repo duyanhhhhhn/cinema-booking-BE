@@ -89,4 +89,19 @@ public class Combo {
 	            ", comboItems=" + comboItems +
 	            '}';
 	}
+	public boolean Validation(Combo item) {
+		try {
+			if(item.getName()==""||item.getName()==null) {
+				return false;
+			}
+			if(item.getPrice()==BigDecimal.valueOf(0)||item.getPrice()==null) {
+				return false;
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return true;
+	}
 }

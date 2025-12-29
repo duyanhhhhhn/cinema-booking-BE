@@ -44,15 +44,18 @@ public class ComboService {
 			// TODO: handle exception
 		}
 	}
-	public int AddCombo(Combo combo) {
-		int rs=0;
+	public String AddCombo(Combo combo) {
+		String m="Error";
 		try {
-			rs = Concessions.Instance().CreateCombo(combo);
+			int rs = Concessions.Instance().CreateCombo(combo);
+			if(rs==1) {
+				m = "Success";
+			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return rs;
+		return m;
 	}
 	public String EditCombo(Combo combo) {
 		String s = "Error";

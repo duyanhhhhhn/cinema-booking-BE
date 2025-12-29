@@ -48,6 +48,7 @@ public class StaffController {
 		}
 		return m;
 	}
+	@CrossOrigin
 	@GetMapping("api/staff/schedules")
 	public List<staffScheduleResponseDTO> getSchedules(){
 		try {
@@ -58,10 +59,22 @@ public class StaffController {
 		}
 		return null;
 	}
+	@CrossOrigin
 	@GetMapping("api/staff/shifts")
 	public List<workShiftResponseDTO> getShift(){
 		try {
 			return service.getShift();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	@CrossOrigin
+	@GetMapping("/api/staff/schedule/my")
+	public List<staffScheduleResponseDTO> getMySchedules(@RequestParam("id")int id){
+		try {
+			return service.getScheduleByStaffId(id);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

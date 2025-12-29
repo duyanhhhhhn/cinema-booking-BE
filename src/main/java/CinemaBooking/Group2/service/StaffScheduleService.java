@@ -26,6 +26,17 @@ public class StaffScheduleService {
 		}
 		return null;
 	}
+	public List<staffScheduleResponseDTO> getScheduleByStaffId(int id){
+		try {
+			List<StaffSchedule> item = StaffSchedulePattern.Instance().getScheduleByStaffId(id);
+			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
 	public int assignStaff(StaffSchedule item) {
 		try {
 			if(item==null) {
