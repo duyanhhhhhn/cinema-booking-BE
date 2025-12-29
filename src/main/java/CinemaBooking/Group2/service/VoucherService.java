@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,5 +46,14 @@ public class VoucherService {
 			// TODO: handle exception
 		}
 		return ms;
+	}
+	public BigDecimal checkDiscount(int id,BigDecimal price) {
+		try {
+			return ModelMaker.Instance().checkPrice(id, price);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
 	}
 }

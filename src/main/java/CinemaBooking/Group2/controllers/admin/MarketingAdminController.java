@@ -32,6 +32,17 @@ public class MarketingAdminController {
 		}
 		return ResponseEntity.ok(item);
 		}
+	@GetMapping("/api/vouchers/check")
+	public ResponseEntity<BigDecimal> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
+		BigDecimal rs = BigDecimal.valueOf(0);
+		try {
+			 rs = vouchService.checkDiscount(id, price);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return ResponseEntity.ok(rs);
+	}
 	@PostMapping("/admin/api/vouchers")
 	public ResponseEntity<String> addVoucher(@RequestParam("code") String code,
 			@RequestParam("description") String description,@RequestParam("discount_type") DiscountType type,

@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.repositories;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -128,5 +129,30 @@ public class VoucherRepository implements Icrud<Voucher>{
 			System.out.print(e);
 		}
 		return false;
+	}
+	public BigDecimal checkDiscount(int id,BigDecimal price) {
+		BigDecimal rs = BigDecimal.valueOf(0);
+		try {
+			if(checkAvailableVoucher(id)) {
+				Voucher item =findById(id);
+				if(price.compareTo(item.getDiscountValue())>0) {
+					if(item.getDiscountType()==DiscountType.AMOUNT) {
+							rs = price.subtract(item.getDiscountValue());
+							return rs;
+					}
+					else if(item.getDiscountType()==DiscountType.PERCENT){
+						rs = price.multiply(item.getDiscountValue()).divide(BigDecimal.valueOf(100));
+						return rs;
+					}
+				}
+				else {
+					return rs;
+				}
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rs;
 	}
 }

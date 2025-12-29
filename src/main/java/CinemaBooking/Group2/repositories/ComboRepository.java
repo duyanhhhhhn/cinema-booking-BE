@@ -1,13 +1,11 @@
 package CinemaBooking.Group2.repositories;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
+import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.DbConnection;
 
@@ -23,28 +21,10 @@ public class ComboRepository implements Icrud<Combo>{
     private ComboRepository() {
 		
 	}
-	public class ComboRowMapper implements RowMapper<Combo>{
-
-		@Override
-		public Combo mapRow(ResultSet rs, int rowNum) throws SQLException {
-			// TODO Auto-generated method stub
-			Combo item = new Combo();
-			item.setId(rs.getInt("id"));
-			item.setName(rs.getNString("name"));
-			item.setDescription(rs.getNString("description"));
-			item.setPrice(rs.getBigDecimal("price"));
-			item.setImageUrl(rs.getNString("image_url"));
-			item.setIsActive(rs.getInt("is_active"));
-			item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-			//item.setComboItems(rep.getByCombo(item.getId()));
-			return item;
-		}
-		
-	}
 	public List<Combo> getAll(){
 		List<Combo> list = new ArrayList<>();
 		try {
-			list = db.query("select * from `combos`", new ComboRowMapper());
+			list = db.query("select * from `combos`", new ComboMapper());
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -55,7 +35,7 @@ public class ComboRepository implements Icrud<Combo>{
 		List<Combo> list = new ArrayList<>();
 		try {
 			int value=(page-1)*size;
-			list = db.query("select * from `combos` limit ? offset ?", new ComboRowMapper(),new Object[] {size,value});
+			list = db.query("select * from `combos` limit ? offset ?", new ComboMapper(),new Object[] {size,value});
 			return list;
 		}
 		catch (Exception e) {
@@ -67,7 +47,7 @@ public class ComboRepository implements Icrud<Combo>{
 	public Combo findById(int id){
 		Combo item = new Combo();
 		try {
-			item = db.query("select * from `combos` where id=?", new ComboRowMapper(),new Object[] {id}).get(0);
+			item = db.query("select * from `combos` where id=?", new ComboMapper(),new Object[] {id}).get(0);
 		}
 		catch(Exception e) {
 			System.out.print(e);

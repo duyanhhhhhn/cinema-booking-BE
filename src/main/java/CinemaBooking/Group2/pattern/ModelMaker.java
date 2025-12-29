@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.pattern;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -192,6 +193,16 @@ public class ModelMaker {
 			// TODO: handle exception
 		}
 		return 0;
+	}
+	public BigDecimal checkPrice(int id,BigDecimal price) {
+		BigDecimal rs = BigDecimal.valueOf(0);
+		try {
+			rs = vouchRep.checkDiscount(id, price);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rs;
 	}
 	//Staff Schedule
 	public List<StaffSchedule> getSchedule(){

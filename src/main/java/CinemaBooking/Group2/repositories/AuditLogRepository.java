@@ -1,13 +1,11 @@
 package CinemaBooking.Group2.repositories;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
+import CinemaBooking.Group2.mappers.AuditLogMapper;
 import CinemaBooking.Group2.models.AuditLog;
 import CinemaBooking.Group2.models.DbConnection;
 
@@ -22,25 +20,6 @@ public class AuditLogRepository implements Icrud<AuditLog>{
 			_instance = new AuditLogRepository();
 		}
 		return _instance;
-	}
-	public class AuditLogMapper implements RowMapper<AuditLog>{
-
-		@Override
-		public AuditLog mapRow(ResultSet rs, int rowNum) throws SQLException {
-			// TODO Auto-generated method stub
-			AuditLog item = new AuditLog();
-			item.setId(rs.getInt("id"));
-			item.setUserId(rs.getInt("user_id"));
-			item.setAction(rs.getString("action"));
-			item.setResourceId(rs.getString("resource_id"));
-			item.setResourceType(rs.getString("resource_type"));
-			item.setDetails(rs.getString("details"));
-			item.setIpAddress(rs.getString("ip_address"));
-			item.setUserAgent(rs.getString("user_agent"));
-			item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-			return item;
-		}
-		
 	}
 	@Override
 	public List<AuditLog> getAll() {

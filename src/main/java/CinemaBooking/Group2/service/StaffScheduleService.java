@@ -6,8 +6,11 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
+import CinemaBooking.Group2.dtos.staff.workShiftResponseDTO;
 import CinemaBooking.Group2.mappers.StaffMapper;
+import CinemaBooking.Group2.mappers.WorkShiftMapper;
 import CinemaBooking.Group2.models.StaffSchedule;
+import CinemaBooking.Group2.models.WorkShift;
 import CinemaBooking.Group2.pattern.ModelMaker;
 
 @Service
@@ -34,5 +37,15 @@ public class StaffScheduleService {
 			// TODO: handle exception
 		}
 		return 0;
+	}
+	public List<workShiftResponseDTO> getShift() {
+		try {
+			List<WorkShift> item = ModelMaker.Instance().getShift();
+			return item.stream().map(WorkShiftMapper::toResponseDTO).collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
 	}
 }
