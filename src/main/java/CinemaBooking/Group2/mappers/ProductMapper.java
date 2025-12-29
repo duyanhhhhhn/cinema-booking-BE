@@ -1,9 +1,14 @@
 package CinemaBooking.Group2.mappers;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.springframework.jdbc.core.RowMapper;
+
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.models.Product;
 
-public class ProductMapper {
+public class ProductMapper implements RowMapper<Product>{
 	public static ProductResponseDTO toResponseDTO(Product item) {
 		if(item==null) {
 			return null;
@@ -25,5 +30,18 @@ public class ProductMapper {
 			System.out.print(e);
 		}
 		return null;
+	}
+	@Override
+	public Product mapRow(ResultSet rs, int rowNum) throws SQLException {
+		// TODO Auto-generated method stub
+		Product pro = new Product();
+		pro.setId(rs.getInt("id"));
+		pro.setName(rs.getNString("name"));
+		pro.setDescription(rs.getNString("description"));
+		pro.setPrice(rs.getBigDecimal("price"));
+		pro.setStock(rs.getInt("stock"));
+		pro.setIsActive(rs.getInt("is_active"));
+		pro.setImageUrl(rs.getNString("image_url"));
+		return pro;
 	}
 }

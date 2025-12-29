@@ -9,14 +9,14 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.mappers.VoucherMapper;
 import CinemaBooking.Group2.models.Voucher;
-import CinemaBooking.Group2.pattern.ModelMaker;
+import CinemaBooking.Group2.pattern.Marketing;
 
 @Service
 public class VoucherService {
 	public List<VoucherResponseDTO> getVoucher(){
 		List<Voucher> item =null;
 		try {
-			item = ModelMaker.Instance().getVoucher();
+			item = Marketing.Instance().getVoucher();
 			return item.stream().map(VoucherMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}
@@ -37,7 +37,7 @@ public class VoucherService {
 	public String addVoucher(Voucher item) {
 		String ms = "Failed";
 		try {
-			int rs = ModelMaker.Instance().createVoucher(item);
+			int rs = Marketing.Instance().createVoucher(item);
 			if(rs==1) {
 				ms = "Success";
 			}
@@ -49,7 +49,7 @@ public class VoucherService {
 	}
 	public BigDecimal checkDiscount(int id,BigDecimal price) {
 		try {
-			return ModelMaker.Instance().checkPrice(id, price);
+			return Marketing.Instance().checkPrice(id, price);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

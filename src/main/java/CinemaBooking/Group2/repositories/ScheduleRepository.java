@@ -1,17 +1,14 @@
 package CinemaBooking.Group2.repositories;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
+import CinemaBooking.Group2.mappers.StaffMapper;
 import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.StaffSchedule;
-import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 
 public class ScheduleRepository implements Icrud<StaffSchedule>{
 	private static ScheduleRepository _instance=null;
@@ -24,22 +21,6 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 			_instance=new ScheduleRepository();
 		}
 		return _instance;
-	}
-	public class ScheduleMapper implements RowMapper<StaffSchedule>{
-
-		@Override
-		public StaffSchedule mapRow(ResultSet rs, int rowNum) throws SQLException {
-			// TODO Auto-generated method stub
-			StaffSchedule item =  new StaffSchedule();
-			item.setId(rs.getInt("id"));
-			item.setShiftId(rs.getInt("shift_id"));
-			item.setStaffId(rs.getInt("staff_id"));
-			item.setWorkDate(rs.getDate("date").toLocalDate());
-			item.setStatus(StaffScheduleStatus.valueOf(rs.getString("status")));
-			
-			return item;
-		}
-		
 	}
 	public int assignSchedule(StaffSchedule item) {
 		try {
@@ -58,7 +39,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		// TODO Auto-generated method stub
 		List<StaffSchedule> list = new ArrayList<>();
 		try {
-			list = db.query("select * from `staff_schedule`", new ScheduleMapper());
+			list = db.query("select * from `staff_schedule`", new StaffMapper());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -73,7 +54,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 				StaffSchedule item = new StaffSchedule();
 				try {
 					item = db.query("select * from `staff_schedule` where id=?",
-							new ScheduleMapper(),new Object[] {id}).get(0);
+							new StaffMapper(),new Object[] {id}).get(0);
 				}
 				catch (Exception e) {
 					// TODO: handle exception
@@ -85,7 +66,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		List<StaffSchedule> item = new ArrayList<>();
 		try {
 			item = db.query("select * from `staff_schedule` where staff_id=?",
-					new ScheduleMapper(),new Object[] {staff_id});
+					new StaffMapper(),new Object[] {staff_id});
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -96,7 +77,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		List<StaffSchedule> item = new ArrayList<>();
 		try {
 			item = db.query("select * from `staff_schedule` where shift_id=?",
-					new ScheduleMapper(),new Object[] {shift_id});
+					new StaffMapper(),new Object[] {shift_id});
 		}
 		catch (Exception e) {
 			// TODO: handle exception

@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.models.Post;
-import CinemaBooking.Group2.pattern.ModelMaker;
+import CinemaBooking.Group2.pattern.Marketing;
 
 @Service
 public class PostService {
 	public List<PostResponseDTO> getAllPost() {
 		try {
-			List<Post> item = ModelMaker.Instance().getPost();
+			List<Post> item = Marketing.Instance().getPost();
 			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -25,7 +25,7 @@ public class PostService {
 	public String newPost(Post post) {
 		String s = "Failed to Create New Post";
 		try {
-			int rs=ModelMaker.Instance().createPost(post);
+			int rs=Marketing.Instance().createPost(post);
 			if(rs==1) {
 				s="Success";
 			}

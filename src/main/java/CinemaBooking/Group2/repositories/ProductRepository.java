@@ -1,17 +1,15 @@
 package CinemaBooking.Group2.repositories;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
+import CinemaBooking.Group2.mappers.ProductMapper;
 import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Product;
 
-public class ProductRepository {
+public class ProductRepository implements Icrud<Product>{
 	private static ProductRepository _instance = null;
 	private JdbcTemplate db;
 	private ProductRepository () {
@@ -23,27 +21,10 @@ public class ProductRepository {
 		}
 		return _instance;
 	}
-	public class ProductRowMapper implements RowMapper<Product>{
-
-		@Override
-		public Product mapRow(ResultSet rs, int rowNum) throws SQLException {
-			// TODO Auto-generated method stub
-			Product pro = new Product();
-			pro.setId(rs.getInt("id"));
-			pro.setName(rs.getNString("name"));
-			pro.setDescription(rs.getNString("description"));
-			pro.setPrice(rs.getBigDecimal("price"));
-			pro.setStock(rs.getInt("stock"));
-			pro.setIsActive(rs.getInt("is_active"));
-			pro.setImageUrl(rs.getNString("image_url"));
-			return pro;
-		}
-		
-	}
 	public List<Product> getAll(){
 		List<Product> item = new ArrayList<>();
 		try {
-			item = db.query("select * from `products`", new ProductRowMapper());
+			item = db.query("select * from `products`", new ProductMapper());
 			return item;
 		}
 		catch (Exception e) {
@@ -52,11 +33,11 @@ public class ProductRepository {
 		}
 		return item;
 	}
-	public List<Product> findById(int id){
-		List<Product> item = new ArrayList<>();
+	public Product findById(int id){
+		Product item = new Product();
 		try {
-			item = db.query("select * from `products` where id=?", new ProductRowMapper()
-					,new Object[] {id});
+			item = db.query("select * from `products` where id=?", new ProductMapper()
+					,new Object[] {id}).get(0);
 			return item;
 		}
 		catch (Exception e) {
@@ -70,7 +51,7 @@ public class ProductRepository {
 		try {
 			int value = (page-1)*size;
 			item = db.query("select * from `products` limit ? offset ?", 
-					new ProductRowMapper(),new Object[] {size,value});
+					new ProductMapper(),new Object[] {size,value});
 			return item;
 		}
 		catch (Exception e) {
@@ -79,7 +60,8 @@ public class ProductRepository {
 		}
 		return item;
 	}
-	public int CreateProduct(Product product) {
+	@Override
+	public int create(Product product) {
 		try {
 			int rs = db.update("insert into `products`(name,description,price,image_url,stock,is_active,created_at) value(?,?,?,?,?,?,?)",
 					new Object[] {product.getName(),product.getDescription(),product.getPrice(),product.getImageUrl(),
@@ -90,6 +72,21 @@ public class ProductRepository {
 			// TODO: handle exception
 			System.out.print(e);
 		}
+		return 0;
+	}
+	@Override
+	public List<Product> search(String key) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public int update(Product item) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	@Override
+	public int delete(int id) {
+		// TODO Auto-generated method stub
 		return 0;
 	}
 }

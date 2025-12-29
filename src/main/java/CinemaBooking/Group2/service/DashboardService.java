@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.dashboardnreports.auditLogResponseDTO;
 import CinemaBooking.Group2.mappers.AuditLogMapper;
 import CinemaBooking.Group2.models.AuditLog;
-import CinemaBooking.Group2.pattern.ModelMaker;
+import CinemaBooking.Group2.pattern.DashboardNReport;
 
 @Service
 public class DashboardService {
 	public List<auditLogResponseDTO> getAuditLog(){
 		try {
-			List<AuditLog> item = ModelMaker.Instance().getAuditLog();
+			List<AuditLog> item = DashboardNReport.Instance().getAuditLog();
 			return item.stream().map(AuditLogMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {

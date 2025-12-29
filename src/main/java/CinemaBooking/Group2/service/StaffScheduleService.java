@@ -11,13 +11,13 @@ import CinemaBooking.Group2.mappers.StaffMapper;
 import CinemaBooking.Group2.mappers.WorkShiftMapper;
 import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.WorkShift;
-import CinemaBooking.Group2.pattern.ModelMaker;
+import CinemaBooking.Group2.pattern.StaffSchedulePattern;
 
 @Service
 public class StaffScheduleService {
 	public List<staffScheduleResponseDTO> getSchedule(){
 		try {
-			List<StaffSchedule> item = ModelMaker.Instance().getSchedule();
+			List<StaffSchedule> item = StaffSchedulePattern.Instance().getSchedule();
 			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -31,7 +31,7 @@ public class StaffScheduleService {
 			if(item==null) {
 				return 0;
 			}
-			return ModelMaker.Instance().assignStaff(item);
+			return StaffSchedulePattern.Instance().assignStaff(item);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -40,7 +40,7 @@ public class StaffScheduleService {
 	}
 	public List<workShiftResponseDTO> getShift() {
 		try {
-			List<WorkShift> item = ModelMaker.Instance().getShift();
+			List<WorkShift> item = StaffSchedulePattern.Instance().getShift();
 			return item.stream().map(WorkShiftMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {

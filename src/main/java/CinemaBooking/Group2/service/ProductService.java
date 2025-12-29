@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.mappers.ProductMapper;
 import CinemaBooking.Group2.models.Product;
-import CinemaBooking.Group2.pattern.ModelMaker;
+import CinemaBooking.Group2.pattern.Concessions;
 
 @Service
 public class ProductService {
 	public List<ProductResponseDTO> getProducts (){
 		try{
-			List<Product> item = ModelMaker.Instance().getProduct();
+			List<Product> item = Concessions.Instance().getProduct();
 			return item.stream().map(ProductMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}
@@ -25,7 +25,7 @@ public class ProductService {
 	}
 	public ProductResponseDTO productInfo (int id){
 		try{
-			Product item = ModelMaker.Instance().productInfo(id);
+			Product item = Concessions.Instance().productInfo(id);
 			return ProductMapper.toResponseDTO(item);
 		}
 		catch (Exception e) {
@@ -36,7 +36,7 @@ public class ProductService {
 	public String createProduct(Product item) {
 		String s = "Failed to create a new product";
 		try {
-			int rs = ModelMaker.Instance().createProduct(item);
+			int rs = Concessions.Instance().createProduct(item);
 			if(rs==1) {
 				s = "Success";
 			}

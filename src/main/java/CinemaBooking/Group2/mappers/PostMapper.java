@@ -1,9 +1,14 @@
 package CinemaBooking.Group2.mappers;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.springframework.jdbc.core.RowMapper;
+
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
 
-public class PostMapper {
+public class PostMapper implements RowMapper<Post>{
 	public static PostResponseDTO toResponseDTO(Post post) {
 		if(post==null) {
 			return null;
@@ -28,4 +33,19 @@ public class PostMapper {
 		}
 		return item;
 	}
+	@Override
+	public Post mapRow(ResultSet rs, int rowNum) throws SQLException {
+		// TODO Auto-generated method stub
+		Post post = new Post();
+		post.setId(rs.getInt("id"));
+		post.setTitle(rs.getString("title"));
+		post.setSlug(rs.getString("slug"));
+		post.setExcerpt(rs.getString("excerpt"));
+		post.setContent(rs.getString("content"));
+		post.setCoverUrl(rs.getString("cover_url"));
+		post.setPublished(rs.getInt("is_published"));
+		//post.setPublishedAt(rs.getDate("published_at"));
+		//post.setCreatedAt();
+		return post;
+	}		
 }
