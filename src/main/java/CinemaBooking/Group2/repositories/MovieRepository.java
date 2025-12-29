@@ -63,9 +63,7 @@ public class MovieRepository {
 	public List<Movie> getAllMovieCommingSoon(int page, int perPage) {
 	    if (page < 1) page = 1;
 	    if (perPage < 1) perPage = 10;
-
 	    int offset = (page - 1) * perPage;
-
 	    String sql =
 	        "SELECT id, title, short_description, duration_minutes, status " +
 	        "FROM movie " +
@@ -77,7 +75,6 @@ public class MovieRepository {
 
 	    try (Connection conn = dataSource.getConnection();
 	         PreparedStatement ps = conn.prepareStatement(sql)) {
-
 	        // set param trước khi executeQuery
 	        ps.setInt(1, perPage);
 	        ps.setInt(2, offset);
@@ -119,12 +116,9 @@ public class MovieRepository {
 	// function get movie by id and show detail
 	public Movie getMovieDetailById(int id) {
 	    String sql = "SELECT * FROM movie WHERE id = ?";
-
 	    try (Connection conn = dataSource.getConnection();
 	         PreparedStatement ps = conn.prepareStatement(sql)) {
-
 	        ps.setInt(1, id);
-
 	        try (ResultSet rs = ps.executeQuery()) {
 	            if (rs.next()) {
 	                Movie movie = new Movie();
@@ -166,7 +160,6 @@ public class MovieRepository {
 	            "(title, short_description, description, duration_minutes, genre, language, format, " +
 	            "director, `cast`, poster_url, banner_url, trailer_url, release_date, end_date, status) " +
 	            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
 	    try (Connection conn = dataSource.getConnection();
 	         PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -182,7 +175,6 @@ public class MovieRepository {
 	        ps.setString(10, movie.getPosterUrl());
 	        ps.setString(11, movie.getBannerUrl());
 	        ps.setString(12, movie.getTrailerUrl());
-
 	        if (movie.getReleaseDate() != null) {
 	            ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
 	        } else {
@@ -194,8 +186,6 @@ public class MovieRepository {
 	        } else {
 	            ps.setNull(14, java.sql.Types.DATE);
 	        }
-
-	        // param 15: status (default)
 	        ps.setString(15, movie.getStatus() == null ? "COMING_SOON" : movie.getStatus().name());
 
 	        return ps.executeUpdate() > 0;
@@ -236,10 +226,8 @@ public class MovieRepository {
 	            + "end_date = ?, "
 	            + "status = ? "
 	            + "WHERE id = ?;";
-
 	    try (Connection conn = dataSource.getConnection();
 	         PreparedStatement ps = conn.prepareStatement(sql)) {
-
 	        ps.setString(1, movie.getTitle());
 	        ps.setString(2, movie.getShortDescription());
 	        ps.setString(3, movie.getDescription());
@@ -252,14 +240,11 @@ public class MovieRepository {
 	        ps.setString(10, movie.getPosterUrl());
 	        ps.setString(11, movie.getBannerUrl());
 	        ps.setString(12, movie.getTrailerUrl());
-
-	        // Date -> java.sql.Date
 	        if (movie.getReleaseDate() != null) {
 	            ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
 	        } else {
 	            ps.setNull(13, java.sql.Types.DATE);
 	        }
-
 	        if (movie.getEndDate() != null) {
 	            ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
 	        } else {
@@ -270,18 +255,16 @@ public class MovieRepository {
 	        } else {
 	            ps.setNull(15, java.sql.Types.VARCHAR);
 	        }
-
 	        ps.setInt(16, id);
-
 	        int rows = ps.executeUpdate();
 	        return rows > 0;
-
 	    } catch (SQLException e) {
 	        e.printStackTrace();
 	        return false;
 	    }
 	}
 	
+	// function help count exist by id 
 	public boolean existsById(int id) {
 	    String sql = "SELECT 1 FROM movie WHERE id = ? LIMIT 1;";
 	    try (Connection conn = dataSource.getConnection();
@@ -290,7 +273,7 @@ public class MovieRepository {
 	        ps.setInt(1, id);
 
 	        try (ResultSet rs = ps.executeQuery()) {
-	            return rs.next(); // có dòng => tồn tại
+	            return rs.next();
 	        }
 	    } catch (SQLException e) {
 	        e.printStackTrace();

@@ -29,12 +29,9 @@ public class MovieReviewService {
             if (page < 1) page = 1;
             if (size < 1) size = 10;
             if (size > 100) size = 100;
-
             int offset = (page - 1) * size;
-
             long totalItems = mvRepositories.countByRoleId(); 
             List<MovieReviewClientDtos> items = mvRepositories.getAllRating(size, offset);
-
             PageResponse<MovieReviewClientDtos> res = new PageResponse<>();
             res.setItems(items);
             res.setPage(page);
@@ -43,9 +40,7 @@ public class MovieReviewService {
             res.setTotalPages((long) Math.ceil(totalItems * 1.0 / size));
             res.setSuccess(true);
             res.setMessage("success");
-
             return res;
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch paged movie review list. Please check repository/database.", e);
         }
