@@ -66,5 +66,25 @@ public class UserRepository {
 	        return 0;
 	    }
 	}
+	public int save(User user) {
+        String sql = """
+            INSERT INTO user (role_id, full_name, email, password, phone, is_active)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """;
+
+        try {
+            return jdbc.update(sql, 
+                user.getRoleId(), 
+                user.getFullName(), 
+                user.getEmail(), 
+                user.getPassword(), 
+                user.getPhone(),
+                user.getIsActive()
+            );
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            return 0;
+        }
+    }
 
 }
