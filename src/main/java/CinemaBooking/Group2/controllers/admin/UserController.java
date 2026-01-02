@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
+import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.service.UserService;
 
 @RestController
@@ -25,7 +26,7 @@ public class UserController {
 	@Autowired
 	private UserService userService;
 
-	@PostMapping("/api/users")
+	@PostMapping
 	public ResponseEntity<?> createUser(@RequestBody CreateUserRequestDTO req) {
 		userService.createUser(req);
 		return ResponseEntity.ok(Map.of("message", "Tạo user thành công"));
@@ -60,6 +61,11 @@ public class UserController {
     public ResponseEntity<?> lockUser(@PathVariable int id) {
         userService.lockUser(id);
         return ResponseEntity.ok(Map.of("message", "Đã khóa tài khoản"));
+    }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserDetail(@PathVariable int id) {
+        return ResponseEntity.ok(userService.getUserDetail(id));
     }
 
 }

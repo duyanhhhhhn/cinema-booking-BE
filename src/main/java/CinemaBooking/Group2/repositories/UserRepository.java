@@ -173,5 +173,30 @@ public class UserRepository {
 	    	throw new RuntimeException("Lỗi khi cập nhật user: " + e.getMessage());
 	    }
 	}
+	
+	public UserResponseDTO findUserDetail(int id) {
+	    String sql = """
+	        SELECT id, full_name, email, phone, role_id, cinema_id, position, is_active
+	        FROM user WHERE id = ?
+	    """;
+
+	    try {
+	        return jdbc.queryForObject(sql, new Object[]{id}, (rs, rowNum) -> {
+	            UserResponseDTO dto = new UserResponseDTO();
+	            dto.setId(rs.getInt("id"));
+	            dto.setFullName(rs.getString("full_name"));
+	            dto.setEmail(rs.getString("email"));
+	            dto.setPhone(rs.getString("phone"));
+	            dto.setRoleId(rs.getInt("role_id"));
+	            dto.setCinemaId(rs.getInt("cinema_id"));
+	            dto.setPosition(rs.getString("position"));
+	            dto.setIsActive(rs.getInt("is_active"));
+	            return dto;
+	        });
+	    } catch (Exception e) {
+	        return null;
+	    }
+	}
+
 
 }

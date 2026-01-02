@@ -131,5 +131,33 @@ public class UserService {
         req.setIsActive(0);
         userRepo.updateUser(id, req);
     }
+    
+    public UserResponseDTO getUserDetail(int id) {
+
+        AuthUserPrincipal principal =
+            (AuthUserPrincipal) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        // STAFF không được xem
+        if ("STAFF".equals(principal.role())) {
+            throw new RuntimeException("Không có quyền xem user");
+        }
+
+        User target = userRepo.findById(id);
+        if (target == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
+
+        // MANAGER chỉ xem user cùng rạp
+        if ("MANAGER".equals(principal.role())) {
+            if (!principal.cinemaId().equals(target.getCinemaId())) {
+                throw new RuntimeException("Không được xem user rạp khác");
+            }
+        }
+
+        return userRepo.findUserDetail(id);
+    }
+
+
 
 }
