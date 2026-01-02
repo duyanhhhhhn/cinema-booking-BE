@@ -3,15 +3,20 @@ package CinemaBooking.Group2.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.pattern.Concessions;
+import CinemaBooking.Group2.repositories.UserRepository;
 
 @Service
 public class ComboService {
+	@Autowired
+	private UserRepository rep;
 	public List<ComboResponseDTO> getCombo(){
 		try {
 			List<Combo> item = Concessions.Instance().getCombo();
@@ -62,7 +67,7 @@ public class ComboService {
 		try {
 			int rs = Concessions.Instance().updateCombo(combo);
 			if(rs==1) {
-				s="Success";
+				s="Edit Success";
 			}
 		}
 		catch (Exception e) {
@@ -76,5 +81,18 @@ public class ComboService {
 	}
 	public int ChangeActive(int id,int active) {
 		return Concessions.Instance().changeStatusCombo(id, active);
+	}
+	public int checkAdmin(int id) {
+		try {
+			User user = rep.findById(id);
+			if(user.getRoleId()==0) {
+				return 1;
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return 0;
 	}
 }
