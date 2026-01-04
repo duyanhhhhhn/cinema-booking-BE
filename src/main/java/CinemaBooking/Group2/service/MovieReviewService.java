@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
+import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
 import CinemaBooking.Group2.models.PageResponse;
 import CinemaBooking.Group2.repositories.MovieReviewRepository;
 
@@ -41,9 +42,22 @@ public class MovieReviewService {
             res.setSuccess(true);
             res.setMessage("success");
             return res;
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             throw new RuntimeException("Failed to fetch paged movie review list. Please check repository/database.", e);
         }
+    }
+    
+    // function help map repositorires count average rating services
+    public RatingSummaryDtos countRatingAverage(int movie_id) {
+    	try {
+    		float avg = mvRepositories.countRatingAverage(movie_id);
+    		return new RatingSummaryDtos(movie_id, avg);
+    	}
+    	catch (Exception e) {
+            throw new RuntimeException("Lỗi khi tính trung bình tổng đánh giá hãy kiểm tra repo", e);
+        }
+    	
     }
 
 }

@@ -65,6 +65,7 @@ public class MovieReviewRepository {
         return movieReviews;
     }
     
+    // functin help me count role by id
     public long countByRoleId() {
         String sql =
             "SELECT COUNT(*) " +
@@ -83,8 +84,6 @@ public class MovieReviewRepository {
         }
     }
 
-
-    
     // This function get all review show on frontend -> role: client
     public List<MovieReviewClientDtos> getAllRating(int limit, int offset) {
     	String sql =
@@ -121,4 +120,29 @@ public class MovieReviewRepository {
     	return list_mr;
     }
 
+   
+    public float countRatingAverage(int id) {
+        String sql =
+            "SELECT AVG(rating) AS avg_rating " +
+            "FROM movie_review " +
+            "WHERE movie_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getFloat("avg_rating");
+                }
+                return 0f;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                "Lỗi khi tính trung bình cộng của review từ database -> kiểm tra lại query", e
+            );
+        }
+    }
 }

@@ -6,21 +6,21 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
-import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
-import CinemaBooking.Group2.dtos.movie.MovieResponse;
+import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.service.MovieService;
 
 @RestController
@@ -31,103 +31,89 @@ public class MovieController {
     private MovieService movieService;
 
     @GetMapping("/")
-    public ResponseEntity<List<MovieResponse>> getAllMovies() {
-        List<MovieResponse> movies = movieService.getAllMovie();
-        return ResponseEntity.ok(movies);
+    public ResponseEntity<ApiResponse<List<MovieDtos>>> getAllMovies() {
+        return ResponseEntity.ok(new ApiResponse<>("Success", movieService.getAllMovie()));
     }
 
-    // get all movie if status = "Comming soon"
     @GetMapping("/public")
-    public ResponseEntity<Map<String, Object>> getAllMovieStatus(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllMovieStatus(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int perPage) {
-        if (page < 1)
-            page = 1;
-        if (perPage < 1)
-            perPage = 10;
 
-        List<MovieResponse> data = movieService.getAllMovieStatus(page, perPage);
+        page = Math.max(page, 1);
+        perPage = Math.max(perPage, 1);
+
+        List<MovieDtos> data = movieService.getAllMovieStatus(page, perPage);
         int total = movieService.countMovieStatus();
 
         Map<String, Object> meta = new HashMap<>();
         meta.put("page", page);
-        meta.put("total", total);
         meta.put("perPage", perPage);
+        meta.put("total", total);
 
-        Map<String, Object> res = new HashMap<>();
-        res.put("message", "Success");
-        res.put("data", data);
-        res.put("meta", meta);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("data", data);
+        payload.put("meta", meta);
 
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(new ApiResponse<>("Success", payload));
     }
 
-    // get movie detail by id when user click see detail
     @GetMapping("/movie-detail/{id}")
-    public ResponseEntity<Map<String, Object>> getMovieDetailById(@PathVariable int id) {
+    public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {
         MovieDetailDtos data = movieService.getMovieDetailById(id);
 
-        Map<String, Object> res = new HashMap<>();
-
         if (data == null) {
-            res.put("message", "Movie not found");
-            res.put("data", null);
-            return ResponseEntity.status(404).body(res);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>("Movie not found", null));
         }
 
-        res.put("message", "Success");
-        res.put("data", data);
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
 
-    // create new film
-    @PostMapping("/create-movies")
-    public ResponseEntity<Boolean> createNewMovie(@RequestBody MovieCreateDtos dto) {
+    @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createMovie(@ModelAttribute MovieCreateDtos dto) {
         try {
-            boolean ok = movieService.createNewMovie(dto);
-            if (ok) {
-                return ResponseEntity.status(HttpStatus.CREATED).body(true);
+            int movieId = movieService.createMovieJson(dto);
+            if (movieId <= 0) {
+                return ResponseEntity.badRequest().body(new ApiResponse<>("Create movie failed", null));
             }
-            return ResponseEntity.badRequest().body(false);
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
-        }
-    }
+            if (dto.getPosterFile() != null && !dto.getPosterFile().isEmpty()) {
+                movieService.updatePosterImage(movieId, dto.getPosterFile());
+            }
 
-    // delete movie by id get on link
-    @DeleteMapping("/delete-movies/{id}")
-    public ResponseEntity<Boolean> deleteMovie(@PathVariable int id) {
-        try {
-            boolean ok = movieService.deleteMovie(id);
-            if (ok)
-                return ResponseEntity.status(HttpStatus.CREATED).body(true);
-            return ResponseEntity.badRequest().body(false);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
-        }
-    }
+            if (dto.getBannerFile() != null && !dto.getBannerFile().isEmpty()) {
+                movieService.updateBannerImage(movieId, dto.getBannerFile());
+            }
 
-    @PutMapping("/edit-movies/{id}")
-    public ResponseEntity<?> updateMovie(
-            @PathVariable int id,
-            @RequestBody MovieEditDtos dto) {
-        try {
-            MovieDetailDtos updated = movieService.updateMovie(id, dto);
-            return ResponseEntity.ok(updated);
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("id", movieId);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new ApiResponse<>("Created", resp));
 
         } catch (RuntimeException e) {
-            // tuỳ bạn: phân loại message để trả 404/400
-            String msg = e.getMessage();
+            return ResponseEntity.badRequest().body(new ApiResponse<>(e.getMessage(), null));
 
-            if (msg != null && msg.toLowerCase().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
-            }
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Server error: " + e.getMessage());
+                    .body(new ApiResponse<>("Server error", null));
+        }
+    }
+
+    @DeleteMapping("/delete-movies/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> deleteMovie(@PathVariable int id) {
+        try {
+            boolean ok = movieService.deleteMovie(id);
+            if (!ok) {
+                return ResponseEntity.badRequest().body(new ApiResponse<>("Delete movie failed", false));
+            }
+
+            return ResponseEntity.ok(new ApiResponse<>("Deleted", true));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>("Server error", false));
         }
     }
 }
