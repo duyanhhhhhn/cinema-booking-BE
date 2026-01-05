@@ -2,6 +2,7 @@ package CinemaBooking.Group2.dtos.movie;
 
 import java.util.Date;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.models.Movie;
@@ -22,8 +23,9 @@ public class MovieDetailDtos {
     private String posterUrl;
     private String bannerUrl;
     private String trailerUrl;
-
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date releaseDate;
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
     private Movie.MovieStatus status;
     private Date createdAt;

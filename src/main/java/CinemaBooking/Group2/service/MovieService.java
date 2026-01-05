@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,6 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -18,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
-import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.repositories.MovieRepository;
@@ -32,8 +33,15 @@ public class MovieService {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
+    @Value("${app.upload.public-prefix:/media}")
+    private String publicPrefix;
 
-    /** Get all movies and map them to MovieResponse DTOs. */
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+
+
+    /*
+     * Lấy danh sách tất cả phim và chuyển đổi sang định dạng DTO.
+     */
     public List<MovieDtos> getAllMovie() {
         try {
             List<Movie> movies = movieRepository.getAllMovie();
@@ -46,7 +54,9 @@ public class MovieService {
     }
 
 
-    /** Get public movies (COMING_SOON and NOW_SHOWING) with pagination. */
+    /*
+     * Lấy danh sách phim đang hiển thị (Sắp chiếu & Đang chiếu) có phân trang.
+     */
     public List<MovieDtos> getAllMovieStatus(int page, int perPage) {
         try {
             List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage);
@@ -59,7 +69,9 @@ public class MovieService {
     }
 
 
-    /** Count public movies (COMING_SOON and NOW_SHOWING). */
+    /*
+     * Đếm tổng số lượng phim có trạng thái Sắp chiếu hoặc Đang chiếu.
+     */
     public int countMovieStatus() {
         try {
             return movieRepository.countMovieComingSoonNowShowing();
@@ -69,7 +81,9 @@ public class MovieService {
     }
 
 
-    /** Get movie details by id and map to MovieDetailDtos. */
+    /*
+     * Tìm kiếm và lấy thông tin chi tiết của một bộ phim dựa trên ID.
+     */
     public MovieDetailDtos getMovieDetailById(int id) {
         try {
             Movie movie = movieRepository.getMovieDetailById(id);
@@ -81,89 +95,96 @@ public class MovieService {
     }
 
 
-    /** Create a movie using JSON only (no images) and return the generated movie id. */
-    public int createMovieJson(MovieCreateDtos dto) {
-        if (dto == null) throw new RuntimeException("Request body is empty.");
-
-        String title = dto.getTitle();
-        if (title == null || title.trim().isEmpty()) {
-            throw new RuntimeException("Title is required.");
+    /*
+     * Quy trình tạo mới phim: Lưu file ảnh, map dữ liệu vào Database và trả về thông tin chi tiết.
+     */
+    public MovieDetailDtos createMovie(MovieCreateDtos data, MultipartFile poster, MultipartFile banner) {
+        if (poster == null || poster.isEmpty()) {
+            throw new IllegalArgumentException("Poster is required");
+        }
+        if (banner == null || banner.isEmpty()) {
+            throw new IllegalArgumentException("Banner is required");
         }
 
-        int duration = dto.getDurationMinutes();
-        if (duration <= 0) {
-            throw new RuntimeException("DurationMinutes must be > 0.");
-        }
-
-        Movie movie = MovieMapper.toModel(dto);
-        if (movie == null) {
-            throw new RuntimeException("Failed to map request to Movie model.");
-        }
-
-        if (movie.getStatus() == null) {
-            movie.setStatus(Movie.MovieStatus.COMING_SOON);
-        }
-
-        movie.setPosterUrl(null);
-        movie.setBannerUrl(null);
-
-        int movieId = movieRepository.createNewMovieReturnId(movie);
-        if (movieId <= 0) {
-            throw new RuntimeException("Failed to create movie.");
-        }
-
-        return movieId;
-    }
-
-
-    /** Upload and set the poster image for a movie; store only relative path in database. */
-    public boolean updatePosterImage(int movieId, MultipartFile poster) {
-        if (movieId <= 0) throw new RuntimeException("Invalid movie id.");
-        if (!movieRepository.existsById(movieId)) throw new RuntimeException("Movie not found.");
+        Path posterPath = null;
+        Path bannerPath = null;
 
         try {
-            String posterPath = saveToUploads(poster, "movie/posters", "poster");
-            if (posterPath == null) throw new RuntimeException("Poster file is required.");
+        	posterPath = saveImageToFolder(poster, "movie/posters");
+        	bannerPath = saveImageToFolder(banner, "movie/banners");
 
-            movieRepository.updateMovieImages(movieId, posterPath, null);
-            return true;
 
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to upload poster image.", e);
+            String posterRel = toRelativePath(posterPath);
+            String bannerRel = borderPath(bannerPath); // logic giữ nguyên: toRelativePath
+
+            Movie movie = MovieMapper.toModel(data);
+
+            if (movie.getStatus() == null) {
+                movie.setStatus(Movie.MovieStatus.COMING_SOON);
+            }
+
+            movie.setPosterUrl(posterRel);
+            movie.setBannerUrl(bannerRel);
+
+            int newId = movieRepository.createNewMovieReturnId(movie);
+            if (newId <= 0) {
+                safeDelete(posterPath);
+                safeDelete(bannerPath);
+                throw new RuntimeException("Failed to insert movie (no generated id returned).");
+            }
+            movie.setId(newId);
+
+            MovieDetailDtos res = MovieMapper.toDetailDto(movie);
+
+            String prefix = normalizePrefix(publicPrefix);
+            res.setPosterUrl(prefix + "/" + posterRel);
+            res.setBannerUrl(prefix + "/" + bannerRel);
+
+            return res;
+
+        } catch (Exception ex) {
+            safeDelete(posterPath);
+            safeDelete(bannerPath);
+            throw new RuntimeException("Create movie failed: " + ex.getMessage(), ex);
         }
     }
 
 
-    /** Upload and set the banner image for a movie; store only relative path in database. */
-    public boolean updateBannerImage(int movieId, MultipartFile banner) {
-        if (movieId <= 0) throw new RuntimeException("Invalid movie id.");
-        if (!movieRepository.existsById(movieId)) throw new RuntimeException("Movie not found.");
+    /*
+     * Chuẩn hóa đường dẫn prefix cho các tài nguyên static (media).
+     */
+    private String normalizePrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) return "/media";
 
+        prefix = prefix.trim();
+
+        if (!prefix.startsWith("/")) {
+            prefix = "/" + prefix;
+        }
+
+        if (prefix.length() > 1 && prefix.endsWith("/")) {
+            prefix = prefix.substring(0, prefix.length() - 1);
+        }
+
+        return prefix;
+    }
+
+
+    /*
+     * Xóa tệp tin một cách an toàn, không gây ngắt quãng luồng xử lý chính.
+     */
+    private void safeDelete(Path path) {
+        if (path == null) return;
         try {
-            String bannerPath = saveToUploads(banner, "movie/banners", "banner");
-            if (bannerPath == null) throw new RuntimeException("Banner file is required.");
-
-            movieRepository.updateMovieImages(movieId, null, bannerPath);
-            return true;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to upload banner image.", e);
+            Files.deleteIfExists(path);
+        } catch (Exception ignored) {
         }
     }
 
 
-    /** Create a new movie without uploading images (keeps old endpoints working). */
-    public boolean createNewMovie(MovieCreateDtos dto) {
-        try {
-            int id = createMovieJson(dto);
-            return id > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-
-    /** Delete a movie by id. */
+    /*
+     * Xóa thông tin phim khỏi hệ thống theo ID.
+     */
     public boolean deleteMovie(int id) {
         try {
             if (id <= 0) return false;
@@ -174,66 +195,69 @@ public class MovieService {
     }
 
 
-    /** Update movie fields by id and return the latest movie detail DTO. */
-//    public MovieDetailDtos updateMovie(int id, MovieEditDtos dto) {
-//        if (!movieRepository.existsById(id)) {
-//            throw new RuntimeException("Movie not found with id = " + id);
-//        }
-//        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
-//            throw new RuntimeException("Title is required.");
-//        }
-//        if (dto.getDurationMinutes() <= 0) {
-//            throw new RuntimeException("Duration must be > 0.");
-//        }
-//        if (dto.getReleaseDate() != null && dto.getEndDate() != null
-//                && dto.getReleaseDate().after(dto.getEndDate())) {
-//            throw new RuntimeException("ReleaseDate must be before EndDate.");
-//        }
-//
-////        Movie movieToUpdate = MovieMapper.toModelEdit(dto);
-//
-//        boolean ok = movieRepository.updateMovieById(id, movieToUpdate);
-//        if (!ok) {
-//            throw new RuntimeException("Update movie failed.");
-//        }
-//
-//        Movie updated = movieRepository.getMovieDetailById(id);
-//        if (updated == null) {
-//            throw new RuntimeException("Updated but cannot load movie.");
-//        }
-//
-//        return MovieMapper.toDetailDto(updated);
-//    }
+    /*
+     * Phân tích và lấy định dạng (extension) của tệp tin từ tên gốc.
+     */
+    private String getExtension(String filename) {
+        if (filename == null) return "";
+        String name = filename.trim();
+        int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        if (slash >= 0) name = name.substring(slash + 1);
+
+        int dot = name.lastIndexOf('.');
+        if (dot < 0 || dot == name.length() - 1) return "";
+        return name.substring(dot + 1).toLowerCase(Locale.ROOT);
+    }
 
 
-    /** Save an image file into uploads/{subFolder} and return the relative path for database storage. */
-    private String saveToUploads(MultipartFile file, String subFolder, String prefix) throws Exception {
-        if (file == null || file.isEmpty()) return null;
+    /*
+     * Lưu trữ tệp tin hình ảnh vào thư mục chỉ định với tên tệp duy nhất (UUID).
+     */
+    private Path saveImageToFolder(MultipartFile file, String folderName) throws Exception {
+        // validate content-type cơ bản
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new IllegalArgumentException("File must be an image");
+        }
 
-        String ext = safeExt(file.getOriginalFilename());
-        String filename = prefix + "_" + UUID.randomUUID() + "." + ext;
+        // validate extension
+        String original = file.getOriginalFilename();
+        String ext = getExtension(original);
+        if (ext.isBlank() || !ALLOWED_EXT.contains(ext)) {
+            throw new IllegalArgumentException("Invalid image extension: " + ext);
+        }
 
-        Path folder = Paths.get(uploadDir, subFolder);
-        Files.createDirectories(folder);
+        // <uploadDir>/<folderName>  (folderName: "poster" | "banner")
+        Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path dir = root.resolve(folderName).normalize();
+        Files.createDirectories(dir);
 
-        System.out.println("UPLOAD_DIR_ABS=" + folder.toAbsolutePath().normalize());
+        String filename = UUID.randomUUID() + "." + ext;
+        Path target = dir.resolve(filename);
 
-        Path target = folder.resolve(filename);
         try (InputStream in = file.getInputStream()) {
             Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        return subFolder + "/" + filename;
+        return target; // đây chính là posterPath / bannerPath
     }
 
 
-    /** Get a safe image file extension; fallback to png if unknown. */
-    private String safeExt(String original) {
-        if (original == null) return "png";
-        String lower = original.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "jpg";
-        if (lower.endsWith(".png")) return "png";
-        if (lower.endsWith(".webp")) return "webp";
-        return "png";
+
+    /*
+     * Chuyển đổi đường dẫn tuyệt đối sang đường dẫn tương đối phục vụ lưu trữ database.
+     */
+    private String toRelativePath(Path absoluteSavedPath) {
+        Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
+        return root.relativize(absoluteSavedPath.toAbsolutePath().normalize())
+                   .toString().replace('\\', '/');
     }
+
+    /*
+     * 
+     */
+    private String borderPath(Path bannerPath) {
+        return toRelativePath(bannerPath);
+    }
+
 }

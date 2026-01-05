@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
@@ -70,36 +72,25 @@ public class MovieController {
         return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
 
-    @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createMovie(@ModelAttribute MovieCreateDtos dto) {
-        try {
-            int movieId = movieService.createMovieJson(dto);
-            if (movieId <= 0) {
-                return ResponseEntity.badRequest().body(new ApiResponse<>("Create movie failed", null));
-            }
-
-            if (dto.getPosterFile() != null && !dto.getPosterFile().isEmpty()) {
-                movieService.updatePosterImage(movieId, dto.getPosterFile());
-            }
-
-            if (dto.getBannerFile() != null && !dto.getBannerFile().isEmpty()) {
-                movieService.updateBannerImage(movieId, dto.getBannerFile());
-            }
-
-            Map<String, Object> resp = new HashMap<>();
-            resp.put("id", movieId);
-
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiResponse<>("Created", resp));
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponse<>(e.getMessage(), null));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>("Server error", null));
+    @PostMapping(
+            value = "/create-movies",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ApiResponse<MovieDetailDtos>> createMovie(@ModelAttribute MovieCreateDtos dto) {
+        if (dto.getPosterFile() == null || dto.getPosterFile().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>("Poster is required", null));
         }
+        if (dto.getBannerFile() == null || dto.getBannerFile().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>("Banner is required", null));
+        }
+
+        MovieDetailDtos created = movieService.createMovie(dto, dto.getPosterFile(), dto.getBannerFile());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Created", created));
     }
+
+
 
     @DeleteMapping("/delete-movies/{id}")
     public ResponseEntity<ApiResponse<Boolean>> deleteMovie(@PathVariable int id) {
