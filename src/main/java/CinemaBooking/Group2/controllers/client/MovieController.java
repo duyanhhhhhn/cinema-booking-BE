@@ -30,7 +30,7 @@ public class MovieController {
     @Autowired
     private MovieService movieService;
 
-    @GetMapping("/")
+    @GetMapping("")
     public ResponseEntity<List<MovieResponse>> getAllMovies() {
         List<MovieResponse> movies = movieService.getAllMovie();
         return ResponseEntity.ok(movies);
