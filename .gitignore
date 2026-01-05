@@ -33,3 +33,6 @@ build/
 .vscode/
 # Ignore Spring config
 application.properties
+
+# Upload images
+/uploads/
