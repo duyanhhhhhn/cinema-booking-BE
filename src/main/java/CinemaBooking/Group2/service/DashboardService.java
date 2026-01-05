@@ -1,5 +1,7 @@
 package CinemaBooking.Group2.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,5 +23,29 @@ public class DashboardService {
 			// TODO: handle exception
 		}
 		return null;
+	}
+	public BigDecimal getRevenueByMonth(int month){
+		BigDecimal rs = new BigDecimal(0);
+		try {
+			rs = DashboardNReport.Instance().getRevenueByMonth(month);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
+	public BigDecimal getRevenueByDate(LocalDate date){
+		BigDecimal rs = new BigDecimal(0);
+		try {
+			rs = DashboardNReport.Instance().getRevenueByDate(date);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return rs;
 	}
 }

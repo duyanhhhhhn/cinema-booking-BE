@@ -35,6 +35,16 @@ public class Marketing {
 		}
 		return item;
 	}
+	public Post postInfo(int id) {
+		try {
+			Post item = postRep.findById(id);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public int createPost(Post post) {
 		try {
 			int rs =  postRep.newPost(post);
