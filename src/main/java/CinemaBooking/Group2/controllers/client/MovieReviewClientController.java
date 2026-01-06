@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
-import CinemaBooking.Group2.models.PageResponse;
 import CinemaBooking.Group2.service.MovieReviewService;
 
 @Controller

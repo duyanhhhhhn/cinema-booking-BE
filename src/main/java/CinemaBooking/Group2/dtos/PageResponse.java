@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos;
 
 import java.util.List;
 

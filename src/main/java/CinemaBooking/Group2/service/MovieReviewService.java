@@ -5,10 +5,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
-import CinemaBooking.Group2.models.PageResponse;
 import CinemaBooking.Group2.repositories.MovieReviewRepository;
 
 @Service
