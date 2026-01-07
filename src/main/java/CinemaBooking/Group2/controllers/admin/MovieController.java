@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -23,6 +24,7 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
+import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.service.MovieService;
 
 @RestController
@@ -88,6 +90,18 @@ public class MovieController {
         MovieDetailDtos created = movieService.createMovie(dto, dto.getPosterFile(), dto.getBannerFile());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Created", created));
+    }
+
+ // UPDATE MOVIE WITH OPTIONAL POSTER/BANNER.
+    @PutMapping(value = "/edit-movie/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MovieDetailDtos> updateMovie(
+            @PathVariable int id,
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "poster", required = false) MultipartFile poster,
+            @RequestPart(value = "banner", required = false) MultipartFile banner
+    ) throws Exception {
+        MovieEditDtos data = new com.fasterxml.jackson.databind.ObjectMapper().readValue(dataJson, MovieEditDtos.class);
+        return ResponseEntity.ok(movieService.updateMovie(id, data, poster, banner));
     }
 
 

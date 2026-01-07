@@ -3,6 +3,7 @@ package CinemaBooking.Group2.mappers;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
+import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.models.Movie;
 
 public class MovieMapper {
@@ -76,6 +77,30 @@ public class MovieMapper {
         if (dto.getStatus() != null) {
             movie.setStatus(dto.getStatus());
         }
+
+        return movie;
+    }
+
+    public static Movie toModelEdit(MovieEditDtos data) {
+        if (data == null) return null;
+
+        Movie movie = new Movie();
+        movie.setTitle(data.getTitle());
+        movie.setShortDescription(data.getShortDescription());
+        movie.setDescription(data.getDescription());
+        movie.setDurationMinutes(data.getDurationMinutes());
+        movie.setGenre(data.getGenre());
+        movie.setLanguage(data.getLanguage());
+        movie.setFormat(data.getFormat());
+        movie.setDirector(data.getDirector());
+        movie.setCast(data.getCast());
+
+        movie.setTrailerUrl(data.getTrailerUrl());
+        movie.setReleaseDate(data.getReleaseDate());
+        movie.setEndDate(data.getEndDate());
+
+        // STATUS: CHO PHÉP NULL ĐỂ SERVICE QUYẾT ĐỊNH DEFAULT HOẶC GIỮ NGUYÊN THEO LOGIC CỦA BẠN.
+        movie.setStatus(data.getStatus());
 
         return movie;
     }
