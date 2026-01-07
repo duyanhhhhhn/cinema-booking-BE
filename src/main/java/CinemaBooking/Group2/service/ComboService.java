@@ -17,11 +17,11 @@ import CinemaBooking.Group2.repositories.UserRepository;
 
 @Service
 public class ComboService {
-	@Autowired
-	private UserRepository rep;
+	@Autowired private UserRepository rep;
+	@Autowired private Concessions con;
 	public List<ComboResponseDTO> getCombo(){
 		try {
-			List<Combo> item = Concessions.Instance().getCombo();
+			List<Combo> item =  con.getCombo();
 			return item.stream().map(ComboMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}
@@ -32,7 +32,7 @@ public class ComboService {
 	}
 	public List<ComboResponseDTO> getCombo(int page,int size ){
 		try {
-			List<Combo> item = Concessions.Instance().pagingCombo(page, size);
+			List<Combo> item =  con.pagingCombo(page, size);
 			return item.stream().map(ComboMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}
@@ -43,7 +43,7 @@ public class ComboService {
 	}
 	public ComboResponseDTO comboInfo(int id){
 		try {
-			Combo item = Concessions.Instance().comboInfo(id);
+			Combo item =  con.comboInfo(id);
 			return ComboMapper.toResponseDTO(item);
 		}
 		catch (Exception e) {
@@ -54,7 +54,7 @@ public class ComboService {
 	public ComboCRUDResponse AddCombo(Combo combo) {
 		ComboCRUDResponse res= new ComboCRUDResponse();
 		try {
-			int rs = Concessions.Instance().CreateCombo(combo);
+			int rs =  con.CreateCombo(combo);
 			if(rs==1) {
 				res.setMessage("Success");
 				res.setStatus(ResponseStatus.SUCCESS);
@@ -72,7 +72,7 @@ public class ComboService {
 	public String EditCombo(Combo combo) {
 		String s = "Error";
 		try {
-			int rs = Concessions.Instance().updateCombo(combo);
+			int rs =  con.updateCombo(combo);
 			if(rs==1) {
 				s="Edit Success";
 			}
@@ -84,10 +84,10 @@ public class ComboService {
 		return s;
 	}
 	public int DeleteCombo(int id) {
-		return Concessions.Instance().deleteCombo(id);
+		return  con.deleteCombo(id);
 	}
 	public int ChangeActive(int id,int active) {
-		return Concessions.Instance().changeStatusCombo(id, active);
+		return  con.changeStatusCombo(id, active);
 	}
 	public int checkAdmin(int id) {
 		try {

@@ -17,8 +17,7 @@ import CinemaBooking.Group2.repositories.MovieRepository;
 @Service
 public class MovieService {
 
-    @Autowired
-    private MovieRepository movieRepository;
+    @Autowired private MovieRepository movieRepository;
 
     public List<MovieResponse> getAllMovie() {
         try {

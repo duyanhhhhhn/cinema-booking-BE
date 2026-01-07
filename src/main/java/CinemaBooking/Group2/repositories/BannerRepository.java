@@ -2,23 +2,18 @@ package CinemaBooking.Group2.repositories;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.BannerMapper;
 import CinemaBooking.Group2.models.Banner;
-import CinemaBooking.Group2.models.DbConnection;
 
+@Repository
 public class BannerRepository implements Icrud<Banner>{
-	private static BannerRepository _instance;
+	@Autowired
 	private JdbcTemplate db;
-	private BannerRepository() {
-		db = DbConnection.Instance().getDb();
-	}
-	public static BannerRepository Instance() {
-		if(_instance==null) {
-			_instance = new BannerRepository();
-		}
-		return _instance;
+	public BannerRepository() {
 	}
 	@Override
 	public List<Banner> getAll() {

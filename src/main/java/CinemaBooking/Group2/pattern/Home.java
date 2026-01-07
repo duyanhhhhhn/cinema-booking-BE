@@ -2,20 +2,17 @@ package CinemaBooking.Group2.pattern;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
 import CinemaBooking.Group2.models.Banner;
 import CinemaBooking.Group2.repositories.BannerRepository;
 
+@Repository
 public class Home {
-	private static Home _instance;
+	@Autowired
 	private BannerRepository bannerRep;
-	private Home() {
-		bannerRep = BannerRepository.Instance();
-	}
-	public static Home Instance() {
-		if(_instance==null) {
-			_instance=new Home();
-		}
-		return _instance;
+	public Home() {
 	}
 	public List<Banner> getBanner() {
 		try {

@@ -3,28 +3,24 @@ package CinemaBooking.Group2.repositories;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
-import CinemaBooking.Group2.models.DbConnection;
 
+@Repository
 public class ComboRepository implements Icrud<Combo>{
-	private JdbcTemplate db = DbConnection.Instance().getDb();
-	private static ComboRepository _instance = null;
-	public static ComboRepository Instance() {
-		if(_instance==null) {
-			_instance = new ComboRepository();
-		}
-		return _instance;
-	}
-    private ComboRepository() {
+	@Autowired
+	private JdbcTemplate db;
+	public ComboRepository() {
 		
 	}
 	public List<Combo> getAll(){
 		List<Combo> list = new ArrayList<>();
 		try {
-			list = db.query("select id,name,description,price,image_url from `combos` where is_active=1", new ComboMapper());
+			list = db.query("select * from `combos` where is_active=1", new ComboMapper());
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -35,7 +31,7 @@ public class ComboRepository implements Icrud<Combo>{
 		List<Combo> list = new ArrayList<>();
 		try {
 			int value=(page-1)*size;
-			list = db.query("select id,name,description,price,image_url from `combos` limit ? offset ? where is_active=1", new ComboMapper(),new Object[] {size,value});
+			list = db.query("select * from `combos` limit ? offset ? where is_active=1", new ComboMapper(),new Object[] {size,value});
 			return list;
 		}
 		catch (Exception e) {
@@ -47,7 +43,7 @@ public class ComboRepository implements Icrud<Combo>{
 	public Combo findById(int id){
 		Combo item = new Combo();
 		try {
-			item = db.query("select id,name,description,price,image_url from `combos` where id=? and is_active=1", new ComboMapper(),new Object[] {id}).get(0);
+			item = db.query("select * from `combos` where id=? and is_active=1", new ComboMapper(),new Object[] {id}).get(0);
 		}
 		catch(Exception e) {
 			System.out.print(e);

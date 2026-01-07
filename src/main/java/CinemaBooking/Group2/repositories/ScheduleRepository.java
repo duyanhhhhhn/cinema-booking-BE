@@ -4,23 +4,19 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.StaffMapper;
-import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.StaffSchedule;
 
+@Repository
 public class ScheduleRepository implements Icrud<StaffSchedule>{
-	private static ScheduleRepository _instance=null;
+	@Autowired
 	private JdbcTemplate db;
-	private ScheduleRepository() {
-		db = DbConnection.Instance().getDb();
-	}
-	public static ScheduleRepository Instance() {
-		if(_instance==null) {
-			_instance=new ScheduleRepository();
-		}
-		return _instance;
+	public ScheduleRepository() {
+		
 	}
 	public int assignSchedule(StaffSchedule item) {
 		try {

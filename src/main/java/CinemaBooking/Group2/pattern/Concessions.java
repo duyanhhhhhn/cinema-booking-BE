@@ -3,26 +3,22 @@ package CinemaBooking.Group2.pattern;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.repositories.ComboRepository;
 import CinemaBooking.Group2.repositories.ProductRepository;
 
+@Repository
 public class Concessions {
-	private static Concessions _instance = null;
+	@Autowired
 	private ProductRepository proRep;
+	@Autowired
 	private ComboRepository comboRep;
 
-	private Concessions() {
-		comboRep = ComboRepository.Instance();
-		proRep= ProductRepository.Instance();
-	}
-
-	public static Concessions Instance() {
-		if (_instance == null) {
-			_instance = new Concessions();
-		}
-		return _instance;
+	public Concessions() {
 	}
 
 	// Combo

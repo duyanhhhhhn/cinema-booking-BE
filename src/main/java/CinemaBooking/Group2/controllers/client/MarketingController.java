@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
@@ -33,7 +33,9 @@ public class MarketingController {
 		String rs = service.newPost(item);
 		return ResponseEntity.ok(rs);
 	}
-	public ResponseEntity<PostResponseDTO> postInfo(@RequestParam("id")int id){
+	@GetMapping("/api/posts/{id}")
+	@CrossOrigin
+	public ResponseEntity<PostResponseDTO> postInfo(@PathVariable("id")int id){
 		PostResponseDTO item = new PostResponseDTO();
 		try {
 			item = service.postInfo(id);

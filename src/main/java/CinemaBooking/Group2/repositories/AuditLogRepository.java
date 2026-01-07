@@ -3,23 +3,18 @@ package CinemaBooking.Group2.repositories;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.AuditLogMapper;
 import CinemaBooking.Group2.models.AuditLog;
-import CinemaBooking.Group2.models.DbConnection;
 
+@Repository
 public class AuditLogRepository implements Icrud<AuditLog>{
-	private static AuditLogRepository _instance;
+	@Autowired
 	private JdbcTemplate db;
-	private AuditLogRepository () {
-		db = DbConnection.Instance().getDb();
-	}
-	public static AuditLogRepository Instance() {
-		if(_instance==null) {
-			_instance = new AuditLogRepository();
-		}
-		return _instance;
+	public AuditLogRepository () {
 	}
 	@Override
 	public List<AuditLog> getAll() {

@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.home.BannerCRUDResponseDTO;
+import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
 import CinemaBooking.Group2.mappers.BannerMapper;
 import CinemaBooking.Group2.models.Banner;
@@ -14,9 +16,11 @@ import CinemaBooking.Group2.pattern.Home;
 
 @Service
 public class BannerService {
+	@Autowired
+	private Home home;
 	public List<BannerResponseDTO> getBanner(){
 		try {
-			List<Banner> item = Home.Instance().getBanner();
+			List<Banner> item = home.getBanner();
 			if(item==null) {
 				item = new ArrayList<>();
 			}
@@ -27,13 +31,15 @@ public class BannerService {
 		}
 		return null;
 	}
-	public List<BannerResponseDTO> getBanner(String url){
+	public BannerListResponseDTO getBanner(String url){
 		try {
-			List<Banner> item = Home.Instance().getBannerByLinkURL(url);
+			List<Banner> item = home.getBannerByLinkURL(url);
 			if(item==null) {
 				item = new ArrayList<>();
 			}
-			return item.stream().map(BannerMapper::toResponseDTO).collect(Collectors.toList());
+			BannerListResponseDTO banner = new BannerListResponseDTO();
+			banner.setBanners(item);
+			return banner;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -43,7 +49,7 @@ public class BannerService {
 	public BannerResponseDTO getBannerById(int id) {
 		BannerResponseDTO banner=null;
 		try {
-			Banner item = Home.Instance().getBannerById(id);
+			Banner item = home.getBannerById(id);
 			if(item==null) {
 				banner = new BannerResponseDTO();
 				banner.setMessage("Error");
@@ -63,7 +69,7 @@ public class BannerService {
 	public BannerCRUDResponseDTO addBanner(Banner banner) {
 		BannerCRUDResponseDTO res = new BannerCRUDResponseDTO();
 		try {
-			int rs = Home.Instance().AddBanner(banner);
+			int rs = home.AddBanner(banner);
 			if(rs==0) {
 				res.setIs_active(false);
 				res.setMessage("Error");

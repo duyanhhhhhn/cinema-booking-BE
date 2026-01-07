@@ -3,23 +3,19 @@ package CinemaBooking.Group2.repositories;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.ProductMapper;
-import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Product;
 
+@Repository
 public class ProductRepository implements Icrud<Product>{
-	private static ProductRepository _instance = null;
+	@Autowired
 	private JdbcTemplate db;
-	private ProductRepository () {
-		db = DbConnection.Instance().getDb();
-	}
-	public static ProductRepository Instance() {
-		if(_instance==null) {
-			_instance = new ProductRepository();
-		}
-		return _instance;
+	public ProductRepository() {
+		
 	}
 	public List<Product> getAll(){
 		List<Product> item = new ArrayList<>();
