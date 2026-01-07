@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
@@ -92,16 +94,33 @@ public class MovieController {
                 .body(new ApiResponse<>("Created", created));
     }
 
- // UPDATE MOVIE WITH OPTIONAL POSTER/BANNER.
+    	
     @PutMapping(value = "/edit-movie/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MovieDetailDtos> updateMovie(
+    public ResponseEntity<ApiResponse<MovieDetailDtos>> updateMovie(
             @PathVariable int id,
             @RequestPart("data") String dataJson,
             @RequestPart(value = "poster", required = false) MultipartFile poster,
             @RequestPart(value = "banner", required = false) MultipartFile banner
-    ) throws Exception {
-        MovieEditDtos data = new com.fasterxml.jackson.databind.ObjectMapper().readValue(dataJson, MovieEditDtos.class);
-        return ResponseEntity.ok(movieService.updateMovie(id, data, poster, banner));
+    ) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();	
+            MovieEditDtos data = mapper.readValue(dataJson, MovieEditDtos.class);
+
+            MovieDetailDtos updated = movieService.updateMovie(id, data, poster, banner);
+            return ResponseEntity.ok(new ApiResponse<>("UPDATE MOVIE SUCCESS.", updated));
+
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>("INVALID JSON FORMAT FOR FIELD 'data'.", null));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(e.getMessage(), null));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>("UPDATE MOVIE FAILED.", null));
+        }
     }
 
 
