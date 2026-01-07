@@ -45,6 +45,21 @@ public class VoucherRepository implements Icrud<Voucher>{
 		}
 		return null;
 	}
+	
+	public Voucher findByCode(String code) {
+		try {
+			List<Voucher> items = db.query("select * from `vouchers` where code=?", new VoucherMapper()
+					,new Object[] {code});
+			if(items != null && !items.isEmpty()) {
+				return items.get(0);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
+		return null;
+	}
 
 	@Override
 	public List<Voucher> search(String key) {

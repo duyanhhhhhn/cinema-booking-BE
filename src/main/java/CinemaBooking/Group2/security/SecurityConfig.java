@@ -45,22 +45,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                // Swagger UI endpoints
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                // Public routes
-                .requestMatchers("/api/auth/**").permitAll()
-                .anyRequest().permitAll()
-                // Protected routes
-//                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-//                .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN","MANAGER")
-//                .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN","MANAGER","STAFF")
-//                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .httpBasic(httpBasic -> httpBasic.disable());
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // Public routes
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(
+                                "/api/auth/register/**",
+                                "/api/auth/login",
+                                "/api/auth/refresh",
+                                "/api/auth/logout",
+                                "/api/auth/forgot/**",
+                                "/swagger-ui/index.html#/")
+                        .permitAll()
+
+                        // Protected (login required)
+                        .requestMatchers("/api/auth/password/**").authenticated()
+                        .requestMatchers("/api/user/me").authenticated()
+
+                        // Roles
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+
+                        .anyRequest().authenticated())
+
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();
     }
