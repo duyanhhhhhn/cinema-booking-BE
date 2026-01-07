@@ -157,6 +157,11 @@ public class UserService {
 
         return userRepo.findUserDetail(id);
     }
+    
+    public User findByEmail(String email) {
+		return userRepo.findByEmail(email);
+	}
+    
 
 
 
