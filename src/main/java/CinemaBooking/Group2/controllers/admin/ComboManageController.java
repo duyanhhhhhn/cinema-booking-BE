@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.concession.ComboCRUDResponse;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
@@ -36,7 +37,7 @@ public class ComboManageController {
 		}
 		try {
 		 m =service.EditCombo(entity);
-		 return ResponseEntity.ok(m);
+		 return ResponseEntity.status(HttpStatus.CREATED).body(m);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -46,22 +47,23 @@ public class ComboManageController {
 	}
 	@CrossOrigin
 	@PostMapping("/api/combo/add")
-	public String add(@RequestParam("name") String name,@RequestParam("descriptiom") String description,
+	public ResponseEntity<ComboCRUDResponse> add(@RequestParam("name") String name,@RequestParam("descriptiom") String description,
 			@RequestParam("price")BigDecimal price,@RequestParam("image_url")String image) {
-		String m ="Error";
+		ComboCRUDResponse res = new ComboCRUDResponse();
 		try {
 			Combo item = new Combo();
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
 			item.setImageUrl(image);
-			return service.AddCombo(item);
+			res = service.AddCombo(item);
+			return ResponseEntity.status(HttpStatus.CREATED).body(res);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
-		return m;
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 	}
 	private Integer getCurrentUserId() {
         try {
@@ -75,6 +77,7 @@ public class ComboManageController {
             }
         } catch (Exception e) {
             // Return null if any error occurs
+        	System.out.print(e.getMessage());
         }
         return null;
     }

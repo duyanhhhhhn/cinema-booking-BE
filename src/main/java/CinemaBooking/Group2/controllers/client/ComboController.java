@@ -5,8 +5,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
-import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
 import CinemaBooking.Group2.service.ProductService;
 
@@ -31,6 +28,7 @@ public class ComboController {
 	@CrossOrigin
 	public ResponseEntity<List<ComboResponseDTO>> getCombo(){
 		List<ComboResponseDTO> item = null;
+		//String message = "Error";
 		try {
 			item =service.getCombo();
 			if(item==null) {
@@ -63,8 +61,19 @@ public class ComboController {
 	@GetMapping("/products")
 	@CrossOrigin
 	public ResponseEntity<List<ProductResponseDTO>> getProduct(){
-		List<ProductResponseDTO> item = pro.getProducts();
-		return ResponseEntity.ok(item);
+		List<ProductResponseDTO> item = null;
+		try {
+			item= pro.getProducts();
+			if(item==null) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(item);
+			}
+			return ResponseEntity.ok(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item);
 	}
 	@GetMapping("/products/{id}")
 	@CrossOrigin

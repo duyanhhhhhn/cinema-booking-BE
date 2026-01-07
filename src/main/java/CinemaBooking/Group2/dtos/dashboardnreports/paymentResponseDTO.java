@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.models;
+package CinemaBooking.Group2.dtos.dashboardnreports;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import CinemaBooking.Group2.models.Enum.PaymentMethod;
 import CinemaBooking.Group2.models.Enum.PaymentStatus;
 
-public class Payment {
+public class paymentResponseDTO {
 	private int id;
     private int bookingId;
     private BigDecimal amount;
@@ -73,7 +73,7 @@ public class Payment {
 	 * @param paidAt
 	 * @param createdAt
 	 */
-	public Payment(int id, int bookingId, BigDecimal amount, PaymentMethod method, String providerPaymentId,
+	public paymentResponseDTO(int id, int bookingId, BigDecimal amount, PaymentMethod method, String providerPaymentId,
 			PaymentStatus status, LocalDateTime paidAt, LocalDateTime createdAt) {
 		super();
 		this.id = id;
@@ -88,11 +88,8 @@ public class Payment {
 	/**
 	 * 
 	 */
-	public Payment() {
+	public paymentResponseDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-    
-    
-
 }

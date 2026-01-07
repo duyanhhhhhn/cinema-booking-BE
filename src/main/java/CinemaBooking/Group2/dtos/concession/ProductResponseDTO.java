@@ -12,6 +12,20 @@ public class ProductResponseDTO {
     private int stock;
     private int isActive;
     private LocalDateTime createdAt;
+    private String Message;
+    private boolean isSuccess;
+	public String getMessage() {
+		return Message;
+	}
+	public void setMessage(String message) {
+		Message = message;
+	}
+	public boolean isSuccess() {
+		return isSuccess;
+	}
+	public void setSuccess(boolean isSuccess) {
+		this.isSuccess = isSuccess;
+	}
 	public int getId() {
 		return id;
 	}
@@ -87,5 +101,10 @@ public class ProductResponseDTO {
 	 */
 	public ProductResponseDTO() {
 		super();
+	}
+	public ProductResponseDTO(String message,boolean isSuccess) {
+		super();
+		this.Message = message;
+		this.isSuccess = isSuccess;
 	}
 }

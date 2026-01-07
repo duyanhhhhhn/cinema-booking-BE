@@ -74,6 +74,15 @@ public class MarketingService {
 		}
 		return ms;
 	}
+	public PostResponseDTO postInfo(int id) {
+		try {
+			return PostMapper.toResponseDTO(Marketing.Instance().postInfo(id));
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public BigDecimal checkDiscount(int id,BigDecimal price) {
 		try {
 			return Marketing.Instance().checkPrice(id, price);

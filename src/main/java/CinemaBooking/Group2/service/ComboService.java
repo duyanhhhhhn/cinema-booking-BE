@@ -6,10 +6,12 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import CinemaBooking.Group2.dtos.concession.ComboCRUDResponse;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.User;
+import CinemaBooking.Group2.models.Enum.ResponseStatus;
 import CinemaBooking.Group2.pattern.Concessions;
 import CinemaBooking.Group2.repositories.UserRepository;
 
@@ -49,18 +51,23 @@ public class ComboService {
 			// TODO: handle exception
 		}
 	}
-	public String AddCombo(Combo combo) {
-		String m="Error";
+	public ComboCRUDResponse AddCombo(Combo combo) {
+		ComboCRUDResponse res= new ComboCRUDResponse();
 		try {
 			int rs = Concessions.Instance().CreateCombo(combo);
 			if(rs==1) {
-				m = "Success";
+				res.setMessage("Success");
+				res.setStatus(ResponseStatus.SUCCESS);
+			}
+			else if(rs==0) {
+				res.setMessage("Error");
+				res.setStatus(ResponseStatus.ERROR);
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return m;
+		return res;
 	}
 	public String EditCombo(Combo combo) {
 		String s = "Error";
