@@ -13,16 +13,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
+import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.service.MovieService;
 
 @RestController
@@ -84,6 +88,38 @@ public class MovieController {
         MovieDetailDtos created = movieService.createMovie(dto, dto.getPosterFile(), dto.getBannerFile());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Created", created));
+    }
+    		
+    	
+    @PutMapping(
+    		value = "/edit-movie/{id}",
+    		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<MovieDetailDtos>> updateMovie(
+            @PathVariable int id,
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "poster", required = false) MultipartFile poster,
+            @RequestPart(value = "banner", required = false) MultipartFile banner
+    ) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();	
+            MovieEditDtos data = mapper.readValue(dataJson, MovieEditDtos.class);
+
+            MovieDetailDtos updated = movieService.updateMovie(id, data, poster, banner);
+            return ResponseEntity.ok(new ApiResponse<>("UPDATE MOVIE SUCCESS.", updated));
+
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>("INVALID JSON FORMAT FOR FIELD 'data'.", null));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(e.getMessage(), null));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>("UPDATE MOVIE FAILED.", null));
+        }
     }
 
     @DeleteMapping("/delete-movies/{id}")
