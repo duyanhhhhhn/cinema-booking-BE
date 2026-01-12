@@ -10,14 +10,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+// ADDED
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import CinemaBooking.Group2.dtos.PageResponse;
+import CinemaBooking.Group2.dtos.ApiResponse; // ADDED
+import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos; // ADDED
+import CinemaBooking.Group2.dtos.movie_review.client.MovieCreateReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
 import CinemaBooking.Group2.service.MovieReviewService;
 
-@Controller
-@RequestMapping("/api/client/movie-reviews")
+@RestController
+@RequestMapping("/api/client/reviews")
 public class MovieReviewClientController {
 	@Autowired
 	MovieReviewService mv;
@@ -43,6 +51,36 @@ public class MovieReviewClientController {
 	    return ResponseEntity.ok(res);
 	}
 
+	// đánh giá comment của khách hàng với điều kiện, người dùng đã mua vé.
+    @PostMapping(value = "/create-comment", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<ApiResponse<MovieReviewDtos>> createComment(@RequestBody MovieCreateReviewDtos req) {
+        try {
+            if (req.getUserId() <= 0) {
+                return ResponseEntity.status(401).body(new ApiResponse<>("UNAUTHORIZED: userId invalid.", null));
+            }
+
+            MovieReviewDtos dto = mv.createReview(
+                    req.getUserId(),
+                    req.getMovieId(),
+                    req.getRating(),
+                    req.getComment()
+            );
+
+            return ResponseEntity.status(201).body(new ApiResponse<>("CREATE REVIEW SUCCESS.", dto));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(new ApiResponse<>(e.getMessage(), null));
+
+        } catch (IllegalStateException e) {
+            String msg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+            if (msg.contains("đã review") || msg.contains("da review")) {
+                return ResponseEntity.status(409).body(new ApiResponse<>(e.getMessage(), null));
+            }
+            return ResponseEntity.status(403).body(new ApiResponse<>(e.getMessage(), null));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(new ApiResponse<>("SERVER ERROR.", null));
+        }
+    }
 
 }
-

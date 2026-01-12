@@ -93,9 +93,12 @@ public class MovieController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Created", created));
     }
-
+    		
     	
-    @PutMapping(value = "/edit-movie/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(
+    		value = "/edit-movie/{id}",
+    		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<ApiResponse<MovieDetailDtos>> updateMovie(
             @PathVariable int id,
             @RequestPart("data") String dataJson,

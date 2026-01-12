@@ -3,12 +3,9 @@ package CinemaBooking.Group2.models;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
+
 public class StaffSchedule {
-
-	public enum StaffScheduleStatus {
-		ASSIGNED, CONFIRMED, CANCELLED
-	}
-
 	private int id;
 	private int staffId;
 	private int shiftId;

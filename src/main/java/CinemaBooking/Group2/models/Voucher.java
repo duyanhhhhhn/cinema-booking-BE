@@ -3,13 +3,9 @@ package CinemaBooking.Group2.models;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import CinemaBooking.Group2.models.Enum.DiscountType;
+
 public class Voucher {
-	
-	public enum DiscountType {
-	    PERCENT,
-	    AMOUNT
-	}
-	
 	private int id;
     private String code;
     private String description;

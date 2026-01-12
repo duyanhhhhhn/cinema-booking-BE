@@ -145,4 +145,167 @@ public class MovieReviewRepository {
             );
         }
     }
+    
+    // Check user đã review movie này chưa.
+    public boolean existsByUserAndMovie(int userId, int movieId) {
+        String sql =
+            "SELECT EXISTS( " +
+            "  SELECT 1 " +
+            "  FROM movie_review " +
+            "  WHERE user_id = ? AND movie_id = ? " +
+            "  LIMIT 1 " +
+            ") AS existed";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, movieId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt("existed") == 1;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi kiểm tra review đã tồn tại (user_id, movie_id)", e);
+        }
+    }
+
+    // Check đủ điều kiện review: PAID + SUCCESS payment + có ghế + showtime kết thúc + đúng movie.
+    public boolean canReview(int userId, int movieId) {
+        String sql =
+            "SELECT EXISTS ( " +
+            "  SELECT 1 " +
+            "  FROM booking b " +
+            "  WHERE b.user_id = ? " +
+            "    AND b.payment_status = 'PAID' " +
+            "    AND EXISTS (SELECT 1 FROM booking_seat bs WHERE bs.booking_id = b.id) " +
+            "    AND EXISTS (SELECT 1 FROM payment p WHERE p.booking_id = b.id AND p.status = 'SUCCESS') " +
+            "    AND EXISTS ( " +
+            "      SELECT 1 " +
+            "      FROM showtime st " +
+            "      WHERE st.id = b.showtime_id " +
+            "        AND st.movie_id = ? " +
+            "        AND st.end_time <= NOW() " +
+            "    ) " +
+            "  LIMIT 1 " +
+            ") AS eligible";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, movieId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt("eligible") == 1;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi kiểm tra điều kiện được review (mua + đã xem)", e);
+        }
+    }
+
+    // Insert review atomic (chống race): chỉ insert nếu đủ điều kiện và chưa review; trả reviewId hoặc null.
+    public Integer createReviewAtomic(int userId, int movieId, int rating, String comment) {
+        String sql =
+            "INSERT INTO movie_review (user_id, movie_id, rating, comment) " +
+            "SELECT ?, ?, ?, ? " +
+            "WHERE ? BETWEEN 1 AND 5 " +
+            "  AND NOT EXISTS ( " +
+            "    SELECT 1 " +
+            "    FROM movie_review mr " +
+            "    WHERE mr.user_id = ? " +
+            "      AND mr.movie_id = ? " +
+            "    LIMIT 1 " +
+            "  ) " +
+            "  AND EXISTS ( " + 		
+            "    SELECT 1 " +
+            "    FROM booking b " +
+            "    WHERE b.user_id = ? " +
+            "      AND b.payment_status = 'PAID' " +
+            "      AND EXISTS (SELECT 1 FROM booking_seat bs WHERE bs.booking_id = b.id) " +
+            "      AND EXISTS (SELECT 1 FROM payment p WHERE p.booking_id = b.id AND p.status = 'SUCCESS') " +
+            "      AND EXISTS ( " +
+            "        SELECT 1 " +
+            "        FROM showtime st " +
+            "        WHERE st.id = b.showtime_id " +
+            "          AND st.movie_id = ? " +
+            "          AND st.end_time <= NOW() " +
+            "      ) " +
+            "    LIMIT 1 " +
+            "  )";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+
+            int i = 1;
+            ps.setInt(i++, userId);
+            ps.setInt(i++, movieId);
+            ps.setInt(i++, rating);
+            ps.setString(i++, comment);
+
+            ps.setInt(i++, rating);
+
+            ps.setInt(i++, userId);
+            ps.setInt(i++, movieId);
+
+            ps.setInt(i++, userId);
+            ps.setInt(i++, movieId);
+
+            int rows = ps.executeUpdate();
+            if (rows != 1) return null;
+
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1);
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi tạo review (atomic insert)", e);
+        }
+    }
+
+    // Lấy DTO admin theo reviewId (join user + movie) để trả về sau khi insert.
+    public MovieReviewDtos findAdminDtoByReviewId(int reviewId) {
+        String sql =
+            "SELECT " +
+            "  u.email, u.full_name, " +
+            "  m.title, m.short_description, m.duration_minutes, m.genre, " +
+            "  mr.id AS review_id, mr.rating, mr.comment, mr.created_at " +
+            "FROM movie_review AS mr " +
+            "JOIN movie AS m ON m.id = mr.movie_id " +
+            "JOIN `user` AS u ON u.id = mr.user_id " +
+            "WHERE mr.id = ? " +
+            "LIMIT 1";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, reviewId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+
+                MovieReviewDtos dto = new MovieReviewDtos();
+                dto.setEmail(rs.getString("email"));
+                dto.setFull_name(rs.getString("full_name"));
+                dto.setTitle(rs.getString("title"));
+                dto.setShort_description(rs.getString("short_description"));
+                dto.setDuration_minutes(rs.getInt("duration_minutes"));
+                dto.setGenre(rs.getString("genre"));
+                dto.setId(rs.getInt("review_id"));
+                dto.setRating(rs.getString("rating"));
+                dto.setComment(rs.getString("comment"));
+                dto.setCreated_at(rs.getTimestamp("created_at"));
+                return dto;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi lấy MovieReviewDtos theo review_id", e);
+        }
+    }
+
+    
 }
