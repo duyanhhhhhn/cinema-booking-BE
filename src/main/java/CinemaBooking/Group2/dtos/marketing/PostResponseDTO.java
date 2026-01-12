@@ -1,6 +1,5 @@
 package CinemaBooking.Group2.dtos.marketing;
 
-import java.io.ObjectInputFilter.Status;
 import java.time.LocalDateTime;
 
 public class PostResponseDTO {
@@ -16,18 +15,18 @@ public class PostResponseDTO {
 	    private LocalDateTime publishedAt;
 	    private LocalDateTime createdAt;
 	    private String message;
-	    private Status status;
+	    private boolean isSuccess;
 		public String getMessage() {
 			return message;
 		}
 		public void setMessage(String message) {
 			this.message = message;
 		}
-		public Status getStatus() {
-			return status;
+		public boolean getIsSuccess() {
+			return isSuccess;
 		}
-		public void setStatus(Status status) {
-			this.status = status;
+		public void setIsSuccess(boolean status) {
+			this.isSuccess = status;
 		}
 		public int getId() {
 			return id;
@@ -116,9 +115,9 @@ public class PostResponseDTO {
 			this.createdAt = createdAt;
 		}
 	 public PostResponseDTO() {};
-	 public PostResponseDTO(Status status,String m) {
+	 public PostResponseDTO(boolean status,String m) {
 		 super();
-		 this.status = status;
+		 this.isSuccess = status;
 		 this.message = m;
 	 };
 

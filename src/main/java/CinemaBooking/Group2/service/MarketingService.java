@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
+import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.mappers.VoucherMapper;
@@ -18,24 +19,39 @@ import CinemaBooking.Group2.pattern.Marketing;
 @Service
 public class MarketingService {
 	@Autowired private Marketing mk;
-	public List<PostResponseDTO> getAllPost() {
+	public ListPostResponseDTO getAllPost() {
 		try {
 			List<Post> item = mk.getPost();
-			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
+			ListPostResponseDTO list = new ListPostResponseDTO();
+			if(item==null) {
+				list.setIs_success(false);
+				list.setMessage("Not found");
+			}
+			
+			list.setList(item);
+			list.setIs_success(true);
+			list.setMessage("Success");
+			return list;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			throw new RuntimeException();
 		}
 	}
-	public String newPost(Post post) {
-		String s = "Failed to Create New Post";
+	public PostResponseDTO newPost(Post post) {
+		PostResponseDTO res = new PostResponseDTO();
 		try {
 			int rs=mk.createPost(post);
 			if(rs==1) {
-				s="Success";
+				res = PostMapper.toResponseDTO(post);
+				res.setMessage("Created ");
+				res.setIsSuccess(true);
 			}
-			return s;
+			else if(rs==0){
+				res.setMessage("Error");
+				res.setIsSuccess(false);
+			}
+			return res;
 		}
 		catch (Exception e) {
 			// TODO: handle exception

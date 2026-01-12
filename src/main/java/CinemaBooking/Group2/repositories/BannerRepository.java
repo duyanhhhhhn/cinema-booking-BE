@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.BannerMapper;
 import CinemaBooking.Group2.models.Banner;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class BannerRepository implements Icrud<Banner>{
@@ -20,7 +21,7 @@ public class BannerRepository implements Icrud<Banner>{
 		// TODO Auto-generated method stub
 		List<Banner> item=null;
 		try {
-			item = db.query("select * from `banner`", new BannerMapper());
+			item = db.query("select * from "+StringValue.tbl_banner, new BannerMapper());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -34,7 +35,7 @@ public class BannerRepository implements Icrud<Banner>{
 		// TODO Auto-generated method stub
 		Banner item = null;
 		try {
-			item = db.query("select * from `banner` where id=?", new BannerMapper(),new Object[] {id}).get(0);
+			item = db.query("select * from "+StringValue.tbl_banner+" where id=?", new BannerMapper(),new Object[] {id}).get(0);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -53,7 +54,7 @@ public class BannerRepository implements Icrud<Banner>{
 	public int create(Banner item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("insert into `banner`(title,image_url,link_url,position,is_active,created_at) values(?,?,?,?,?,?)", 
+			int rs = db.update("insert into "+StringValue.tbl_banner+"(title,image_url,link_url,position,is_active,created_at) values(?,?,?,?,?,?)", 
 					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition(),
 							item.getIsActive(),item.getCreatedAt()});
 			return rs;
@@ -68,7 +69,7 @@ public class BannerRepository implements Icrud<Banner>{
 	@Override
 	public int update(Banner item) {
 		try {
-			int rs = db.update("update`banner` set title=?,image_url=?,link_url=?,position=?,is_active=?,created_at=?) where id=?", 
+			int rs = db.update("update "+StringValue.tbl_banner+" set title=?,image_url=?,link_url=?,position=?,is_active=?,created_at=?) where id=?", 
 					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition(),
 							item.getIsActive(),item.getCreatedAt(),item.getId()});
 			return rs;
@@ -87,7 +88,7 @@ public class BannerRepository implements Icrud<Banner>{
 			if(findById(id)==null) {
 				return 0;
 			};
-			int rs = db.update("delete from `banner` where id=?",new Object[] {id});
+			int rs = db.update("delete from "+StringValue.tbl_banner+" where id=?",new Object[] {id});
 			return rs;
 		}
 		catch (Exception e) {
@@ -97,7 +98,7 @@ public class BannerRepository implements Icrud<Banner>{
 	}
 	public List<Banner> findByLinkURL(String link_url){
 		try {
-			List<Banner> item = db.query("select * from `banner` where link_url=?",
+			List<Banner> item = db.query("select * from "+StringValue.tbl_banner+" where link_url=?",
 					new BannerMapper(), new Object[] {link_url});
 			return item;
 		}

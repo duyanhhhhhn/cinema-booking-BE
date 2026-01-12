@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.ProductMapper;
 import CinemaBooking.Group2.models.Product;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class ProductRepository implements Icrud<Product>{
@@ -20,7 +21,7 @@ public class ProductRepository implements Icrud<Product>{
 	public List<Product> getAll(){
 		List<Product> item = new ArrayList<>();
 		try {
-			item = db.query("select * from `products`", new ProductMapper());
+			item = db.query("select * from "+StringValue.tbl_product, new ProductMapper());
 			return item;
 		}
 		catch (Exception e) {
@@ -32,7 +33,7 @@ public class ProductRepository implements Icrud<Product>{
 	public Product findById(int id){
 		Product item = new Product();
 		try {
-			item = db.query("select * from `products` where id=?", new ProductMapper()
+			item = db.query("select * from "+StringValue.tbl_product+" where id=?", new ProductMapper()
 					,new Object[] {id}).get(0);
 			return item;
 		}
@@ -46,7 +47,7 @@ public class ProductRepository implements Icrud<Product>{
 		List<Product> item = new ArrayList<>();
 		try {
 			int value = (page-1)*size;
-			item = db.query("select * from `products` limit ? offset ?", 
+			item = db.query("select * from "+StringValue.tbl_product+" limit ? offset ?", 
 					new ProductMapper(),new Object[] {size,value});
 			return item;
 		}
@@ -59,7 +60,7 @@ public class ProductRepository implements Icrud<Product>{
 	@Override
 	public int create(Product product) {
 		try {
-			int rs = db.update("insert into `products`(name,description,price,image_url,stock,is_active,created_at) value(?,?,?,?,?,?,?)",
+			int rs = db.update("insert into "+StringValue.tbl_product+"(name,description,price,image_url,stock,is_active,created_at) value(?,?,?,?,?,?,?)",
 					new Object[] {product.getName(),product.getDescription(),product.getPrice(),product.getImageUrl(),
 							product.getStock(),product.getIsActive(),product.getCreatedAt()});
 			return rs;

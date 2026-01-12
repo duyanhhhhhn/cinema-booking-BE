@@ -92,7 +92,7 @@ public class ComboService {
 	public int checkAdmin(int id) {
 		try {
 			User user = rep.findById(id);
-			if(user.getRoleId()==0) {
+			if(user.getRoleId()==1) {
 				return 1;
 			}
 		}

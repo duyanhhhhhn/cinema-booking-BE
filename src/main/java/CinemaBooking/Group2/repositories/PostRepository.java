@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.models.Post;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class PostRepository implements Icrud<Post>{
@@ -20,7 +21,7 @@ public class PostRepository implements Icrud<Post>{
 	public List<Post> getAll(){
 		List<Post> item = new ArrayList<>();
 		try {
-			item = db.query("select * from `posts` where is_published=1",new PostMapper());
+			item = db.query("select * from "+StringValue.tbl_post+" where is_published=1",new PostMapper());
 		}
 		catch(Exception e) {
 			throw new RuntimeException();
@@ -29,7 +30,7 @@ public class PostRepository implements Icrud<Post>{
 	}
 	public int newPost(Post post) {
 		try {
-			int rs = db.update("insert into `post`(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"
+			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"
 					,new Object[] {post.getTitle(),post.getSlug(),post.getExcerpt(),post.getContent(),
 							post.getCoverUrl(),post.getPublished()});
 			return rs;
@@ -45,7 +46,7 @@ public class PostRepository implements Icrud<Post>{
 		// TODO Auto-generated method stub
 		Post item = new Post();
 		try {
-			item = db.query("select * from `post` where id=?", 
+			item = db.query("select * from "+StringValue.tbl_post+" where id=?", 
 					new PostMapper(),new Object[] {id}).get(0);
 		}
 		catch (Exception e) {
@@ -67,7 +68,7 @@ public class PostRepository implements Icrud<Post>{
 	public int update(Post item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("update `post` set title=?,slug=?,excerpt=?,content=?,cover_url=?,is_published=? where id=?",
+			int rs = db.update("update "+StringValue.tbl_post+" set title=?,slug=?,excerpt=?,content=?,cover_url=?,is_published=? where id=?",
 					new Object[] {item.getTitle(),item.getSlug(),item.getExcerpt(),
 							item.getContent(),item.getCoverUrl(),item.getPublished()}, item.getId());
 			return rs;
@@ -82,7 +83,7 @@ public class PostRepository implements Icrud<Post>{
 	public int delete(int id) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("delete from `post` where id=?",new Object[] {id});
+			int rs = db.update("delete from "+StringValue.tbl_post+" where id=?",new Object[] {id});
 			return rs;
 		}
 		catch (Exception e) {
