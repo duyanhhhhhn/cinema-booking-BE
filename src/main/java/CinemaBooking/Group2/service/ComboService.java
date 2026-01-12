@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dtos.concession.ComboCRUDResponse;
+import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
@@ -51,8 +51,8 @@ public class ComboService {
 			// TODO: handle exception
 		}
 	}
-	public ComboCRUDResponse AddCombo(Combo combo) {
-		ComboCRUDResponse res= new ComboCRUDResponse();
+	public ComboCRUDResponseDTO AddCombo(Combo combo) {
+		ComboCRUDResponseDTO res= new ComboCRUDResponseDTO();
 		try {
 			int rs =  con.CreateCombo(combo);
 			if(rs==1) {
