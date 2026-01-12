@@ -3,6 +3,7 @@ package CinemaBooking.Group2.repositories;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,6 +132,58 @@ public class BookingRepository {
             return count != null && count > 0;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    public List<BookingSeat> findBookingSeats(int bookingId) {
+        String sql = "SELECT * FROM booking_seat WHERE booking_id = ?";
+        try {
+            return jdbc.query(sql, new BeanPropertyRowMapper<>(BookingSeat.class), bookingId);
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    /**
+     * Create a payment record and return generated id
+     */
+    public int createPayment(CinemaBooking.Group2.models.Payment payment) {
+        String sql = """
+            INSERT INTO payment (booking_id, amount, method, provider_payment_id, status, paid_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
+        """;
+
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setInt(1, payment.getBookingId());
+            ps.setBigDecimal(2, payment.getAmount());
+            ps.setString(3, payment.getMethod() != null ? payment.getMethod().name() : null);
+            ps.setString(4, payment.getProviderPaymentId());
+            ps.setString(5, payment.getStatus() != null ? payment.getStatus().name() : null);
+            if (payment.getPaidAt() != null) {
+                ps.setTimestamp(6, java.sql.Timestamp.valueOf(payment.getPaidAt()));
+            } else {
+                ps.setNull(6, java.sql.Types.TIMESTAMP);
+            }
+            return ps;
+        }, keyHolder);
+
+        return keyHolder.getKey().intValue();
+    }
+
+    public void updateBookingPaymentStatus(int bookingId, String paymentStatus, LocalDateTime paidAt, String paymentMethod) {
+        String sql = "UPDATE booking SET payment_status = ?, paid_at = ?, payment_method = ? WHERE id = ?";
+        jdbc.update(sql, paymentStatus, paidAt != null ? java.sql.Timestamp.valueOf(paidAt) : null,
+                    paymentMethod, bookingId);
+    }
+
+    public String getUserEmail(int userId) {
+        try {
+            String sql = "SELECT email FROM `user` WHERE id = ?";
+            return jdbc.queryForObject(sql, String.class, userId);
+        } catch (Exception e) {
+            return null;
         }
     }
 }
