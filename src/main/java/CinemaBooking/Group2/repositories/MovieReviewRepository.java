@@ -208,33 +208,33 @@ public class MovieReviewRepository {
 
     // Insert review atomic (chống race): chỉ insert nếu đủ điều kiện và chưa review; trả reviewId hoặc null.
     public Integer createReviewAtomic(int userId, int movieId, int rating, String comment) {
-        String sql =
-            "INSERT INTO movie_review (user_id, movie_id, rating, comment) " +
-            "SELECT ?, ?, ?, ? " +
-            "WHERE ? BETWEEN 1 AND 5 " +
-            "  AND NOT EXISTS ( " +
-            "    SELECT 1 " +
-            "    FROM movie_review mr " +
-            "    WHERE mr.user_id = ? " +
-            "      AND mr.movie_id = ? " +
-            "    LIMIT 1 " +
-            "  ) " +
-            "  AND EXISTS ( " + 		
-            "    SELECT 1 " +
-            "    FROM booking b " +
-            "    WHERE b.user_id = ? " +
-            "      AND b.payment_status = 'PAID' " +
-            "      AND EXISTS (SELECT 1 FROM booking_seat bs WHERE bs.booking_id = b.id) " +
-            "      AND EXISTS (SELECT 1 FROM payment p WHERE p.booking_id = b.id AND p.status = 'SUCCESS') " +
-            "      AND EXISTS ( " +
-            "        SELECT 1 " +
-            "        FROM showtime st " +
-            "        WHERE st.id = b.showtime_id " +
-            "          AND st.movie_id = ? " +
-            "          AND st.end_time <= NOW() " +
-            "      ) " +
-            "    LIMIT 1 " +
-            "  )";
+    	String sql =
+    		    "INSERT INTO movie_review (user_id, movie_id, rating, comment) " +
+    		    "SELECT ?, ?, ?, ? " +
+    		    "WHERE ? BETWEEN 1 AND 5 " +
+    		    "  AND NOT EXISTS ( " +
+    		    "    SELECT 1 " +
+    		    "    FROM movie_review mr " +
+    		    "    WHERE mr.user_id = ? " +
+    		    "      AND mr.movie_id = ? " +
+    		    "    LIMIT 1 " +
+    		    "  ) " +
+    		    "  AND EXISTS ( " +
+    		    "    SELECT 1 " +
+    		    "    FROM booking b " +
+    		    "    WHERE b.user_id = ? " +
+    		    "      AND b.payment_status = 'PAID' " +
+    		    "      AND EXISTS (SELECT 1 FROM booking_seat bs WHERE bs.booking_id = b.id) " +
+    		    "      AND EXISTS (SELECT 1 FROM payment p WHERE p.booking_id = b.id AND p.status = 'SUCCESS') " +
+    		    "      AND EXISTS ( " +
+    		    "        SELECT 1 " +
+    		    "        FROM showtime st " +
+    		    "        WHERE st.id = b.showtime_id " +
+    		    "          AND st.movie_id = ? " +
+    		    "          AND st.end_time <= NOW() " +
+    		    "      ) " +
+    		    "    LIMIT 1 " +
+    		    "  )";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {

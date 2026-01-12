@@ -39,25 +39,31 @@ public class MovieService {
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
-    // LẤY DANH SÁCH TẤT CẢ PHIM VÀ CHUYỂN SANG DTO.
+    // LẤY DANH SÁCH TẤT CẢ PHIM VÀ CHUYỂN SANG DTO (GHÉP THÊM /MEDIA).
     public List<MovieDtos> getAllMovie() {
         try {
             List<Movie> movies = movieRepository.getAllMovie();
-            return movies.stream()
-                    .map(MovieMapper::toResponseDto)
-                    .collect(Collectors.toList());
+            return movies.stream().map(m -> {
+                MovieDtos dto = MovieMapper.toResponseDto(m);
+                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
+                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
+                return dto;
+            }).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("FAILED TO FETCH MOVIE LIST.", e);
         }
     }
 
-    // LẤY DANH SÁCH PHIM THEO TRẠNG THÁI (COMING_SOON/NOW_SHOWING) CÓ PHÂN TRANG.
+    // LẤY DANH SÁCH PHIM THEO TRẠNG THÁI (COMING_SOON/NOW_SHOWING) CÓ PHÂN TRANG (GHÉP THÊM /MEDIA).
     public List<MovieDtos> getAllMovieStatus(int page, int perPage) {
         try {
             List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage);
-            return movies.stream()
-                    .map(MovieMapper::toResponseDto)
-                    .collect(Collectors.toList());
+            return movies.stream().map(m -> {
+                MovieDtos dto = MovieMapper.toResponseDto(m);
+                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
+                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
+                return dto;
+            }).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("FAILED TO FETCH MOVIES BY STATUS WITH PAGINATION.", e);
         }
@@ -72,18 +78,23 @@ public class MovieService {
         }
     }
 
-    // LẤY CHI TIẾT PHIM THEO ID.
+    // LẤY CHI TIẾT PHIM THEO ID (GHÉP THÊM /MEDIA).
     public MovieDetailDtos getMovieDetailById(int id) {
         try {
             Movie movie = movieRepository.getMovieDetailById(id);
             if (movie == null) return null;
-            return MovieMapper.toDetailDto(movie);
+
+            MovieDetailDtos res = MovieMapper.toDetailDto(movie);
+            res.setPosterUrl(toPublicMediaUrl(movie.getPosterUrl()));
+            res.setBannerUrl(toPublicMediaUrl(movie.getBannerUrl()));
+            return res;
+
         } catch (Exception e) {
             throw new RuntimeException("FAILED TO GET MOVIE DETAIL.", e);
         }
     }
 
-    // TẠO PHIM: LƯU POSTER/BANNER, LƯU RELATIVE PATH VÀO DB, TRẢ DTO (KHI DB INSERT OK THÌ KHÔNG XÓA ẢNH).
+    // TẠO PHIM: LƯU POSTER/BANNER, LƯU RELATIVE PATH VÀO DB, TRẢ DTO (GHÉP THÊM /MEDIA).
     public MovieDetailDtos createMovie(MovieCreateDtos data, MultipartFile poster, MultipartFile banner) {
         if (poster == null || poster.isEmpty()) throw new IllegalArgumentException("POSTER IS REQUIRED.");
         if (banner == null || banner.isEmpty()) throw new IllegalArgumentException("BANNER IS REQUIRED.");
@@ -112,9 +123,8 @@ public class MovieService {
             movie.setId(newId);
 
             MovieDetailDtos res = MovieMapper.toDetailDto(movie);
-            String prefix = normalizePrefix(publicPrefix);
-            res.setPosterUrl(prefix + "/" + posterRel);
-            res.setBannerUrl(prefix + "/" + bannerRel);
+            res.setPosterUrl(toPublicMediaUrl(posterRel));
+            res.setBannerUrl(toPublicMediaUrl(bannerRel));
             return res;
 
         } catch (Exception ex) {
@@ -126,15 +136,15 @@ public class MovieService {
         }
     }
 
-    // EDIT MOVIE: UPDATE FIELD + OPTIONAL POSTER/BANNER, DELETE OLD FILES AFTER DB UPDATE SUCCESS.
+    // EDIT MOVIE: UPDATE FIELD + OPTIONAL POSTER/BANNER, DELETE OLD FILES AFTER DB UPDATE SUCCESS (GHÉP THÊM /MEDIA).
     public MovieDetailDtos updateMovie(int id, MovieEditDtos data, MultipartFile poster, MultipartFile banner) {
         if (id <= 0) throw new IllegalArgumentException("INVALID MOVIE ID.");
 
         MovieMediaDtos oldMedia = movieRepository.getMediaPathById(id);
         if (oldMedia == null) throw new IllegalArgumentException("MOVIE NOT FOUND WITH ID=" + id);
 
-        boolean hasNewPoster = (poster != null && !poster.isEmpty());
-        boolean hasNewBanner = (banner != null && !banner.isEmpty());
+        boolean hasNewPoster = isProvidedFile(poster);
+        boolean hasNewBanner = isProvidedFile(banner);
 
         Path newPosterPath = null;
         Path newBannerPath = null;
@@ -176,11 +186,8 @@ public class MovieService {
             String bannerFinalRel = hasNewBanner ? newBannerRel : oldMedia.getBannerUrl();
 
             MovieDetailDtos res = MovieMapper.toDetailDto(movie);
-            String prefix = normalizePrefix(publicPrefix);
-
-            res.setPosterUrl(posterFinalRel == null || posterFinalRel.isBlank() ? null : (prefix + "/" + posterFinalRel));
-            res.setBannerUrl(bannerFinalRel == null || bannerFinalRel.isBlank() ? null : (prefix + "/" + bannerFinalRel));
-
+            res.setPosterUrl(toPublicMediaUrl(posterFinalRel));
+            res.setBannerUrl(toPublicMediaUrl(bannerFinalRel));
             return res;
 
         } catch (Exception ex) {
@@ -198,6 +205,18 @@ public class MovieService {
         } catch (Exception e) {
             throw new RuntimeException("FAILED TO DELETE MOVIE BY ID.", e);
         }
+    }
+
+    // GHÉP URL PUBLIC TỪ RELATIVE PATH TRONG DB (VD: movie/posters/a.jpg -> /media/movie/posters/a.jpg).
+    private String toPublicMediaUrl(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) return null;
+        return normalizePrefix(publicPrefix) + "/" + relativePath;
+    }
+
+    // KIỂM TRA FILE CÓ THỰC SỰ ĐƯỢC GỬI LÊN (TRÁNH PART RỖNG).
+    private boolean isProvidedFile(MultipartFile f) {
+        return f != null && !f.isEmpty() && f.getSize() > 0
+                && f.getOriginalFilename() != null && !f.getOriginalFilename().isBlank();
     }
 
     // CHUẨN HÓA PUBLIC PREFIX ĐỂ GHÉP URL MEDIA (VD: /MEDIA).
