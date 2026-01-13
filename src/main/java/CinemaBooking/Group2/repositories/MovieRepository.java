@@ -29,18 +29,33 @@ public class MovieRepository {
 
 
     /**
-     * Truy vấn toàn bộ danh sách phim có trong hệ thống.
+     * Truy vấn danh sách phim có phân trang.
      */
-    public List<Movie> getAllMovie() {
-        String sql = "SELECT * FROM movie";
+    public List<Movie> getAllMovie(int page, int perPage) {
+        if (page < 1) page = 1;
+        if (perPage < 1) perPage = 10;
+
+        int offset = (page - 1) * perPage;
+
+        String sql = """
+            SELECT *
+            FROM movie
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+        """;
+
         List<Movie> movies = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                movies.add(mapFullMovie(rs));
+            ps.setInt(1, perPage);
+            ps.setInt(2, offset);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    movies.add(mapFullMovie(rs));
+                }
             }
 
             return movies;

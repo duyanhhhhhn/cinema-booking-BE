@@ -37,9 +37,26 @@ public class MovieController {
     private MovieService movieService;
 
     @GetMapping("")
-    public ResponseEntity<ApiResponse<List<MovieDtos>>> getAllMovies() {
-        return ResponseEntity.ok(new ApiResponse<>("Success", movieService.getAllMovie()));
-    }
+	public ResponseEntity<ApiResponse<Map<String, Object>>> getAllMovieStatus(
+	        @RequestParam(defaultValue = "1") int page,
+	        @RequestParam(defaultValue = "10") int perPage) {
+
+	    page = Math.max(page, 1);
+	    perPage = Math.max(perPage, 1);
+
+	    List<MovieDtos> data = movieService.getAllMovie(page, perPage);
+	    long total = movieService.countMovieStatus();
+
+	    Map<String, Object> meta = new HashMap<>();
+	    meta.put("page", page);
+	    meta.put("perPage", perPage);
+	    meta.put("total", total);
+
+	    Map<String, Object> payload = new HashMap<>();
+	    payload.put("data", data);
+	    payload.put("meta", meta);
+	    return ResponseEntity.ok(new ApiResponse<>("Success", payload));
+	}
 
     @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<MovieDetailDtos>> createMovie(@ModelAttribute MovieCreateDtos dto) {
