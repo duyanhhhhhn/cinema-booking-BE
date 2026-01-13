@@ -41,41 +41,6 @@ public class MovieController {
         return ResponseEntity.ok(new ApiResponse<>("Success", movieService.getAllMovie()));
     }
 
-    @GetMapping("/public")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllMovieStatus(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int perPage) {
-
-        page = Math.max(page, 1);
-        perPage = Math.max(perPage, 1);
-
-        List<MovieDtos> data = movieService.getAllMovieStatus(page, perPage);
-        int total = movieService.countMovieStatus();
-
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("page", page);
-        meta.put("perPage", perPage);
-        meta.put("total", total);
-
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("data", data);
-        payload.put("meta", meta);
-
-        return ResponseEntity.ok(new ApiResponse<>("Success", payload));
-    }
-
-    @GetMapping("/movie-detail/{id}")
-    public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {
-        MovieDetailDtos data = movieService.getMovieDetailById(id);
-
-        if (data == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>("Movie not found", null));
-        }
-
-        return ResponseEntity.ok(new ApiResponse<>("Success", data));
-    }
-
     @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<MovieDetailDtos>> createMovie(@ModelAttribute MovieCreateDtos dto) {
         if (dto.getPosterFile() == null || dto.getPosterFile().isEmpty()) {
