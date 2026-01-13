@@ -39,9 +39,9 @@ public class MovieService {
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
     // LẤY DANH SÁCH TẤT CẢ PHIM VÀ CHUYỂN SANG DTO (GHÉP THÊM /MEDIA).
-    public List<MovieDtos> getAllMovie() {
+    public List<MovieDtos> getAllMovie(int page, int perPage) {
         try {
-            List<Movie> movies = movieRepository.getAllMovie();
+            List<Movie> movies = movieRepository.getAllMovie(page, perPage);
             return movies.stream().map(m -> {
                 MovieDtos dto = MovieMapper.toResponseDto(m);
                 dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
