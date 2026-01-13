@@ -31,4 +31,7 @@ public class ShowtimeRepository {
             return false;
         }
     }
+    
+    // (codeser) -> HÀM TRUY VẤN LẤY LỊCH CHIẾU CỦA CÁC BỘ PHIM (RẠP + THỜI GIAN...)
+
 }
