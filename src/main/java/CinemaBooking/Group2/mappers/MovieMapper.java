@@ -4,6 +4,7 @@ import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
+import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.models.Movie;
 
 public class MovieMapper {
@@ -103,6 +104,30 @@ public class MovieMapper {
         movie.setStatus(data.getStatus());
 
         return movie;
+    }
+
+    public static MoviePublicDtos toPublicRes(Movie movie) {
+        if (movie == null) return null;
+
+        MoviePublicDtos dto = new MoviePublicDtos();
+        dto.setId(movie.getId());
+        dto.setTitle(movie.getTitle());
+        dto.setShortDescription(movie.getShortDescription());
+        dto.setDescription(movie.getDescription());
+        dto.setDurationMinutes(movie.getDurationMinutes());
+        dto.setGenre(movie.getGenre());
+        dto.setLanguage(movie.getLanguage());
+        dto.setFormat(movie.getFormat());
+        dto.setDirector(movie.getDirector());
+        dto.setCast(movie.getCast());
+        dto.setPosterUrl(movie.getPosterUrl());
+        dto.setBannerUrl(movie.getBannerUrl());
+        dto.setTrailerUrl(movie.getTrailerUrl());
+        dto.setReleaseDate(movie.getReleaseDate());
+        dto.setEndDate(movie.getEndDate());
+        dto.setStatus(movie.getStatus());
+        dto.setCreatedAt(movie.getCreatedAt());
+        return dto;
     }
 
 }

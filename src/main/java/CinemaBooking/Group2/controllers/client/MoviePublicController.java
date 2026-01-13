@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
+import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.service.MovieService;
 
 @RestController
@@ -26,14 +27,13 @@ public class MoviePublicController {
     private MovieService movieServices;
 	
 	@GetMapping("/movies")
-	public ResponseEntity<ApiResponse<Map<String, Object>>> getAllMovieStatus(
+	public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovieStatus(
 	        @RequestParam(defaultValue = "1") int page,
 	        @RequestParam(defaultValue = "10") int perPage) {
-
 	    page = Math.max(page, 1);
 	    perPage = Math.max(perPage, 1);
 
-	    List<MovieDtos> data = movieServices.getAllMovieStatus(page, perPage);
+	    List<MoviePublicDtos> movies = movieServices.getAllMovieStatus(page, perPage);
 	    long total = movieServices.countMovieStatus();
 
 	    Map<String, Object> meta = new HashMap<>();
@@ -41,13 +41,8 @@ public class MoviePublicController {
 	    meta.put("perPage", perPage);
 	    meta.put("total", total);
 
-	    Map<String, Object> payload = new HashMap<>();
-	    payload.put("data", data);
-	    payload.put("meta", meta);
-
-	    return ResponseEntity.ok(new ApiResponse<>("Success", payload));
+	    return ResponseEntity.ok(new ApiResponse<>("Success", movies, meta));
 	}
-
 
 	@GetMapping("/movie-detail/{id}")
 	public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {

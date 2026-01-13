@@ -21,6 +21,7 @@ import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
+import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.repositories.MovieRepository;
@@ -54,11 +55,11 @@ public class MovieService {
     }
 
     // LẤY DANH SÁCH PHIM THEO TRẠNG THÁI (COMING_SOON/NOW_SHOWING) CÓ PHÂN TRANG (GHÉP THÊM /MEDIA).
-    public List<MovieDtos> getAllMovieStatus(int page, int perPage) {
+    public List<MoviePublicDtos> getAllMovieStatus(int page, int perPage) {
         try {
             List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage);
             return movies.stream().map(m -> {
-                MovieDtos dto = MovieMapper.toResponseDto(m);
+                MoviePublicDtos dto = MovieMapper.toPublicRes(m);
                 dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
                 dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
                 return dto;
