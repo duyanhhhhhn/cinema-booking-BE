@@ -30,11 +30,10 @@ public class ComboService {
 			throw new RuntimeException(e);
 		}
 	}
-	public List<ComboResponseDTO> getCombo(int page,int size ){
+	public List<Combo> getCombo(int page,int size ){
 		try {
 			List<Combo> item =  con.pagingCombo(page, size);
-			return item.stream().map(ComboMapper::toResponseDTO)
-					.collect(Collectors.toList());
+			return item;
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

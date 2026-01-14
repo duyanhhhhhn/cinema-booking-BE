@@ -30,6 +30,21 @@ public class ProductRepository implements Icrud<Product>{
 		}
 		return item;
 	}
+	public List<Product> getAll(int page,int size){
+		List<Product> item = new ArrayList<>();
+		try {
+			int value = (page-1)*size;
+			item = db.query("select * from "+StringValue.tbl_product
+					+" limit ? offset ?", new ProductMapper(),new Object[] {
+							size,value});
+			return item;
+		}
+		catch (Exception e) {
+			System.out.print(e);
+			// TODO: handle exception
+		}
+		return item;
+	}
 	public Product findById(int id){
 		Product item = new Product();
 		try {

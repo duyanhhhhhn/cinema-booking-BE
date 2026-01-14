@@ -28,6 +28,17 @@ public class DashboardNReport {
 		}
 		return null;
 	}
+	public int addAuditLog(AuditLog item,int uid) {
+		try {
+			item.setUserId(uid);
+			return logRep.create(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return 0;
+	}
 	//Payment
 	public BigDecimal getRevenueByMonth(int month) {
 		BigDecimal rs = new BigDecimal(0);

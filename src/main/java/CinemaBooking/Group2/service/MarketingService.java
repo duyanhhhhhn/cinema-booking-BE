@@ -79,18 +79,23 @@ public class MarketingService {
 		}
 		return null;
 	}
-	public String addVoucher(Voucher item) {
-		String ms = "Failed";
+	public VoucherResponseDTO addVoucher(Voucher item) {
+		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
 			int rs = mk.createVoucher(item);
 			if(rs==1) {
-				ms = "Success";
+				dto = VoucherMapper.toResponseDTO(item);
+				dto.setMessage("Success");
+				dto.setIsSuccess(true);
+				return dto;
 			}
+			dto.setMessage("failed");
+			dto.setIsSuccess(false);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return ms;
+		return dto;
 	}
 	public PostResponseDTO postInfo(int id) {
 		try {
@@ -101,13 +106,26 @@ public class MarketingService {
 		}
 		return null;
 	}
-	public BigDecimal checkDiscount(int id,BigDecimal price) {
+	public VoucherResponseDTO checkDiscount(int id,BigDecimal price) {
+		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
-			return mk.checkPrice(id, price);
+			if(id==0) {
+				dto.setMessage("Id is shouldn't be 0");
+				dto.setIsSuccess(false);
+				return dto;
+			}
+			BigDecimal rs = mk.checkPrice(id, price);
+			if(rs==BigDecimal.valueOf(0)) {
+				return null;
+			}
+			dto.setDiscountPrice(rs);
+			dto.setMessage("Success");
+			dto.setIsSuccess(true);
+			return dto;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return null;
+		return dto;
 	}
 }

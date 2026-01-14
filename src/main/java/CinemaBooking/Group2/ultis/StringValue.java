@@ -10,4 +10,21 @@ public class StringValue {
 	public static String tbl_payment = "payment";
 	public static String tbl_post = "post";
 	public static String tbl_schedule = "staff_schedule";
+	public static float calculateTotalPage(float totalSize,int size) {
+		try {
+			float totalPage;
+			float left = totalSize / (float) size;
+			int right = (int) totalSize / size;
+			if (left > right) {
+				totalPage = right + 1;
+			} else {
+				totalPage = right;
+			}
+			return totalPage;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
 }

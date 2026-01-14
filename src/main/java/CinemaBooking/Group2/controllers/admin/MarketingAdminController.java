@@ -36,8 +36,8 @@ public class MarketingAdminController {
 		}
 	@GetMapping("/api/vouchers/check")
 	@CrossOrigin
-	public ResponseEntity<BigDecimal> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
-		BigDecimal rs = BigDecimal.valueOf(0);
+	public ResponseEntity<VoucherResponseDTO> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
+		VoucherResponseDTO rs = new VoucherResponseDTO();
 		try {
 			 rs = service.checkDiscount(id, price);
 		}
@@ -48,12 +48,12 @@ public class MarketingAdminController {
 	}
 	@PostMapping("/admin/api/vouchers")
 	@CrossOrigin
-	public ResponseEntity<String> addVoucher(@RequestParam("code") String code,
+	public ResponseEntity<VoucherResponseDTO> addVoucher(@RequestParam("code") String code,
 			@RequestParam("description") String description,@RequestParam("discount_type") DiscountType type,
 			@RequestParam("discount_value") BigDecimal value,@RequestParam("min_order_amount") BigDecimal min_order,
 			@RequestParam("start_at") LocalDate start, @RequestParam("end_at") LocalDate end,
 			@RequestParam("usage_limit") int limit,@RequestParam("usage") int count){
-		String ms="Failed";
+		VoucherResponseDTO dto = new VoucherResponseDTO();
 		Voucher item = new Voucher();
 		item.setCode(code);
 		item.setDescription(description);
@@ -66,11 +66,11 @@ public class MarketingAdminController {
 		item.setUsedCount(count);
 		item.setCreatedAt(LocalDate.now());
 		try {
-			ms = service.addVoucher(item);
+			dto = service.addVoucher(item);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return ResponseEntity.ok(ms);
+		return ResponseEntity.ok(dto);
 	}
 }

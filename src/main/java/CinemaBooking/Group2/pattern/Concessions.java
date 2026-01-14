@@ -104,6 +104,17 @@ public class Concessions {
 		}
 		return null;
 	}
+	public List<Product> getProduct(int page,int size){
+		try {
+			List<Product> item = proRep.getAll(page,size);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
+		return null;
+	}
 	public Product productInfo(int id) {
 		try {
 			Product item = proRep.findById(id);

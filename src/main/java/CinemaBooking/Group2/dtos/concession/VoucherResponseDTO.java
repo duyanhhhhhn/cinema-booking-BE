@@ -17,8 +17,29 @@ public class VoucherResponseDTO {
     private int usageLimit;
     private int usedCount;
     private LocalDate createdAt;
+    private BigDecimal discountPrice;
+    public BigDecimal getDiscountPrice() {
+		return discountPrice;
+	}
+	public void setDiscountPrice(BigDecimal discountPrice) {
+		this.discountPrice = discountPrice;
+	}
+	private String message;
+    private boolean isSuccess;
 	
     
+	public String getMessage() {
+		return message;
+	}
+	public void setMessage(String message) {
+		this.message = message;
+	}
+	public boolean getIsSuccess() {
+		return isSuccess;
+	}
+	public void setIsSuccess(boolean isSuccess) {
+		this.isSuccess = isSuccess;
+	}
 	public int getId() {
 		return id;
 	}

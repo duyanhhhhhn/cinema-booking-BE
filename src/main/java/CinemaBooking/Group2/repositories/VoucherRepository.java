@@ -128,7 +128,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 							return rs;
 					}
 					else if(item.getDiscountType()==DiscountType.PERCENT){
-						rs = price.multiply(item.getDiscountValue()).divide(BigDecimal.valueOf(100));
+						rs = price.subtract(price.multiply(item.getDiscountValue()).divide(BigDecimal.valueOf(100)));
 						return rs;
 					}
 				}
@@ -139,6 +139,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return rs;
 	}
