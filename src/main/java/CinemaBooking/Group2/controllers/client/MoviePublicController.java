@@ -40,7 +40,7 @@ public class MoviePublicController {
 	    meta.put("page", page);
 	    meta.put("perPage", perPage);
 	    meta.put("total", total);
-
+	    
 	    return ResponseEntity.ok(new ApiResponse<>("Success", movies, meta));
 	}
 

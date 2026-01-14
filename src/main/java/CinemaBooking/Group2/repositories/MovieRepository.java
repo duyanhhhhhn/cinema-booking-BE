@@ -426,4 +426,22 @@ public class MovieRepository {
             throw new RuntimeException("BIND MOVIE FOR UPDATE FAILED (ID=" + id + ")", e);
         }
     }
+    
+    // function count movie
+    public long countMovies() {
+        String sql = "SELECT COUNT(*) AS total FROM movie";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            rs.next();
+            return rs.getLong("total");
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to count movies.", e);
+        }
+    }
+
+    	
 }

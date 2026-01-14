@@ -319,4 +319,9 @@ public class MovieService {
 
         return full;
     }
+    
+    // ĐẾM TOTAL KHI GIAO DIỆN LẤY API 
+    public long countTotalMovies() {
+    	return movieRepository.countMovies();
+    }
 }

@@ -46,7 +46,7 @@ public class MovieController {
         perPage = Math.max(perPage, 1);
 
         List<MovieDtos> movies = movieService.getAllMovie(page, perPage);
-        long total = movieService.countMovieStatus();
+        long total = movieService.countTotalMovies();
 
         Map<String, Object> meta = new HashMap<>();
         meta.put("page", page);
