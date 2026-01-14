@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
@@ -16,9 +17,10 @@ import CinemaBooking.Group2.pattern.Marketing;
 
 @Service
 public class MarketingService {
+	@Autowired private Marketing mk;
 	public List<PostResponseDTO> getAllPost() {
 		try {
-			List<Post> item = Marketing.Instance().getPost();
+			List<Post> item = mk.getPost();
 			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -29,7 +31,7 @@ public class MarketingService {
 	public String newPost(Post post) {
 		String s = "Failed to Create New Post";
 		try {
-			int rs=Marketing.Instance().createPost(post);
+			int rs=mk.createPost(post);
 			if(rs==1) {
 				s="Success";
 			}
@@ -43,7 +45,7 @@ public class MarketingService {
 	public List<VoucherResponseDTO> getVoucher(){
 		List<Voucher> item =null;
 		try {
-			item = Marketing.Instance().getVoucher();
+			item = mk.getVoucher();
 			return item.stream().map(VoucherMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}
@@ -64,7 +66,7 @@ public class MarketingService {
 	public String addVoucher(Voucher item) {
 		String ms = "Failed";
 		try {
-			int rs = Marketing.Instance().createVoucher(item);
+			int rs = mk.createVoucher(item);
 			if(rs==1) {
 				ms = "Success";
 			}
@@ -76,7 +78,7 @@ public class MarketingService {
 	}
 	public PostResponseDTO postInfo(int id) {
 		try {
-			return PostMapper.toResponseDTO(Marketing.Instance().postInfo(id));
+			return PostMapper.toResponseDTO(mk.postInfo(id));
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -85,7 +87,7 @@ public class MarketingService {
 	}
 	public BigDecimal checkDiscount(int id,BigDecimal price) {
 		try {
-			return Marketing.Instance().checkPrice(id, price);
+			return mk.checkPrice(id, price);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

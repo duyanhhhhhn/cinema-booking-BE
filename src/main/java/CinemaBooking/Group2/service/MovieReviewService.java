@@ -60,4 +60,35 @@ public class MovieReviewService {
     	
     }
 
+    // Create review (atomic): PAID + SUCCESS + has seat + showtime ended + not reviewed.
+    public MovieReviewDtos createReview(int userId, int movieId, int rating, String comment) {
+        try {
+            if (movieId <= 0) throw new IllegalArgumentException("movieId không hợp lệ");
+            if (rating < 1 || rating > 5) throw new IllegalArgumentException("rating phải trong khoảng 1..5");
+            if (comment != null && comment.length() > 2000) throw new IllegalArgumentException("comment tối đa 2000 ký tự");
+
+            Integer newReviewId = mvRepositories.createReviewAtomic(userId, movieId, rating, comment);
+            if (newReviewId != null) {
+                MovieReviewDtos dto = mvRepositories.findAdminDtoByReviewId(newReviewId);
+                if (dto != null) return dto;
+                throw new RuntimeException("Tạo review thành công nhưng không lấy được dữ liệu trả về");
+            }
+
+            if (mvRepositories.existsByUserAndMovie(userId, movieId)) {
+                throw new IllegalStateException("Bạn đã review phim này rồi");
+            }
+
+            if (!mvRepositories.canReview(userId, movieId)) {
+                throw new IllegalStateException("Bạn chỉ có thể review sau khi đã mua vé và xem phim");
+            }
+
+            throw new IllegalStateException("Không thể tạo review. Vui lòng thử lại");
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create movie review. Please check repository/database.", e);
+        }
+    }
+
 }

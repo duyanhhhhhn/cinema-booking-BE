@@ -3,6 +3,7 @@ package CinemaBooking.Group2.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
@@ -15,9 +16,11 @@ import CinemaBooking.Group2.pattern.StaffSchedulePattern;
 
 @Service
 public class StaffScheduleService {
+	@Autowired
+	private StaffSchedulePattern pattern;
 	public List<staffScheduleResponseDTO> getSchedule(){
 		try {
-			List<StaffSchedule> item = StaffSchedulePattern.Instance().getSchedule();
+			List<StaffSchedule> item = pattern.getSchedule();
 			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -28,7 +31,7 @@ public class StaffScheduleService {
 	}
 	public List<staffScheduleResponseDTO> getScheduleByStaffId(int id){
 		try {
-			List<StaffSchedule> item = StaffSchedulePattern.Instance().getScheduleByStaffId(id);
+			List<StaffSchedule> item = pattern.getScheduleByStaffId(id);
 			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -42,7 +45,7 @@ public class StaffScheduleService {
 			if(item==null) {
 				return 0;
 			}
-			return StaffSchedulePattern.Instance().assignStaff(item);
+			return pattern.assignStaff(item);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -51,7 +54,7 @@ public class StaffScheduleService {
 	}
 	public List<workShiftResponseDTO> getShift() {
 		try {
-			List<WorkShift> item = StaffSchedulePattern.Instance().getShift();
+			List<WorkShift> item = pattern.getShift();
 			return item.stream().map(WorkShiftMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {

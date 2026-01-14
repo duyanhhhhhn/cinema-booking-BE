@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.dashboardnreports.auditLogResponseDTO;
@@ -14,9 +15,10 @@ import CinemaBooking.Group2.pattern.DashboardNReport;
 
 @Service
 public class DashboardService {
+	@Autowired private DashboardNReport dashboard;
 	public List<auditLogResponseDTO> getAuditLog(){
 		try {
-			List<AuditLog> item = DashboardNReport.Instance().getAuditLog();
+			List<AuditLog> item = dashboard.getAuditLog();
 			return item.stream().map(AuditLogMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -27,7 +29,7 @@ public class DashboardService {
 	public BigDecimal getRevenueByMonth(int month){
 		BigDecimal rs = new BigDecimal(0);
 		try {
-			rs = DashboardNReport.Instance().getRevenueByMonth(month);
+			rs = dashboard.getRevenueByMonth(month);
 			return rs;
 		}
 		catch (Exception e) {
@@ -39,7 +41,7 @@ public class DashboardService {
 	public BigDecimal getRevenueByDate(LocalDate date){
 		BigDecimal rs = new BigDecimal(0);
 		try {
-			rs = DashboardNReport.Instance().getRevenueByDate(date);
+			rs = dashboard.getRevenueByDate(date);
 			return rs;
 		}
 		catch (Exception e) {

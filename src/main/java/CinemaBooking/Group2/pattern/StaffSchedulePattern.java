@@ -2,24 +2,21 @@ package CinemaBooking.Group2.pattern;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
 import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.WorkShift;
 import CinemaBooking.Group2.repositories.ScheduleRepository;
 import CinemaBooking.Group2.repositories.ShiftRepository;
 
+@Repository
 public class StaffSchedulePattern {
-	private static StaffSchedulePattern _instance=null;
+	@Autowired
 	private ScheduleRepository scheRep;
-	private ShiftRepository shiftRep;
-	private StaffSchedulePattern() {
-		scheRep = ScheduleRepository.Instance();
-		shiftRep = ShiftRepository.Instance();
-	}
-	public static StaffSchedulePattern Instance() {
-		if(_instance==null) {
-			_instance=new StaffSchedulePattern();
-		}
-		return _instance;
+	@Autowired
+	public ShiftRepository shiftRep;
+	public StaffSchedulePattern() {
 	}
 	//Staff Schedule
 	public List<StaffSchedule> getSchedule(){

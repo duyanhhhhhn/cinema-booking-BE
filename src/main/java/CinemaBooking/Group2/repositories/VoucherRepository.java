@@ -4,24 +4,19 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.VoucherMapper;
-import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
 
+@Repository
 public class VoucherRepository implements Icrud<Voucher>{
+	@Autowired
 	private JdbcTemplate db;
-	private VoucherRepository() {
-		db=DbConnection.Instance().getDb();
-	}
-	private static VoucherRepository _instance=null;
-	public static VoucherRepository Instance() {
-		if(_instance==null) {
-			_instance= new VoucherRepository();
-		}
-		return _instance;
+	public VoucherRepository() {
 	}
 	@Override
 	public List<Voucher> getAll() {

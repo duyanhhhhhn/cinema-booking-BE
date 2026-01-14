@@ -4,23 +4,20 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
 import CinemaBooking.Group2.models.AuditLog;
 import CinemaBooking.Group2.repositories.AuditLogRepository;
 import CinemaBooking.Group2.repositories.PaymentRepository;
 
+@Repository
 public class DashboardNReport {
-	private static DashboardNReport _instance = null;
+	@Autowired
 	private AuditLogRepository logRep;
+	@Autowired
 	private PaymentRepository payRep;
-	private DashboardNReport() {
-		logRep = AuditLogRepository.Instance();
-		payRep = PaymentRepository.Instance();
-	}
-	public static DashboardNReport Instance () {
-		if(_instance==null) {
-			_instance=new DashboardNReport();
-		}
-		return _instance;
+	public DashboardNReport() {
 	}
 	//Audit Log
 	public List<AuditLog> getAuditLog(){

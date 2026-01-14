@@ -41,10 +41,12 @@ public class BookingService {
 
     @Autowired
     private SeatRepository seatRepository;
-
-    private ComboRepository comboRepository = ComboRepository.Instance();
     
-    private VoucherRepository voucherRepository = VoucherRepository.Instance();
+    @Autowired
+    private ComboRepository comboRepository;
+    
+    @Autowired
+    private VoucherRepository voucherRepository;
 
     public BookingCalculateResponse calculateBooking(BookingCalculateRequest request) {
         Showtime showtime = showtimeRepository.findById(request.getShowtimeId());

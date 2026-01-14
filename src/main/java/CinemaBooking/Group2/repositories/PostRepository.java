@@ -3,23 +3,20 @@ package CinemaBooking.Group2.repositories;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
 import CinemaBooking.Group2.mappers.PostMapper;
-import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Post;
 
+@Repository
 public class PostRepository implements Icrud<Post>{
+	@Autowired
 	private JdbcTemplate db;
-	private static PostRepository _instance=null;
-	public static PostRepository Instance() {
-		if(_instance==null) {
-			_instance=new PostRepository();
-		}
-		return _instance;
+	public PostRepository() {
+		
 	}
-	private PostRepository() {
-		db=DbConnection.Instance().getDb();
-	};
 	public List<Post> getAll(){
 		List<Post> item = new ArrayList<>();
 		try {

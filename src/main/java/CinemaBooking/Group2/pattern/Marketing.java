@@ -4,24 +4,21 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.repositories.PostRepository;
 import CinemaBooking.Group2.repositories.VoucherRepository;
 
+@Repository
 public class Marketing {
-	private static Marketing _instance = null;
+	@Autowired
 	private VoucherRepository vouchRep;
+	@Autowired
 	private PostRepository postRep;
-	private Marketing() {
-		vouchRep = VoucherRepository.Instance();
-		postRep = PostRepository.Instance();
-	}
-	public static Marketing Instance() {
-		if(_instance==null) {
-			_instance=new Marketing();
-		}
-		return _instance;
+	public Marketing() {
 	}
 	//Post
 	public List<Post> getPost(){

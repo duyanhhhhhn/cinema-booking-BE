@@ -5,22 +5,19 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.ComboItem;
-import CinemaBooking.Group2.models.DbConnection;
 
+@Repository
 public class ComboItemRepository implements Icrud<ComboItem>{
-	private JdbcTemplate db = DbConnection.Instance().getDb();
-	private static ComboItemRepository _instance=null;
-	private ComboItemRepository() {
-	}
-	public static ComboItemRepository Instance() {
-		if(_instance==null) {
-			_instance= new ComboItemRepository();
-		}
-		return _instance;
+	@Autowired
+	private JdbcTemplate db;
+	public ComboItemRepository() {
+		// TODO Auto-generated constructor stub
 	}
 	public class ComboItemRowMapper implements RowMapper<ComboItem> {
 		@Override

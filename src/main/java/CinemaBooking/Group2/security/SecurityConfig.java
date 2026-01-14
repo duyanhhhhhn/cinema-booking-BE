@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -46,36 +47,50 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // Public routes
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(
+                                "/api/auth/register/**",
+                                "/api/auth/login",
+                                "/api/auth/refresh",
+                                "/api/auth/forgot/**",
+                                "/media/**",
+                                "/api/public/**",
+                                "/swagger-ui/index.html#/")
+                        .permitAll()
 
-            .authorizeHttpRequests(auth -> auth
+                        // Protected (login required)
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                        .requestMatchers("/api/auth/password/**").authenticated()
+                        .requestMatchers("/api/users/me").authenticated()
 
-                // ===== PUBLIC =====
-                .requestMatchers(
-                        "/api/auth/**",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**"
-                ).permitAll()
+                        // ===== PUBLIC =====
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**")
+                        .permitAll()
 
-                // ===== AUTHENTICATED =====
-                .requestMatchers(
-                        "/api/auth/password/**",
-                        "/api/users/me"
-                ).authenticated()
+                        // ===== AUTHENTICATED =====
+                        .requestMatchers(
+                                "/api/auth/password/**",
+                                "/api/users/me")
+                        .authenticated()
 
-                // ===== ROLE BASE =====
-                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
-                .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
-                .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
-                .requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
-                .requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
-                .anyRequest().authenticated()
-            )
+                        // ===== ROLE BASE =====
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
+                        .requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
+                        .anyRequest().authenticated())
 
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .httpBasic(httpBasic -> httpBasic.disable());
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();
     }

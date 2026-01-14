@@ -47,7 +47,7 @@ public class ComboManageController {
 	}
 	@CrossOrigin
 	@PostMapping("/api/combo/add")
-	public ResponseEntity<ComboCRUDResponse> add(@RequestParam("name") String name,@RequestParam("descriptiom") String description,
+	public ResponseEntity<ComboCRUDResponse> add(@RequestParam("name") String name,@RequestParam("description") String description,
 			@RequestParam("price")BigDecimal price,@RequestParam("image_url")String image) {
 		ComboCRUDResponse res = new ComboCRUDResponse();
 		try {

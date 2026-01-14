@@ -5,23 +5,19 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.PaymentMapper;
-import CinemaBooking.Group2.models.DbConnection;
 import CinemaBooking.Group2.models.Payment;
 
+@Repository
 public class PaymentRepository implements Icrud<Payment>{
-	private static PaymentRepository _instance=null;
+	@Autowired
 	private JdbcTemplate db;
-	private PaymentRepository() {
-		db = DbConnection.Instance().getDb();
-	}
-	public static PaymentRepository Instance() {
-		if(_instance==null) {
-			_instance = new PaymentRepository();
-		}
-		return _instance;
+	public PaymentRepository() {
+		
 	}
 	@Override
 	public List<Payment> getAll() {
