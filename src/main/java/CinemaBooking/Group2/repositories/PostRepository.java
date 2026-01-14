@@ -28,6 +28,19 @@ public class PostRepository implements Icrud<Post>{
 		}
 		return item;
 	}
+	public List<Post> Paging(int page,int size){
+		List<Post> item = new ArrayList<>();
+		try {
+			int value = (page-1)*size;
+			item = db.query("select * from "+StringValue.tbl_post+
+					" limit ? offset ? where is_published=1",new PostMapper()
+					,new Object[] {size,value});
+		}
+		catch(Exception e) {
+			throw new RuntimeException();
+		}
+		return item;
+	}
 	public int newPost(Post post) {
 		try {
 			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"

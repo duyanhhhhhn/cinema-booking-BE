@@ -38,6 +38,25 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
+	public ListPostResponseDTO getPostPaging(int page,int size) {
+		try {
+			List<Post> item = mk.getPost(page,size);
+			ListPostResponseDTO list = new ListPostResponseDTO();
+			if(item==null) {
+				list.setIs_success(false);
+				list.setMessage("Not found");
+			}
+			
+			list.setList(item);
+			list.setIs_success(true);
+			list.setMessage("Success");
+			return list;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+	}
 	public PostResponseDTO newPost(Post post) {
 		PostResponseDTO res = new PostResponseDTO();
 		try {
@@ -62,6 +81,18 @@ public class MarketingService {
 		List<Voucher> item =null;
 		try {
 			item = mk.getVoucher();
+			return item.stream().map(VoucherMapper::toResponseDTO)
+					.collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	public List<VoucherResponseDTO> getVoucherPaging(int page,int size){
+		List<Voucher> item =null;
+		try {
+			item = mk.getVoucher(page,size);
 			return item.stream().map(VoucherMapper::toResponseDTO)
 					.collect(Collectors.toList());
 		}

@@ -32,6 +32,17 @@ public class Marketing {
 		}
 		return item;
 	}
+	public List<Post> getPost(int page,int size){
+		List<Post> item = new ArrayList<>();
+		try {
+			item = postRep.Paging(page, size);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return item;
+	}
 	public Post postInfo(int id) {
 		try {
 			Post item = postRep.findById(id);
@@ -57,6 +68,16 @@ public class Marketing {
 		List<Voucher> item=new ArrayList<>();
 		try {
 			item = vouchRep.getAll();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return item;
+	}
+	public List<Voucher> getVoucher(int page,int size){
+		List<Voucher> item = new ArrayList<>();
+		try {
+			item = vouchRep.Paging(page, size);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

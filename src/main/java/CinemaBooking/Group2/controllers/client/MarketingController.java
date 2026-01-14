@@ -1,5 +1,8 @@
 package CinemaBooking.Group2.controllers.client;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,8 +12,10 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
@@ -26,6 +31,27 @@ public class MarketingController {
 	@CrossOrigin
 	public ResponseEntity<ListPostResponseDTO> getPost(){
 		ListPostResponseDTO item = service.getAllPost();
+		try {
+			
+			if(item.isIs_success()==false) {
+				return ResponseEntity.status(HttpStatus.NO_CONTENT).body(item);
+			}
+			else {
+				return ResponseEntity.ok(item);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item); 
+	}
+	@GetMapping("/api/posts/paging")
+	@CrossOrigin
+	public ResponseEntity<ListPostResponseDTO> getPost(@RequestParam("page")int page,
+			@RequestParam("size")int size){
+		ListPostResponseDTO item = service.getPostPaging(page,size);
 		try {
 			
 			if(item.isIs_success()==false) {
@@ -80,6 +106,19 @@ public class MarketingController {
 		item.setMessage("Error");
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item);
 	}
+	@GetMapping("/api/vouchers/paging")
+	@CrossOrigin
+	public ResponseEntity<List<VoucherResponseDTO>> getVoucherPaging(@RequestParam("page")int page,
+			@RequestParam("size") int size){
+		List<VoucherResponseDTO> item=null;
+		try {
+			item= service.getVoucherPaging(page,size);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return ResponseEntity.ok(item);
+		}
 	private Integer getCurrentUserId() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -96,4 +135,14 @@ public class MarketingController {
         }
         return null;
     }
+	public ResponseEntity<VoucherResponseDTO> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
+		VoucherResponseDTO rs = new VoucherResponseDTO();
+		try {
+			 rs = service.checkDiscount(id, price);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return ResponseEntity.ok(rs);
+	}
 }

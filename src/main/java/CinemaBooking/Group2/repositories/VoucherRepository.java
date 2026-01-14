@@ -32,7 +32,21 @@ public class VoucherRepository implements Icrud<Voucher>{
 		}
 		return null;
 	}
-
+	public List<Voucher> Paging(int page,int size){
+		List<Voucher> list = null;
+		try {
+			int value = (page-1)*size;
+			List<Voucher> item =  db.query("select * from "+StringValue.tbl_voucher+
+					" limit ? offset ?",new VoucherMapper(),new Object[] {size,value} 
+					);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return list;
+	}
 	@Override
 	public Voucher findById(int id) {
 		// TODO Auto-generated method stub
