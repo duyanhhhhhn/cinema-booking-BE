@@ -38,19 +38,10 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
-	public ListPostResponseDTO getPostPaging(int page,int size) {
+	public List<PostResponseDTO> getPostPaging(int page,int size) {
 		try {
 			List<Post> item = mk.getPost(page,size);
-			ListPostResponseDTO list = new ListPostResponseDTO();
-			if(item==null) {
-				list.setIs_success(false);
-				list.setMessage("Not found");
-			}
-			
-			list.setList(item);
-			list.setIs_success(true);
-			list.setMessage("Success");
-			return list;
+			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
 			// TODO: handle exception

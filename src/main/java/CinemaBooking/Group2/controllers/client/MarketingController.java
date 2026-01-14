@@ -1,7 +1,9 @@
 package CinemaBooking.Group2.controllers.client;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,12 +17,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.MarketingService;
+import CinemaBooking.Group2.ultis.StringValue;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
@@ -49,16 +53,21 @@ public class MarketingController {
 	}
 	@GetMapping("/api/posts/paging")
 	@CrossOrigin
-	public ResponseEntity<ListPostResponseDTO> getPost(@RequestParam("page")int page,
+	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam("page")int page,
 			@RequestParam("size")int size){
-		ListPostResponseDTO item = service.getPostPaging(page,size);
+		 List<PostResponseDTO> item = service.getPostPaging(page,size);
 		try {
-			
-			if(item.isIs_success()==false) {
-				return ResponseEntity.status(HttpStatus.NO_CONTENT).body(item);
+			Map<String, Object> meta = new HashMap<>();
+			float totalItem = service.getAllPost().getList().size();
+			float totalPage = StringValue.calculateTotalPage(totalItem, size);
+			meta.put("page",page);
+			meta.put("perPage", size);
+			meta.put("total", totalItem);
+			if(page>totalPage) {
+				
 			}
 			else {
-				return ResponseEntity.ok(item);
+				return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
 			}
 		}
 		catch (Exception e) {
@@ -66,7 +75,7 @@ public class MarketingController {
 			System.out.print(e.getMessage());
 		}
 		
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item); 
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
 	}
 	@PostMapping("/api/posts")
 	@CrossOrigin
@@ -108,16 +117,31 @@ public class MarketingController {
 	}
 	@GetMapping("/api/vouchers/paging")
 	@CrossOrigin
-	public ResponseEntity<List<VoucherResponseDTO>> getVoucherPaging(@RequestParam("page")int page,
+	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucherPaging(@RequestParam("page")int page,
 			@RequestParam("size") int size){
+		ApiResponse<List<VoucherResponseDTO>> response;
 		List<VoucherResponseDTO> item=null;
 		try {
-			item= service.getVoucherPaging(page,size);
+			Map<String, Object> meta = new HashMap<>();
+			float totalItem = service.getVoucher().size();
+			meta.put("page", page);
+			meta.put("perPage",size);
+			meta.put("total",totalItem);
+			float totalPage = StringValue.calculateTotalPage(totalItem, size);
+			if(totalPage<page) {
+				return ResponseEntity
+						.status(HttpStatus.INTERNAL_SERVER_ERROR).
+						body(new ApiResponse<>("Error",item, meta));
+			}
+			else {
+				item= service.getVoucherPaging(page,size);
+				return ResponseEntity.ok(new ApiResponse<>("Success",item, meta));
+			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			throw new RuntimeException();
 		}
-		return ResponseEntity.ok(item);
 		}
 	private Integer getCurrentUserId() {
         try {
