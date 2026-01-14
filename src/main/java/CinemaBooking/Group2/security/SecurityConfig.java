@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -54,15 +55,16 @@ public class SecurityConfig {
                                 "/api/auth/register/**",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
-                                "/api/auth/logout",
                                 "/api/auth/forgot/**",
                                 "/media/**",
+                                "/api/public/**",
                                 "/swagger-ui/index.html#/")
                         .permitAll()
 
                         // Protected (login required)
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .requestMatchers("/api/auth/password/**").authenticated()
-                        .requestMatchers("/api/user/me").authenticated()
+                        .requestMatchers("/api/users/me").authenticated()
 
                         // Roles
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
