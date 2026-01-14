@@ -1,20 +1,14 @@
 package CinemaBooking.Group2.controllers.admin;
 
-import java.util.Map;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
@@ -27,52 +21,72 @@ import CinemaBooking.Group2.service.UserService;
 @RequestMapping("/api/users")
 public class UserController {
 
-	@Autowired
-	private UserService userService;
+    @Autowired
+    private UserService userService;
 
-	@PostMapping
-	public ResponseEntity<?> createUser(@RequestBody CreateUserRequestDTO req) {
-		userService.createUser(req);
-		return ResponseEntity.ok(Map.of("message", "Tạo user thành công"));
-	}
-	
-	/**
-     * Lấy danh sách user
-     * - ADMIN: xem tất cả, lọc theo role / cinema tùy ý
-     * - MANAGER: chỉ xem user trong rạp của mình
-     *            (roleId/cinemaId client gửi sẽ bị service kiểm soát)
-     */
+    // ================= CREATE USER =================
+    @PostMapping
+    public ResponseEntity<ApiResponse<Void>> createUser(
+            @RequestBody CreateUserRequestDTO req) {
+
+        userService.createUser(req);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Tạo user thành công", null));
+    }
+
+    // ================= GET USERS =================
     @GetMapping
-    public ResponseEntity<?> getUsers(
-        @RequestParam(required = false) Integer roleId,
-        @RequestParam(required = false) Integer cinemaId
-    ) {
+    public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getUsers(
+            @RequestParam(required = false) Integer roleId,
+            @RequestParam(required = false) Integer cinemaId) {
+
+        List<UserResponseDTO> data = userService.getUsers(roleId, cinemaId);
+
         return ResponseEntity.ok(
-            userService.getUsers(roleId, cinemaId)
+                new ApiResponse<>("Success", data)
         );
     }
-    
+
+    // ================= UPDATE USER =================
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(
+    public ResponseEntity<ApiResponse<Void>> updateUser(
             @PathVariable int id,
-            @RequestBody UpdateUserRequestDTO req
-    ) {
+            @RequestBody UpdateUserRequestDTO req) {
+
         userService.updateUser(id, req);
-        return ResponseEntity.ok(Map.of("message", "Cập nhật user thành công"));
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Cập nhật user thành công", null)
+        );
     }
 
+    // ================= LOCK USER =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> lockUser(@PathVariable int id) {
+    public ResponseEntity<ApiResponse<Void>> lockUser(@PathVariable int id) {
+
         userService.lockUser(id);
-        return ResponseEntity.ok(Map.of("message", "Đã khóa tài khoản"));
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Đã khóa tài khoản", null)
+        );
     }
-    
+
+    // ================= GET USER DETAIL =================
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserDetail(@PathVariable int id) {
-        return ResponseEntity.ok(userService.getUserDetail(id));
+    public ResponseEntity<ApiResponse<UserResponseDTO>> getUserDetail(
+            @PathVariable int id) {
+
+        UserResponseDTO data = userService.getUserDetail(id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Success", data)
+        );
     }
+
+    // ================= GET CURRENT USER =================
     @GetMapping("/me")
-    public UserDTO getCurrentUser() {
+    public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser() {
 
         var auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -80,16 +94,12 @@ public class UserController {
             throw new RuntimeException("Bạn chưa đăng nhập!");
         }
 
-        //  Lấy email từ JWT
-        String email = principal.email();
-
-        // Lấy user từ DB
-        User user = userService.findByEmail(email);
+        User user = userService.findByEmail(principal.email());
         if (user == null) {
             throw new RuntimeException("Không tìm thấy người dùng!");
         }
-        //  Trả DTO không có password
-        return new UserDTO(
+
+        UserDTO dto = new UserDTO(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
@@ -98,6 +108,9 @@ public class UserController {
                 user.getRoleName(),
                 user.getCinemaId()
         );
-    }
 
+        return ResponseEntity.ok(
+                new ApiResponse<>("Success", dto)
+        );
+    }
 }

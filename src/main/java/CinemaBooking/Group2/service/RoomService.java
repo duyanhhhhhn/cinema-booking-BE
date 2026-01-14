@@ -16,6 +16,7 @@ public class RoomService {
     @Autowired
     private RoomRepository repo;
 
+    // ================= GET BY CINEMA =================
     public List<RoomResponseDTO> getByCinema(int cinemaId) {
         return repo.findByCinema(cinemaId)
                    .stream()
@@ -23,25 +24,37 @@ public class RoomService {
                    .toList();
     }
 
+    // ================= GET BY ID =================
     public RoomResponseDTO getById(int id) {
+
         Room r = repo.findById(id);
         if (r == null) {
             throw new RuntimeException("Room not found");
+            // Sau này thay bằng NotFoundException
         }
+
         return toResponse(r);
     }
 
-    public void create(RoomRequestDTO dto) {
+    // ================= CREATE =================
+    public RoomResponseDTO create(RoomRequestDTO dto) {
+
         Room r = new Room();
         r.setCinemaId(dto.getCinemaId());
         r.setName(dto.getName());
         r.setType(dto.getType());
         r.setTotalSeats(dto.getTotalSeats());
         r.setSeatLayout(dto.getSeatLayout());
+
         repo.insert(r);
+
+        // repo.insert set lại id
+        return toResponse(r);
     }
 
-    public void update(int id, RoomRequestDTO dto) {
+    // ================= UPDATE =================
+    public RoomResponseDTO update(int id, RoomRequestDTO dto) {
+
         Room existing = repo.findById(id);
         if (existing == null) {
             throw new RuntimeException("Room not found");
@@ -53,19 +66,29 @@ public class RoomService {
         existing.setSeatLayout(dto.getSeatLayout());
 
         repo.update(id, existing);
+
+        return toResponse(existing);
     }
 
+    // ================= DELETE =================
     public void delete(int id) {
+
+        Room existing = repo.findById(id);
+        if (existing == null) {
+            throw new RuntimeException("Room not found");
+        }
+
         repo.delete(id);
     }
 
+    // ================= MAPPER =================
     private RoomResponseDTO toResponse(Room r) {
         return new RoomResponseDTO(
-            r.getId(),
-            r.getName(),
-            r.getType(),
-            r.getTotalSeats(),
-            r.getSeatLayout()
+                r.getId(),
+                r.getName(),
+                r.getType(),
+                r.getTotalSeats(),
+                r.getSeatLayout()
         );
     }
 }

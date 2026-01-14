@@ -1,16 +1,22 @@
 package CinemaBooking.Group2.security;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -18,43 +24,66 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private JwtService jwtService;
 
+    // Các endpoint public
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/api/auth",
+            "/swagger-ui",
+            "/v3/api-docs"
+    );
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-            FilterChain filterChain) throws IOException, jakarta.servlet.ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
 
-        try {
-            String header = request.getHeader("Authorization");
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-            // Check Bearer token
-            if (header != null && header.startsWith("Bearer ")) {
-                String token = header.substring(7);
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-                // Validate token
-                if (jwtService.validateToken(token) && 
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
+        // Không có Authorization header
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            return;
+        }
 
-                    String email = jwtService.getEmail(token);
-                    String role = jwtService.getRole(token);
-                    Integer cinemaId = jwtService.getCinemaId(token);
+        String token = authHeader.substring(7);
 
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            new AuthUserPrincipal(email, role, cinemaId),
+        // Token không hợp lệ
+        if (!jwtService.validateToken(token)) {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            return;
+        }
+
+        // Token hợp lệ → set SecurityContext
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            String email = jwtService.getEmail(token);
+            String role = jwtService.getRole(token);
+            Integer cinemaId = jwtService.getCinemaId(token);
+
+            AuthUserPrincipal principal =
+                    new AuthUserPrincipal(email, role, cinemaId);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            principal,
                             null,
-                            java.util.List.of(() -> role)
+                            List.of(() -> role)
                     );
 
-                    auth.setDetails(new org.springframework.security.web.authentication.WebAuthenticationDetailsSource().buildDetails(request));
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
 
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
-            }
-        } catch (Exception e) {
-            // Token invalid → clear context, avoid 500 error
-            SecurityContextHolder.clearContext();
+            SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
     }
 }
-
-

@@ -3,15 +3,12 @@ package CinemaBooking.Group2.controllers.admin;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.room.RoomRequestDTO;
 import CinemaBooking.Group2.dtos.room.RoomResponseDTO;
 import CinemaBooking.Group2.service.RoomService;
@@ -23,24 +20,54 @@ public class RoomController {
     @Autowired
     private RoomService service;
 
-    @GetMapping("/cinemas/{id}/rooms")
-    public List<RoomResponseDTO> getRooms(@PathVariable int id) {
-        return service.getByCinema(id);
+    // ================= GET ROOMS BY CINEMA =================
+    @GetMapping("/cinemas/{cinemaId}/rooms")
+    public ResponseEntity<ApiResponse<List<RoomResponseDTO>>> getRoomsByCinema(
+            @PathVariable int cinemaId) {
+
+        List<RoomResponseDTO> data = service.getByCinema(cinemaId);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Success", data)
+        );
     }
 
+    // ================= CREATE ROOM =================
     @PostMapping("/rooms")
     @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<RoomResponseDTO>> create(
+            @RequestBody RoomRequestDTO dto) {
 
-    public void create(@RequestBody RoomRequestDTO dto) {
-        service.create(dto);
+        RoomResponseDTO created = service.create(dto);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Room created", created));
     }
 
+    // ================= UPDATE ROOM =================
     @PutMapping("/rooms/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<RoomResponseDTO>> update(
+            @PathVariable int id,
+            @RequestBody RoomRequestDTO dto) {
 
-    public void update(@PathVariable int id,
-                       @RequestBody RoomRequestDTO dto) {
-        service.update(id, dto);
+        RoomResponseDTO updated = service.update(id, dto);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Room updated", updated)
+        );
+    }
+
+    // ================= DELETE ROOM =================
+    @DeleteMapping("/rooms/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable int id) {
+
+        service.delete(id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Room deleted", null)
+        );
     }
 }
-

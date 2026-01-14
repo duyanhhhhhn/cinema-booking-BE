@@ -3,9 +3,9 @@ package CinemaBooking.Group2.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
@@ -20,125 +20,110 @@ public class UserService {
     @Autowired private UserRepository userRepo;
     @Autowired private PasswordEncoder encoder;
 
+    // ================= CREATE =================
     public void createUser(CreateUserRequestDTO req) {
 
-        // 1️ Lấy user đang đăng nhập
         AuthUserPrincipal principal =
             (AuthUserPrincipal) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
+                .getContext().getAuthentication().getPrincipal();
 
-        String creatorRole = principal.role();
-        Integer creatorCinemaId = principal.cinemaId();
+        String role = principal.role();
+        Integer cinemaId = principal.cinemaId();
 
-        // 2️ Phân quyền tạo user
-        if ("ADMIN".equals(creatorRole)) {
+        if ("ADMIN".equals(role)) {
             if (req.getRoleId() != 2) {
                 throw new RuntimeException("ADMIN chỉ được tạo MANAGER");
             }
         }
-
-
-        else if ("MANAGER".equals(creatorRole)) {
-            // MANAGER → chỉ được tạo STAFF
-            if (req.getRoleId() != 3) { // role_id = 3 là STAFF
+        else if ("MANAGER".equals(role)) {
+            if (req.getRoleId() != 3) {
                 throw new RuntimeException("MANAGER chỉ được tạo STAFF");
             }
-
-            //  Ràng buộc cinema
-            if (!creatorCinemaId.equals(req.getCinemaId())) {
-                throw new RuntimeException("MANAGER chỉ được tạo nhân viên trong rạp của mình");
+            if (!cinemaId.equals(req.getCinemaId())) {
+                throw new RuntimeException("MANAGER chỉ được tạo user trong rạp của mình");
             }
         }
-
         else {
-            throw new RuntimeException("Bạn không có quyền tạo người dùng");
+            throw new RuntimeException("Bạn không có quyền tạo user");
         }
 
-        // 3️ Check email
         if (userRepo.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email đã tồn tại");
         }
 
-        // 4️ Hash password
         String encodedPassword = encoder.encode(req.getPassword());
-
-        // 5️ Insert DB
         userRepo.createStaff(req, encodedPassword);
     }
-    
+
+    // ================= GET USERS =================
     public List<UserResponseDTO> getUsers(Integer roleId, Integer cinemaId) {
 
-        // 1️ Lấy user đang đăng nhập
         AuthUserPrincipal principal =
             (AuthUserPrincipal) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
+                .getContext().getAuthentication().getPrincipal();
 
         String role = principal.role();
-        Integer myCinemaId = principal.cinemaId();
 
-        // 2️ STAFF không được xem
         if ("STAFF".equals(role)) {
             throw new RuntimeException("Bạn không có quyền xem danh sách user");
         }
 
-        // 3️ MANAGER: cưỡng chế cinema
         if ("MANAGER".equals(role)) {
-            cinemaId = myCinemaId; //  override
+            cinemaId = principal.cinemaId();
         }
 
-        // 4️ ADMIN: không giới hạn
         return userRepo.findUsers(roleId, cinemaId);
     }
-    
+
+    // ================= UPDATE =================
     public void updateUser(int id, UpdateUserRequestDTO req) {
 
         AuthUserPrincipal principal =
-            (AuthUserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+            (AuthUserPrincipal) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
 
         User target = userRepo.findById(id);
-        if (target == null) throw new RuntimeException("User không tồn tại");
+        if (target == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
 
-        if ("MANAGER".equals(principal.role())) {
-            if (!principal.cinemaId().equals(target.getCinemaId())) {
-                throw new RuntimeException("Bạn không có quyền sửa user rạp khác");
-            }
+        if ("MANAGER".equals(principal.role())
+                && !principal.cinemaId().equals(target.getCinemaId())) {
+            throw new RuntimeException("Bạn không có quyền sửa user rạp khác");
         }
 
         userRepo.updateUser(id, req);
     }
-    
+
+    // ================= LOCK =================
     public void lockUser(int id) {
 
         AuthUserPrincipal principal =
-            (AuthUserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+            (AuthUserPrincipal) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
 
         User target = userRepo.findById(id);
-        if (target == null) throw new RuntimeException("User không tồn tại");
+        if (target == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
 
-        if ("MANAGER".equals(principal.role())) {
-            if (!principal.cinemaId().equals(target.getCinemaId())) {
-                throw new RuntimeException("Không được khóa user rạp khác");
-            }
+        if ("MANAGER".equals(principal.role())
+                && !principal.cinemaId().equals(target.getCinemaId())) {
+            throw new RuntimeException("Không được khóa user rạp khác");
         }
 
         UpdateUserRequestDTO req = new UpdateUserRequestDTO();
         req.setIsActive(0);
         userRepo.updateUser(id, req);
     }
-    
+
+    // ================= DETAIL =================
     public UserResponseDTO getUserDetail(int id) {
 
         AuthUserPrincipal principal =
-            (AuthUserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+            (AuthUserPrincipal) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
 
-        // STAFF không được xem
         if ("STAFF".equals(principal.role())) {
             throw new RuntimeException("Không có quyền xem user");
         }
@@ -148,21 +133,15 @@ public class UserService {
             throw new RuntimeException("User không tồn tại");
         }
 
-        // MANAGER chỉ xem user cùng rạp
-        if ("MANAGER".equals(principal.role())) {
-            if (!principal.cinemaId().equals(target.getCinemaId())) {
-                throw new RuntimeException("Không được xem user rạp khác");
-            }
+        if ("MANAGER".equals(principal.role())
+                && !principal.cinemaId().equals(target.getCinemaId())) {
+            throw new RuntimeException("Không được xem user rạp khác");
         }
 
         return userRepo.findUserDetail(id);
     }
-    
+
     public User findByEmail(String email) {
-		return userRepo.findByEmail(email);
-	}
-    
-
-
-
+        return userRepo.findByEmail(email);
+    }
 }
