@@ -28,7 +28,8 @@ import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.service.MovieService;
-
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 @RestController
 @RequestMapping("/api/movies")
 public class MovieController {
@@ -69,31 +70,32 @@ public class MovieController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Created", created));
     }
-    		
-    	
+    
+    
     @PutMapping(
-    		value = "/edit-movie/{id}",
-    		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+            value = "/edit-movie/{id}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<ApiResponse<MovieDetailDtos>> updateMovie(
-            @PathVariable int id,
-            @RequestPart("data") String dataJson,
-            @RequestPart(value = "poster", required = false) MultipartFile poster,
-            @RequestPart(value = "banner", required = false) MultipartFile banner
+            @PathVariable("id") Integer id,
+            @ModelAttribute MovieEditDtos dto
     ) {
         try {
-            ObjectMapper mapper = new ObjectMapper();	
-            MovieEditDtos data = mapper.readValue(dataJson, MovieEditDtos.class);
+            if (id == null || id <= 0) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>("INVALID MOVIE ID.", null));
+            }
 
-            MovieDetailDtos updated = movieService.updateMovie(id, data, poster, banner);
+            // FILE CÓ THỂ NULL (KHÔNG ĐỔI ẢNH THÌ BỎ QUA)
+            MultipartFile poster = normalizeOptionalFile(dto.getPosterFile());
+            MultipartFile banner = normalizeOptionalFile(dto.getBannerFile());
+
+            MovieDetailDtos updated = movieService.updateMovie(id, dto, poster, banner);
             return ResponseEntity.ok(new ApiResponse<>("UPDATE MOVIE SUCCESS.", updated));
 
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ApiResponse<>("INVALID JSON FORMAT FOR FIELD 'data'.", null));
-
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.badRequest()
                     .body(new ApiResponse<>(e.getMessage(), null));
 
         } catch (Exception e) {
@@ -101,6 +103,18 @@ public class MovieController {
                     .body(new ApiResponse<>("UPDATE MOVIE FAILED.", null));
         }
     }
+
+    // COI FILE RỖNG LÀ NULL ĐỂ TRÁNH XỬ LÝ UPDATE ẢNH
+    private MultipartFile normalizeOptionalFile(MultipartFile f) {
+        if (f == null) return null;
+        if (f.isEmpty() || f.getSize() <= 0) return null;
+        if (f.getOriginalFilename() == null || f.getOriginalFilename().isBlank()) return null;
+        return f;
+    }
+
+
+
+    
 
     @DeleteMapping("/delete-movies/{id}")
     public ResponseEntity<ApiResponse<Boolean>> deleteMovie(@PathVariable int id) {

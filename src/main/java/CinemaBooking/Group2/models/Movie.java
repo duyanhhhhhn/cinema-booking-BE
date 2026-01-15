@@ -197,6 +197,10 @@ public class Movie {
 		super();
 		// TODO Auto-generated constructor stub
 	}
+	public void setReleaseDate(Object releaseDate2) {
+		// TODO Auto-generated method stub
+		
+	}
     
     
 
