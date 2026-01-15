@@ -1,10 +1,11 @@
 package CinemaBooking.Group2.service;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.models.RefreshToken;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.repositories.RefreshTokenRepository;
 import CinemaBooking.Group2.repositories.UserRepository;
@@ -18,39 +19,63 @@ public class AuthService {
     @Autowired private RefreshTokenRepository refreshRepo;
     @Autowired private PasswordEncoder encoder;
 
-    public String login(String email, String password) {
-        User u = userRepo.findByEmail(email);
-        if (u == null || !encoder.matches(password, u.getPassword())) {
+    // ================= LOGIN =================
+    public Map<String, String> login(String email, String password) {
+
+        User user = userRepo.findByEmail(email);
+        if (user == null || !encoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
         }
 
-        String access = jwtService.generateAccessToken(u);
-        String refresh = jwtService.generateRefreshToken(email);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(email);
 
-        refreshRepo.saveToken(u.getId(), refresh);
+        refreshRepo.saveToken(user.getId(), refreshToken);
 
-        return access + "|" + refresh; // Controller sẽ format lại JSON
+        return Map.of(
+                "accessToken", accessToken,
+                "refreshToken", refreshToken
+        );
     }
 
-    public String refresh(String refreshToken) {
+    // ================= REFRESH =================
+    public Map<String, String> refresh(String refreshToken) {
+
+        // 1. Validate JWT
         if (!jwtService.validateToken(refreshToken)) {
             throw new RuntimeException("Refresh token không hợp lệ");
         }
 
+        // 2. Check DB
         if (!refreshRepo.isValid(refreshToken)) {
             throw new RuntimeException("Refresh token đã bị thu hồi");
         }
 
+        // 3. Get user
         String email = jwtService.getEmail(refreshToken);
+        User user = userRepo.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
+
+        // 4. Rotate refresh token
         refreshRepo.revoke(refreshToken);
 
-        String newToken = jwtService.generateRefreshToken(email);
-        refreshRepo.saveToken(userRepo.findByEmail(email).getId(), newToken);
+        String newRefreshToken = jwtService.generateRefreshToken(email);
+        refreshRepo.saveToken(user.getId(), newRefreshToken);
 
-        return newToken;
+        // 5. Generate new access token
+        String newAccessToken = jwtService.generateAccessToken(user);
+
+        return Map.of(
+                "accessToken", newAccessToken,
+                "refreshToken", newRefreshToken
+        );
     }
 
+    // ================= LOGOUT =================
     public void logout(String refreshToken) {
         refreshRepo.revoke(refreshToken);
     }
 }
+

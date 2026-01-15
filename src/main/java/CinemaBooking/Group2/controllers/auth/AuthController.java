@@ -102,6 +102,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.auth.AuthRequestDTO;
 import CinemaBooking.Group2.dtos.auth.RegisterRequestDTO;
 import CinemaBooking.Group2.dtos.auth.SendOtpRequestDTO;
 import CinemaBooking.Group2.service.AuthService;
@@ -151,31 +152,21 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Map<String, String>>> login(
-            @RequestBody Map<String, String> req) {
-
-        String[] tokens = authService
-                .login(req.get("email"), req.get("password"))
-                .split("\\|");
-
-        Map<String, String> data = Map.of(
-                "accessToken", tokens[0],
-                "refreshToken", tokens[1]
-        );
+            @RequestBody AuthRequestDTO req) {
 
         return ResponseEntity.ok(
-                new ApiResponse<>("Đăng nhập thành công", data)
+                new ApiResponse<>("Đăng nhập thành công",
+                        authService.login(req.getEmail(), req.getPassword()))
         );
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<Map<String, String>>> refreshToken(
+    public ResponseEntity<ApiResponse<Map<String, String>>> refresh(
             @RequestBody Map<String, String> req) {
-
-        String refreshToken = authService.refresh(req.get("refreshToken"));
 
         return ResponseEntity.ok(
                 new ApiResponse<>("Refresh token thành công",
-                        Map.of("refreshToken", refreshToken))
+                        authService.refresh(req.get("refreshToken")))
         );
     }
 
