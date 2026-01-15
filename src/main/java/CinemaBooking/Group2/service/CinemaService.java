@@ -16,6 +16,7 @@ public class CinemaService {
     @Autowired
     private CinemaRepository repo;
 
+    // ================= GET ALL =================
     public List<CinemaResponseDTO> getAll() {
         return repo.findAllActive()
                    .stream()
@@ -23,24 +24,35 @@ public class CinemaService {
                    .toList();
     }
 
+    // ================= GET BY ID =================
     public CinemaResponseDTO getById(int id) {
         Cinema c = repo.findById(id);
         if (c == null) {
             throw new RuntimeException("Cinema not found");
+            // Sau này thay bằng custom exception
         }
         return toResponse(c);
     }
 
-    public void create(CinemaRequestDTO dto) {
+    // ================= CREATE =================
+    public CinemaResponseDTO create(CinemaRequestDTO dto) {
+
         Cinema c = new Cinema();
         c.setName(dto.getName());
         c.setAddress(dto.getAddress());
         c.setPhone(dto.getPhone());
         c.setDescription(dto.getDescription());
+        c.setIsActive(1); // mặc định active
+
         repo.insert(c);
+
+        // Giả sử repo.insert set lại ID
+        return toResponse(c);
     }
 
-    public void update(int id, CinemaRequestDTO dto) {
+    // ================= UPDATE =================
+    public CinemaResponseDTO update(int id, CinemaRequestDTO dto) {
+
         Cinema existing = repo.findById(id);
         if (existing == null) {
             throw new RuntimeException("Cinema not found");
@@ -53,20 +65,30 @@ public class CinemaService {
         existing.setIsActive(dto.getIsActive());
 
         repo.update(id, existing);
+
+        return toResponse(existing);
     }
 
+    // ================= DEACTIVATE (SOFT DELETE) =================
     public void deactivate(int id) {
+
+        Cinema existing = repo.findById(id);
+        if (existing == null) {
+            throw new RuntimeException("Cinema not found");
+        }
+
         repo.deactivate(id);
     }
 
+    // ================= MAPPER =================
     private CinemaResponseDTO toResponse(Cinema c) {
         return new CinemaResponseDTO(
-            c.getId(),
-            c.getName(),
-            c.getAddress(),
-            c.getPhone(),
-            c.getDescription(),
-            c.getIsActive()
+                c.getId(),
+                c.getName(),
+                c.getAddress(),
+                c.getPhone(),
+                c.getDescription(),
+                c.getIsActive()
         );
     }
 }

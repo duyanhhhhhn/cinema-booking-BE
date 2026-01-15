@@ -1,5 +1,7 @@
 package CinemaBooking.Group2.dtos.auth;
 
+import java.time.LocalDateTime;
+
 public class UserDTO {
 	private int id;
     private String fullName;
@@ -7,6 +9,7 @@ public class UserDTO {
     private String phone;
     private String avatarUrl;
     private String role;
+    private LocalDateTime createdAt;
     private Integer cinemaId;
 	/**
 	 * @param id
@@ -27,6 +30,47 @@ public class UserDTO {
 		this.avatarUrl = avatarUrl;
 		this.role = role;
 		this.cinemaId = cinemaId;
+	}
+	/**
+	 * 
+	 */
+	public UserDTO() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	/**
+	 * @param id
+	 * @param fullName
+	 * @param email
+	 * @param phone
+	 * @param avatarUrl
+	 * @param role
+	 * @param createdAt
+	 * @param cinemaId
+	 */
+	public UserDTO(int id, String fullName, String email, String phone, String avatarUrl, String role,
+			LocalDateTime createdAt, Integer cinemaId) {
+		super();
+		this.id = id;
+		this.fullName = fullName;
+		this.email = email;
+		this.phone = phone;
+		this.avatarUrl = avatarUrl;
+		this.role = role;
+		this.createdAt = createdAt;
+		this.cinemaId = cinemaId;
+	}
+	/**
+	 * @return the createdAt
+	 */
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+	/**
+	 * @param createdAt the createdAt to set
+	 */
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
 	}
 	/**
 	 * @return the id
