@@ -443,5 +443,69 @@ public class MovieRepository {
         }
     }
 
-    	
+    public Movie findById(int id) {
+        String sql =
+                "SELECT id, title, short_description, description, duration_minutes, " +
+                "genre, language, format, director, `cast`, " +
+                "poster_url, banner_url, trailer_url, " +
+                "release_date, end_date, status, created_at " +
+                "FROM movie WHERE id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+
+                Movie m = new Movie();
+                m.setId(rs.getInt("id"));
+                m.setTitle(rs.getString("title"));
+                m.setShortDescription(rs.getString("short_description"));
+                m.setDescription(rs.getString("description"));
+
+                Integer dur = (Integer) rs.getObject("duration_minutes");
+                m.setDurationMinutes(dur != null ? dur : 0);
+
+                m.setGenre(rs.getString("genre"));
+                m.setLanguage(rs.getString("language"));
+                m.setFormat(rs.getString("format"));
+                m.setDirector(rs.getString("director"));
+                m.setCast(rs.getString("cast"));
+
+                m.setPosterUrl(rs.getString("poster_url"));
+                m.setBannerUrl(rs.getString("banner_url"));
+                m.setTrailerUrl(rs.getString("trailer_url"));
+
+                java.sql.Timestamp releaseTs = rs.getTimestamp("release_date");
+                m.setReleaseDate(releaseTs != null ? new java.util.Date(releaseTs.getTime()) : null);
+
+                java.sql.Timestamp endTs = rs.getTimestamp("end_date");
+                m.setEndDate(endTs != null ? new java.util.Date(endTs.getTime()) : null);
+
+                String statusStr = rs.getString("status");
+                if (statusStr != null && !statusStr.isBlank()) {
+                    try {
+                        m.setStatus(Movie.MovieStatus.valueOf(statusStr));
+                    } catch (IllegalArgumentException ex) {
+                        m.setStatus(null);
+                    }
+                } else {
+                    m.setStatus(null);
+                }
+
+                java.sql.Timestamp createdTs = rs.getTimestamp("created_at");
+                m.setCreatedAt(createdTs != null ? new java.util.Date(createdTs.getTime()) : null);
+
+                return m;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find movie by id=" + id, e);
+        }
+    }
+
+
+
 }

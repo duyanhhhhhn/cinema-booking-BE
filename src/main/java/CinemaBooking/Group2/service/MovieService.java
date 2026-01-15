@@ -143,6 +143,9 @@ public class MovieService {
         MovieMediaDtos oldMedia = movieRepository.getMediaPathById(id);
         if (oldMedia == null) throw new IllegalArgumentException("MOVIE NOT FOUND WITH ID=" + id);
 
+        Movie existing = movieRepository.findById(id);
+        if (existing == null) throw new IllegalArgumentException("MOVIE NOT FOUND WITH ID=" + id);
+
         boolean hasNewPoster = isProvidedFile(poster);
         boolean hasNewBanner = isProvidedFile(banner);
 
@@ -163,16 +166,48 @@ public class MovieService {
                 newBannerRel = toRelativePath(newBannerPath);
             }
 
-            Movie movie = MovieMapper.toModelEdit(data);
-            movie.setId(id);
+            Movie patch = MovieMapper.toModelEdit(data);
+            patch.setId(id);
 
-            // SET NULL WHEN NO NEW IMAGE (REQUIRES COALESCE IN SQL TO KEEP OLD URL).
-            movie.setPosterUrl(hasNewPoster ? newPosterRel : null);
-            movie.setBannerUrl(hasNewBanner ? newBannerRel : null);
+            patch.setTitle(normalizeText(patch.getTitle()));
+            patch.setShortDescription(normalizeText(patch.getShortDescription()));
+            patch.setDescription(normalizeText(patch.getDescription()));
+            patch.setGenre(normalizeText(patch.getGenre()));
+            patch.setLanguage(normalizeText(patch.getLanguage()));
+            patch.setFormat(normalizeText(patch.getFormat()));
+            patch.setDirector(normalizeText(patch.getDirector()));
+            patch.setCast(normalizeText(patch.getCast()));
+            patch.setTrailerUrl(normalizeText(patch.getTrailerUrl()));
 
-            if (movie.getStatus() == null) movie.setStatus(Movie.MovieStatus.COMING_SOON);
+            Integer durationPatch = normalizeDurationFromPatch(patch, data);
 
-            boolean ok = movieRepository.updateMovieById(id, movie);
+            Movie merged = new Movie();
+            merged.setId(id);
+
+            merged.setTitle(pick(patch.getTitle(), existing.getTitle()));
+            merged.setShortDescription(pick(patch.getShortDescription(), existing.getShortDescription()));
+            merged.setDescription(pick(patch.getDescription(), existing.getDescription()));
+
+            int durationFinal = existing.getDurationMinutes();
+            if (durationPatch != null) durationFinal = durationPatch;
+            merged.setDurationMinutes(durationFinal);
+
+            merged.setGenre(pick(patch.getGenre(), existing.getGenre()));
+            merged.setLanguage(pick(patch.getLanguage(), existing.getLanguage()));
+            merged.setFormat(pick(patch.getFormat(), existing.getFormat()));
+            merged.setDirector(pick(patch.getDirector(), existing.getDirector()));
+            merged.setCast(pick(patch.getCast(), existing.getCast()));
+
+            merged.setPosterUrl(hasNewPoster ? newPosterRel : existing.getPosterUrl());
+            merged.setBannerUrl(hasNewBanner ? newBannerRel : existing.getBannerUrl());
+            merged.setTrailerUrl(pick(patch.getTrailerUrl(), existing.getTrailerUrl()));
+
+            merged.setReleaseDate(pick(patch.getReleaseDate(), existing.getReleaseDate()));
+            merged.setEndDate(pick(patch.getEndDate(), existing.getEndDate()));
+            merged.setStatus(pick(patch.getStatus(), existing.getStatus()));
+            merged.setCreatedAt(existing.getCreatedAt());
+
+            boolean ok = movieRepository.updateMovieById(id, merged);
             if (!ok) {
                 safeDelete(newPosterPath);
                 safeDelete(newBannerPath);
@@ -182,12 +217,9 @@ public class MovieService {
             if (hasNewPoster) safeDelete(resolveUploadPath(oldMedia.getPosterUrl()));
             if (hasNewBanner) safeDelete(resolveUploadPath(oldMedia.getBannerUrl()));
 
-            String posterFinalRel = hasNewPoster ? newPosterRel : oldMedia.getPosterUrl();
-            String bannerFinalRel = hasNewBanner ? newBannerRel : oldMedia.getBannerUrl();
-
-            MovieDetailDtos res = MovieMapper.toDetailDto(movie);
-            res.setPosterUrl(toPublicMediaUrl(posterFinalRel));
-            res.setBannerUrl(toPublicMediaUrl(bannerFinalRel));
+            MovieDetailDtos res = MovieMapper.toDetailDto(merged);
+            res.setPosterUrl(toPublicMediaUrl(merged.getPosterUrl()));
+            res.setBannerUrl(toPublicMediaUrl(merged.getBannerUrl()));
             return res;
 
         } catch (Exception ex) {
@@ -196,6 +228,7 @@ public class MovieService {
             throw new RuntimeException("EDIT MOVIE FAILED: " + ex.getMessage(), ex);
         }
     }
+
 
     // XÓA PHIM THEO ID.
     public boolean deleteMovie(int id) {
@@ -324,4 +357,30 @@ public class MovieService {
     public long countTotalMovies() {
     	return movieRepository.countMovies();
     }
+    
+    
+    // FETCH MOVIE HIỆN TẠI 
+    private String normalizeText(String s) {
+        if (s == null) return null;
+        s = s.trim();
+        return s.isEmpty() ? null : s;
+    }
+
+    private Integer normalizePositive(Integer n) {
+        if (n == null) return null;
+        return n > 0 ? n : null;
+    }
+
+    private <T> T pick(T newVal, T oldVal) {
+        return newVal != null ? newVal : oldVal;
+    }
+    private Integer normalizeDurationFromPatch(Movie patch, MovieEditDtos data) {
+        try {
+            return normalizePositive((Integer) (Object) patch.getDurationMinutes());
+        } catch (Exception ignore) {
+            int v = patch.getDurationMinutes();
+            return v > 0 ? v : null;
+        }
+    }
+
 }
