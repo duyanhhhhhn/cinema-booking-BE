@@ -56,7 +56,8 @@ public class MovieController {
 
         return ResponseEntity.ok(new ApiResponse<>("Success", movies, meta));
     }
-
+    
+    
     @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<MovieDetailDtos>> createMovie(@ModelAttribute MovieCreateDtos dto) {
         if (dto.getPosterFile() == null || dto.getPosterFile().isEmpty()) {
