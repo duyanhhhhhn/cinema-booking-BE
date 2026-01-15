@@ -67,6 +67,7 @@ public class SecurityConfig {
                         // Roles
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
                         .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 
