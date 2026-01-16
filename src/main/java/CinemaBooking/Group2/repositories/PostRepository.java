@@ -33,11 +33,12 @@ public class PostRepository implements Icrud<Post>{
 		try {
 			int value = (page-1)*size;
 			item = db.query("select * from "+StringValue.tbl_post+
-					" limit ? offset ? where is_published=1",new PostMapper()
+					" limit ? offset ?",new PostMapper()
 					,new Object[] {size,value});
+			return item;
 		}
 		catch(Exception e) {
-			throw new RuntimeException();
+			System.out.print(e.getMessage());
 		}
 		return item;
 	}
