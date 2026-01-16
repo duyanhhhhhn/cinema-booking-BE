@@ -76,14 +76,23 @@ public class MovieRepository {
         int offset = (page - 1) * perPage;
 
         String sql =
-            "SELECT " +
-            "  id, title, short_description, description, duration_minutes, genre, language, format, " +
-            "  director, `cast` AS cast, poster_url, banner_url, trailer_url, " +
-            "  release_date, end_date, status, created_at " +
-            "FROM movie " +
-            "WHERE status IN (?, ?) " +
-            "ORDER BY id DESC " +
-            "LIMIT ? OFFSET ?;";
+        	    "SELECT " +
+        	    "  id, title, short_description, description, duration_minutes, genre, language, format, " +
+        	    "  director, `cast` AS cast, poster_url, banner_url, trailer_url, " +
+        	    "  release_date, end_date, status, created_at " +
+        	    "FROM movie " +
+        	    "WHERE status IN (?, ?) " +
+        	    "ORDER BY " +
+        	    "  CASE status " +
+        	    "    WHEN 'NOW_SHOWING' THEN 0 " +
+        	    "    WHEN 'COMING_SOON' THEN 1 " +
+        	    "    WHEN 'ENDED' THEN 2 " +
+        	    "    ELSE 3 " +
+        	    "  END, " +
+        	    "  release_date DESC, " +
+        	    "  id DESC " +
+        	    "LIMIT ? OFFSET ?;";
+
 
         List<Movie> movies = new ArrayList<>();
 
