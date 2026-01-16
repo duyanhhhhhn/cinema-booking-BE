@@ -26,14 +26,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     // Các endpoint public
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth",
+    		  "/api/auth",
+              "/api/public",
+              "/swagger-ui",
+              "/v3/api-docs",
+              "/swagger-ui.html",
+              "/media",
+              "/uploads",
+              "/static",
+              "/favicon.ico",
             "/swagger-ui",
             "/v3/api-docs"
+            
     );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
 
