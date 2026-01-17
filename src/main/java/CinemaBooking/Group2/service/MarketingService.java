@@ -48,6 +48,16 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
+	public List<PostResponseDTO> searchPostPaging(String key,int page,int size) {
+		try {
+			List<Post> item = mk.searchPost(key, page, size);
+			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+	}
 	public PostResponseDTO newPost(Post post) {
 		PostResponseDTO res = new PostResponseDTO();
 		try {

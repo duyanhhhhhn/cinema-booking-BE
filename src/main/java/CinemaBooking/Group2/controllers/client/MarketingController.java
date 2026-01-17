@@ -63,6 +63,34 @@ public class MarketingController {
 			meta.put("page",page);
 			meta.put("perPage", size);
 			meta.put("total", totalItem);
+			meta.put("totalPages", totalPage);
+			if(page>totalPage) {
+				
+			}
+			else {
+				return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
+	}
+	@GetMapping("/api/posts/search")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> searchPost(@RequestParam("key")String key,@RequestParam("page")int page,
+			@RequestParam("size")int size){
+		 List<PostResponseDTO> item = service.searchPostPaging(key,page,size);
+		try {
+			Map<String, Object> meta = new HashMap<>();
+			float totalItem = service.getAllPost().getList().size();
+			float totalPage = StringValue.calculateTotalPage(totalItem, size);
+			meta.put("page",page);
+			meta.put("perPage", size);
+			meta.put("total", totalItem);
+			meta.put("totalPages", totalPage);
 			if(page>totalPage) {
 				
 			}
@@ -96,6 +124,8 @@ public class MarketingController {
 		}
 		return ResponseEntity.status(HttpStatus.CREATED).body(rs);
 	}
+	
+	
 	@GetMapping("/api/posts/{id}")
 	@CrossOrigin
 	public ResponseEntity<PostResponseDTO> postInfo(@PathVariable("id")int id){
@@ -119,15 +149,16 @@ public class MarketingController {
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucherPaging(@RequestParam("page")int page,
 			@RequestParam("size") int size){
-		ApiResponse<List<VoucherResponseDTO>> response;
+		//ApiResponse<List<VoucherResponseDTO>> response;
 		List<VoucherResponseDTO> item=null;
 		try {
 			Map<String, Object> meta = new HashMap<>();
 			float totalItem = service.getVoucher().size();
+			float totalPage = StringValue.calculateTotalPage(totalItem, size);
 			meta.put("page", page);
 			meta.put("perPage",size);
 			meta.put("total",totalItem);
-			float totalPage = StringValue.calculateTotalPage(totalItem, size);
+			meta.put("totalPages", totalPage);
 			if(totalPage<page) {
 				return ResponseEntity
 						.status(HttpStatus.INTERNAL_SERVER_ERROR).

@@ -71,6 +71,31 @@ public class PostRepository implements Icrud<Post>{
 	@Override
 	public List<Post> search(String key) {
 		// TODO Auto-generated method stub
+		List<Post> item = new ArrayList<>();
+		try {
+			item = db.query("select * from"+StringValue.tbl_post+"where title like %?% or content ", 
+					new PostMapper(),new Object[] {key});
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
+	public List<Post> search(String key,int page,int size) {
+		// TODO Auto-generated method stub
+		List<Post> item = new ArrayList<>();
+		try {
+			int value = (page-1)*size;
+			item = db.query("select * from"+StringValue.tbl_post+"limit ? offset ? where title like %?% or content ", 
+					new PostMapper(),new Object[] {size,value,key});
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
 		return null;
 	}
 	@Override
