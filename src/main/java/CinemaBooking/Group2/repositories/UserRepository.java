@@ -11,6 +11,7 @@ import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.dtos.auth.RegisterRequestDTO;
+import CinemaBooking.Group2.mappers.UserMapper;
 import CinemaBooking.Group2.models.User;
 
 @Repository
@@ -50,7 +51,10 @@ public class UserRepository {
 				    WHERE u.email = ?
 				""";
 		try {
-			return jdbc.queryForObject(sql, new CinemaBooking.Group2.mappers.UserMapper(), email);
+			User user = jdbc.queryForObject(sql, new UserMapper(), email);
+			System.out.println(user);
+			return jdbc.queryForObject(sql, new UserMapper(), email);
+			
 		} catch (Exception e) {
 			return null;
 		}
@@ -59,7 +63,7 @@ public class UserRepository {
 	public User findById(int id) {
 		String sql = "SELECT u.*, r.name AS role_name FROM user u JOIN role r ON u.role_id = r.id WHERE u.id = ?";
 		try {
-			return jdbc.queryForObject(sql, new CinemaBooking.Group2.mappers.UserMapper(), id);
+			return jdbc.queryForObject(sql, new UserMapper(), id);
 		} catch (Exception ex) {
 			return null;
 		}
@@ -218,5 +222,35 @@ public class UserRepository {
         }
     }
 
+	public void updateProfile(int userId, String fullName, String phone) {
+
+	    StringBuilder sql = new StringBuilder("UPDATE user SET ");
+	    List<Object> params = new ArrayList<>();
+
+	    try {
+	    	if (fullName != null) {
+	            sql.append("full_name = ?, ");
+	            params.add(fullName);
+	        }
+
+	        if (phone != null) {
+	            sql.append("phone = ?, ");
+	            params.add(phone);
+	        }
+
+	        if (params.isEmpty()) {
+	            return; // không có gì để update
+	        }
+
+	        sql.setLength(sql.length() - 2); // bỏ ", "
+	        sql.append(" WHERE id = ?");
+	        params.add(userId);
+
+	        jdbc.update(sql.toString(), params.toArray());
+	    }
+	    catch (Exception e) {
+	    	throw new RuntimeException("Lỗi khi cập nhật profile: " + e.getMessage());
+	    }
+	}
 
 }

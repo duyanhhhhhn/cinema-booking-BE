@@ -26,9 +26,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     // Các endpoint public
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth",
-            "/swagger-ui",
-            "/v3/api-docs"
+    		"/api/auth/login",
+    	    "/api/auth/register",
+    	    "/api/auth/forgot",
+    	    "/swagger-ui",
+    	    "/v3/api-docs"
     );
 
     @Override

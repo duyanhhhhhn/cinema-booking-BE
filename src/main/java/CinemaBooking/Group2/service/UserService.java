@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
+import CinemaBooking.Group2.dtos.client.UpdateProfileRequestDTO;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.repositories.UserRepository;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
@@ -143,5 +144,24 @@ public class UserService {
 
     public User findByEmail(String email) {
         return userRepo.findByEmail(email);
+    }
+    
+    //===Update Profile===
+    public void updateMyProfile(UpdateProfileRequestDTO req) {
+
+        AuthUserPrincipal principal =
+            (AuthUserPrincipal) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+
+        User user = userRepo.findByEmail(principal.email());
+        if (user == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
+
+        userRepo.updateProfile(
+            user.getId(),
+            req.getFullName(),
+            req.getPhone()       
+        );
     }
 }
