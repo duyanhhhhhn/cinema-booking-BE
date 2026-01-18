@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,36 +54,39 @@ public class MovieReviewClientController {
 	}
 
 	// đánh giá comment của khách hàng với điều kiện, người dùng đã mua vé.
-    @PostMapping(value = "/create-comment", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<ApiResponse<MovieReviewDtos>> createComment(@RequestBody MovieCreateReviewDtos req) {
-        try {
-            if (req.getUserId() <= 0) {
-                return ResponseEntity.status(401).body(new ApiResponse<>("UNAUTHORIZED: userId invalid.", null));
-            }
+	@PostMapping(
+		    value = "/create-comment",
+		    consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+		    produces = MediaType.APPLICATION_JSON_VALUE
+		)
+		public ResponseEntity<ApiResponse<MovieReviewDtos>> createComment(
+		    @RequestParam int userId,
+		    @RequestParam int movieId,
+		    @RequestParam int rating,
+		    @RequestParam(required = false, defaultValue = "") String comment
+		) {
+		    try {
+		        if (userId <= 0) {
+		            return ResponseEntity.status(401).body(new ApiResponse<>("UNAUTHORIZED: userId invalid.", null));
+		        }
 
-            MovieReviewDtos dto = mv.createReview(
-                    req.getUserId(),
-                    req.getMovieId(),
-                    req.getRating(),
-                    req.getComment()
-            );
+		        MovieReviewDtos dto = mv.createReview(userId, movieId, rating, comment);
+		        return ResponseEntity.status(201).body(new ApiResponse<>("CREATE REVIEW SUCCESS.", dto));
 
-            return ResponseEntity.status(201).body(new ApiResponse<>("CREATE REVIEW SUCCESS.", dto));
+		    } catch (IllegalArgumentException e) {
+		        return ResponseEntity.status(400).body(new ApiResponse<>(e.getMessage(), null));
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(new ApiResponse<>(e.getMessage(), null));
+		    } catch (IllegalStateException e) {
+		        String msg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+		        if (msg.contains("đã review") || msg.contains("da review")) {
+		            return ResponseEntity.status(409).body(new ApiResponse<>(e.getMessage(), null));
+		        }
+		        return ResponseEntity.status(403).body(new ApiResponse<>(e.getMessage(), null));
 
-        } catch (IllegalStateException e) {
-            String msg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
-            if (msg.contains("đã review") || msg.contains("da review")) {
-                return ResponseEntity.status(409).body(new ApiResponse<>(e.getMessage(), null));
-            }
-            return ResponseEntity.status(403).body(new ApiResponse<>(e.getMessage(), null));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(new ApiResponse<>("SERVER ERROR.", null));
-        }
-    }
+		    } catch (Exception e) {
+		        return ResponseEntity.status(500).body(new ApiResponse<>("SERVER ERROR.", null));
+		    }
+		}
     
     @GetMapping("/{movie_id}/comment")
     public ResponseEntity<PageResponse<MovieReviewClientDtos>> getAllComment(
