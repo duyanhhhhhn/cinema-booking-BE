@@ -112,7 +112,7 @@ public class MovieRepository {
                     movie.setDescription(rs.getString("description"));
                     movie.setDurationMinutes(rs.getInt("duration_minutes"));
 
-                    // genre: DB VARCHAR -> enum
+                    // genre: DB VARCHAR (có thể nhiều genre) -> enum (lấy genre hợp lệ đầu tiên)
                     movie.setGenre(parseMovieGenre(rs.getString("genre")));
 
                     movie.setLanguage(rs.getString("language"));
@@ -124,7 +124,6 @@ public class MovieRepository {
                     movie.setTrailerUrl(rs.getString("trailer_url"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
 
-                    // FIX: end_date column name
                     movie.setEndDate(rs.getTimestamp("end_date"));
 
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
@@ -248,7 +247,6 @@ public class MovieRepository {
         }
     }
 
-    // (NO AI) -> XÓA TOÀN BỘ PHIM RA KHỎI DB THÔNG QUA ID.
     public boolean deleteMovieById(int id) {
         String sql = "DELETE FROM movie WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
@@ -260,7 +258,6 @@ public class MovieRepository {
         }
     }
 
-    // (NO AI) -> HÀM LẤY ẢNH CŨ ĐỂ EDIT SANG ẢNH MỚI.
     public MovieMediaDtos getMediaPathById(int id) {
         String sql = "SELECT poster_url, banner_url FROM movie WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
@@ -275,7 +272,6 @@ public class MovieRepository {
         }
     }
 
-    //(NO AI) -> HÀM CHỈNH SỬA PHIM THEO ID.
     public boolean updateMovieById(int id, Movie movie) {
         String sql =
             "UPDATE movie SET " +
@@ -296,7 +292,6 @@ public class MovieRepository {
         }
     }
 
-    // (NO AI) -> HÀM KIỂM TRA XEM PHIM ĐÃ TỒN TẠI HAY CHƯA
     public boolean existsById(int id) {
         String sql = "SELECT 1 FROM movie WHERE id = ? LIMIT 1;";
         try (Connection conn = dataSource.getConnection();
@@ -312,9 +307,6 @@ public class MovieRepository {
         }
     }
 
-    /**
-     * Chuyển đổi dữ liệu từ ResultSet sang đối tượng Movie (Mapping).
-     */
     private Movie mapFullMovie(ResultSet rs) throws SQLException {
         Movie movie = new Movie();
         movie.setId(rs.getInt("id"));
@@ -323,7 +315,7 @@ public class MovieRepository {
         movie.setDescription(rs.getString("description"));
         movie.setDurationMinutes(rs.getInt("duration_minutes"));
 
-        // genre: DB VARCHAR -> enum
+        // genre: DB VARCHAR (có thể nhiều genre) -> enum (lấy genre hợp lệ đầu tiên)
         movie.setGenre(parseMovieGenre(rs.getString("genre")));
 
         movie.setLanguage(rs.getString("language"));
@@ -340,7 +332,6 @@ public class MovieRepository {
         return movie;
     }
 
-    // (NO AI) -> CHUYỂN TỪ STRING SANG ENUM PHÙ HỢP VỚI DATABASE.
     private Movie.MovieStatus parseMovieStatus(String statusStr) {
         if (statusStr == null || statusStr.isBlank()) return null;
         try {
@@ -350,29 +341,87 @@ public class MovieRepository {
         }
     }
 
-    // genre: DB VARCHAR -> enum (chịu được dữ liệu cũ: "sci-fi", "Sci Fi", "SCI_FI")
+    /**
+     * ============================
+     * GENRE FIX (TỐI ƯU THỰC TẾ)
+     * ============================
+     *
+     * DB đang lưu genre dạng: "Fantasy, Thriller" / "Drama, Coming-of-age" / "Sci-Fi, Adventure"...
+     * Trong khi MovieGenre là enum 1 giá trị.
+     *
+     * => parse tolerant:
+     *   - split theo , | /
+     *   - normalize token
+     *   - token hợp lệ -> enum
+     *   - token lạ -> bỏ qua
+     *   - trả về enum hợp lệ đầu tiên (primary genre)
+     *   - KHÔNG throw để tránh chết API.
+     */
     private MovieGenre parseMovieGenre(String raw) {
         if (raw == null || raw.isBlank()) return null;
 
-        String normalized = raw.trim().toUpperCase(Locale.ROOT)
-            .replace("-", "_")
-            .replace(" ", "_");
+        // tách nhiều thể loại: "Sci-Fi, Thriller" / "Sci-Fi/Thriller" / "Sci-Fi | Thriller"
+        String[] parts = raw.split("[,|/]+");
 
-        try {
-            return MovieGenre.valueOf(normalized);
-        } catch (IllegalArgumentException ex) {
-            throw new RuntimeException("Invalid genre in DB: " + raw, ex);
+        for (String p : parts) {
+            String token = normalizeGenreToken(p);
+            if (token == null) continue;
+
+            // alias phổ biến (tuỳ enum của bạn có gì)
+            token = mapGenreAlias(token);
+
+            try {
+                return MovieGenre.valueOf(token);
+            } catch (IllegalArgumentException ignore) {
+                // token không có trong enum -> bỏ qua
+            }
         }
+
+        // không tìm được genre nào match enum -> return null để hệ thống không crash
+        return null;
     }
 
-    // (NO AI) -> Gán (bind) dữ liệu từ Movie vào các dấu ? của PreparedStatement để thực hiện INSERT.
+    /**
+     * Chuẩn hoá token genre về dạng ENUM_NAME.
+     * Ví dụ:
+     * - "Sci-Fi" -> "SCI_FI"
+     * - "Coming-of-age" -> "COMING_OF_AGE"
+     * - "  thriller  " -> "THRILLER"
+     */
+    private String normalizeGenreToken(String input) {
+        if (input == null) return null;
+        String s = input.trim();
+        if (s.isEmpty()) return null;
+
+        return s.toUpperCase(Locale.ROOT)
+                .replace("-", "_")
+                .replace(" ", "_");
+    }
+
+    /**
+     * Map alias để tăng khả năng match enum mà không phải sửa DB.
+     * Bạn có thể mở rộng thêm nếu enum của bạn hỗ trợ.
+     */
+    private String mapGenreAlias(String token) {
+        if (token == null) return null;
+
+        // các biến thể Sci-Fi hay gặp
+        if (token.equals("SCIFI") || token.equals("SCI_FI") || token.equals("SCI__FI")) return "SCI_FI";
+        if (token.equals("SCI-FI")) return "SCI_FI"; // phòng trường hợp token chưa replace
+
+        // Coming-of-age -> COMING_OF_AGE (token normalize đã ra COMING_OF_AGE rồi, nhưng giữ để chắc)
+        if (token.equals("COMING_OF_AGE")) return "COMING_OF_AGE";
+
+        return token;
+    }
+
     private void bindMovieForInsert(PreparedStatement ps, Movie movie) throws SQLException {
         ps.setString(1, movie.getTitle());
         ps.setString(2, movie.getShortDescription());
         ps.setString(3, movie.getDescription());
         ps.setInt(4, movie.getDurationMinutes());
 
-        // genre: enum -> DB VARCHAR
+        // genre: enum -> DB VARCHAR (lưu 1 genre chính)
         if (movie.getGenre() != null) ps.setString(5, movie.getGenre().name());
         else ps.setNull(5, Types.VARCHAR);
 
@@ -407,7 +456,6 @@ public class MovieRepository {
         );
     }
 
-    // GÁN (BIND) GIÁ TRỊ TỪ MOVIE VÀO CÁC DẤU ? TRONG PREPAREDSTATEMENT ĐỂ UPDATE THEO ID.
     private void bindMovieForUpdate(PreparedStatement ps, int id, Movie movie) {
         try {
             ps.setString(1, movie.getTitle());
@@ -415,7 +463,7 @@ public class MovieRepository {
             ps.setString(3, movie.getDescription());
             ps.setInt(4, movie.getDurationMinutes());
 
-            // genre: enum -> DB VARCHAR
+            // genre: enum -> DB VARCHAR (lưu 1 genre chính)
             if (movie.getGenre() != null) ps.setString(5, movie.getGenre().name());
             else ps.setNull(5, Types.VARCHAR);
 
@@ -461,7 +509,6 @@ public class MovieRepository {
         }
     }
 
-    // function count movie
     public long countMovies() {
         String sql = "SELECT COUNT(*) AS total FROM movie";
 
@@ -502,7 +549,7 @@ public class MovieRepository {
                 Integer dur = (Integer) rs.getObject("duration_minutes");
                 m.setDurationMinutes(dur != null ? dur : 0);
 
-                // genre: DB VARCHAR -> enum
+                // genre: tolerant parse
                 m.setGenre(parseMovieGenre(rs.getString("genre")));
 
                 m.setLanguage(rs.getString("language"));
