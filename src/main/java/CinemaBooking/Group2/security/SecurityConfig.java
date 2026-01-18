@@ -3,6 +3,7 @@ package CinemaBooking.Group2.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -71,6 +72,10 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**")
                         .permitAll()
+                        
+                        // ======= PUBLIC =======
+                        .requestMatchers("/api/client/reviews/*/comment").permitAll()
+
 
                         // ===== AUTHENTICATED =====
                         .requestMatchers(
