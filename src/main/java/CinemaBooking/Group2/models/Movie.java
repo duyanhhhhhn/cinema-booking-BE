@@ -10,12 +10,30 @@ public class Movie {
 	    ENDED
 	}
 	
+	public enum MovieGenre {
+	    ACTION,
+	    COMEDY,
+	    ROMANCE,
+	    DRAMA,
+	    HORROR,
+	    THRILLER,
+	    SCI_FI,
+	    FANTASY,
+	    ANIMATION,
+	    ADVENTURE,
+	    CRIME,
+	    WAR,
+	    FAMILY,
+	    MUSIC,
+	    DOCUMENTARY
+	}
+
 	private int id;
     private String title;
     private String shortDescription;
     private String description;
     private int durationMinutes;
-    private String genre;
+    private MovieGenre genre;
     private String language;
     private String format;
     private String director;
@@ -57,10 +75,10 @@ public class Movie {
 	public void setDurationMinutes(int durationMinutes) {
 		this.durationMinutes = durationMinutes;
 	}
-	public String getGenre() {
+	public MovieGenre getGenre() {
 		return genre;
 	}
-	public void setGenre(String genre) {
+	public void setGenre(MovieGenre genre) {
 		this.genre = genre;
 	}
 	public String getLanguage() {
@@ -117,7 +135,7 @@ public class Movie {
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
 	}
-	public Movie(String title, String shortDescription, String description, int durationMinutes, String genre,
+	public Movie(String title, String shortDescription, String description, int durationMinutes, MovieGenre genre,
 			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
 			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status) {
 		super();
@@ -168,7 +186,7 @@ public class Movie {
 	 * @param status
 	 * @param createdAt
 	 */
-	public Movie(int id, String title, String shortDescription, String description, int durationMinutes, String genre,
+	public Movie(int id, String title, String shortDescription, String description, int durationMinutes, MovieGenre genre,
 			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
 			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
 		super();

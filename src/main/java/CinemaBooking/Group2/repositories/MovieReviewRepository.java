@@ -307,5 +307,40 @@ public class MovieReviewRepository {
         }
     }
 
-    
+    // Lấy toàn bộ comment của user thông qua movieID 
+    public List<MovieReview> getAllCommnetByMovieId(int movieId, int limit, int offset) {
+        if (limit < 1) limit = 10;
+        if (offset < 0) offset = 0;
+
+        String sql =
+            "SELECT id, user_id, movie_id, rating, comment, created_at " +
+            "FROM movie_review " +
+            "WHERE movie_id = ? " +
+            "ORDER BY created_at DESC, user_id DESC " +
+            "LIMIT ? OFFSET ?;";
+    	List<MovieReview> movie_review = new ArrayList<>();
+    	try(Connection conn = dataSource.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)) {
+    		ps.setInt(1, movieId);
+    		ps.setInt(2, limit);
+    		ps.setInt(3, offset);
+
+    		try(ResultSet rs = ps.executeQuery()) {
+    			while(rs.next()) {
+    				MovieReview review = new MovieReview();
+    				review.setId(rs.getInt("id"));
+    				review.setUserId(rs.getInt("user_id"));
+    				review.setMovieId(rs.getInt("movie_id"));
+    				review.setRating(rs.getInt("rating"));
+    				review.setComment(rs.getString("comment"));
+    				review.setCreatedAt(rs.getTimestamp("created_at"));
+    				movie_review.add(review);
+    			}
+    		}
+    		return movie_review;
+    	}
+    	catch(SQLException e) { 
+            throw new RuntimeException("Failed to fetch reviews by movieId with pagination.", e);
+    	}
+    }
 }

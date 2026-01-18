@@ -23,6 +23,7 @@ import CinemaBooking.Group2.dtos.movie_review.client.MovieCreateReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
 import CinemaBooking.Group2.service.MovieReviewService;
+import io.swagger.v3.oas.annotations.Parameter;
 
 @RestController
 @RequestMapping("/api/client/reviews")
@@ -81,6 +82,41 @@ public class MovieReviewClientController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new ApiResponse<>("SERVER ERROR.", null));
         }
+    }
+    
+    @GetMapping("/{movie_id}/comment")
+    public ResponseEntity<PageResponse<MovieReviewClientDtos>> getAllComment(
+            @PathVariable("movie_id") int movieId,
+
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int perPage
+    ) {
+        if (movieId <= 0) {
+            throw new IllegalArgumentException("INVALID MOVIE ID.");
+        }
+
+        if (page < 1) page = 1;
+        if (perPage < 1) perPage = 10;
+        if (perPage > 100) perPage = 100;
+
+        int limit = perPage;
+        int offset = (page - 1) * perPage;
+
+        // service vẫn trả List như bạn muốn
+        List<MovieReviewClientDtos> items = mv.getAllCommentById(movieId, limit, offset);
+
+        PageResponse<MovieReviewClientDtos> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("OK");
+        res.setItems(items);
+        res.setPage(page);
+        res.setSize(perPage);
+
+        // Chưa có COUNT -> để 0 (hoặc -1 tuỳ quy ước của bạn)
+        res.setTotalItems(0);
+        res.setTotalPages(0);
+
+        return ResponseEntity.ok(res);
     }
 
 }

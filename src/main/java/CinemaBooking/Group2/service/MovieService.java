@@ -24,6 +24,7 @@ import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieGenre;
 import CinemaBooking.Group2.repositories.MovieRepository;
 
 @Service
@@ -172,7 +173,7 @@ public class MovieService {
             patch.setTitle(normalizeText(patch.getTitle()));
             patch.setShortDescription(normalizeText(patch.getShortDescription()));
             patch.setDescription(normalizeText(patch.getDescription()));
-            patch.setGenre(normalizeText(patch.getGenre()));
+            patch.setGenre(normalizeGenre(patch.getGenre()));
             patch.setLanguage(normalizeText(patch.getLanguage()));
             patch.setFormat(normalizeText(patch.getFormat()));
             patch.setDirector(normalizeText(patch.getDirector()));
@@ -193,7 +194,7 @@ public class MovieService {
             merged.setDurationMinutes(durationFinal);
 
             merged.setGenre(pick(patch.getGenre(), existing.getGenre()));
-            merged.setLanguage(pick(patch.getLanguage(), existing.getLanguage()));
+            merged.setLanguage(normalizeText(pick(patch.getLanguage(), existing.getLanguage())));
             merged.setFormat(pick(patch.getFormat(), existing.getFormat()));
             merged.setDirector(pick(patch.getDirector(), existing.getDirector()));
             merged.setCast(pick(patch.getCast(), existing.getCast()));
@@ -382,5 +383,11 @@ public class MovieService {
             return v > 0 ? v : null;
         }
     }
+    
+    // FETCH MOVIE GENRE 
+    private MovieGenre normalizeGenre(MovieGenre genre) {
+        return genre;
+    }
+
 
 }

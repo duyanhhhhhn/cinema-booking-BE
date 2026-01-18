@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieGenre;
 
 @Repository
 public class MovieRepository {
@@ -112,7 +113,7 @@ public class MovieRepository {
                     movie.setShortDescription(rs.getString("short_description"));
                     movie.setDescription(rs.getString("description"));
                     movie.setDurationMinutes(rs.getInt("duration_minutes"));
-                    movie.setGenre(rs.getString("genre"));
+                    movie.setGenre(parseMovieGenre(rs.getString("genre")));
                     movie.setLanguage(rs.getString("language"));
                     movie.setFormat(rs.getString("format"));
                     movie.setDirector(rs.getString("director"));
@@ -121,7 +122,7 @@ public class MovieRepository {
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
-                    movie.setEndDate(rs.getTimestamp("end_date"));
+                    movie.setEndDate(rs.getTimestamp("e		nd_date"));
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
                     movie.setCreatedAt(rs.getTimestamp("created_at"));
                     movies.add(movie);
@@ -327,7 +328,7 @@ public class MovieRepository {
         movie.setShortDescription(rs.getString("short_description"));
         movie.setDescription(rs.getString("description"));
         movie.setDurationMinutes(rs.getInt("duration_minutes"));
-        movie.setGenre(rs.getString("genre"));
+        movie.setGenre(parseMovieGenre(rs.getString("genre")));
         movie.setLanguage(rs.getString("language"));
         movie.setFormat(rs.getString("format"));
         movie.setDirector(rs.getString("director"));
@@ -353,6 +354,21 @@ public class MovieRepository {
         }
     }
 
+    private MovieGenre parseMovieGenre(String raw) {
+        if (raw == null) return null;
+
+        String normalized = raw.trim().toUpperCase()
+                .replace("-", "_")
+                .replace(" ", "_");
+
+        try {
+            return MovieGenre.valueOf(normalized);
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Invalid genre in DB: " + raw, ex);
+        }
+    }
+
+
     
     // (NO AI) -> Gán (bind) dữ liệu từ Movie vào các dấu ? của PreparedStatement để thực hiện INSERT.
     private void bindMovieForInsert(PreparedStatement ps, Movie movie) throws SQLException {
@@ -361,7 +377,7 @@ public class MovieRepository {
             ps.setString(2, movie.getShortDescription());
             ps.setString(3, movie.getDescription());
             ps.setInt(4, movie.getDurationMinutes());
-            ps.setString(5, movie.getGenre());
+            ps.setString(5, movie.getGenre().name());
             ps.setString(6, movie.getLanguage());
             ps.setString(7, movie.getFormat());
             ps.setString(8, movie.getDirector());
@@ -405,7 +421,7 @@ public class MovieRepository {
             ps.setString(2, movie.getShortDescription());
             ps.setString(3, movie.getDescription());
             ps.setInt(4, movie.getDurationMinutes());
-            ps.setString(5, movie.getGenre());
+            ps.setString(5, movie.getGenre().name());
             ps.setString(6, movie.getLanguage());
             ps.setString(7, movie.getFormat());
             ps.setString(8, movie.getDirector());
@@ -477,7 +493,7 @@ public class MovieRepository {
                 Integer dur = (Integer) rs.getObject("duration_minutes");
                 m.setDurationMinutes(dur != null ? dur : 0);
 
-                m.setGenre(rs.getString("genre"));
+                m.setGenre(parseMovieGenre(rs.getString("genre")));
                 m.setLanguage(rs.getString("language"));
                 m.setFormat(rs.getString("format"));
                 m.setDirector(rs.getString("director"));
