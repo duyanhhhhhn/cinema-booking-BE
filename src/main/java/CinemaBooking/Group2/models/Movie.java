@@ -25,7 +25,8 @@ public class Movie {
 	    WAR,
 	    FAMILY,
 	    MUSIC,
-	    DOCUMENTARY
+	    DOCUMENTARY,
+	    MYSTERY
 	}
 
 	private int id;
