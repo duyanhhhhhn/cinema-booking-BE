@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dtos.concession.ComboCRUDResponse;
+import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
@@ -30,11 +30,10 @@ public class ComboService {
 			throw new RuntimeException(e);
 		}
 	}
-	public List<ComboResponseDTO> getCombo(int page,int size ){
+	public List<Combo> getCombo(int page,int size ){
 		try {
 			List<Combo> item =  con.pagingCombo(page, size);
-			return item.stream().map(ComboMapper::toResponseDTO)
-					.collect(Collectors.toList());
+			return item;
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -51,8 +50,8 @@ public class ComboService {
 			// TODO: handle exception
 		}
 	}
-	public ComboCRUDResponse AddCombo(Combo combo) {
-		ComboCRUDResponse res= new ComboCRUDResponse();
+	public ComboCRUDResponseDTO AddCombo(Combo combo) {
+		ComboCRUDResponseDTO res= new ComboCRUDResponseDTO();
 		try {
 			int rs =  con.CreateCombo(combo);
 			if(rs==1) {
@@ -92,7 +91,7 @@ public class ComboService {
 	public int checkAdmin(int id) {
 		try {
 			User user = rep.findById(id);
-			if(user.getRoleId()==0) {
+			if(user.getRoleId()==1) {
 				return 1;
 			}
 		}

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class ComboRepository implements Icrud<Combo>{
@@ -20,7 +21,8 @@ public class ComboRepository implements Icrud<Combo>{
 	public List<Combo> getAll(){
 		List<Combo> list = new ArrayList<>();
 		try {
-			list = db.query("select * from `combos` where is_active=1", new ComboMapper());
+			list = db.query("select * from" +StringValue.tbl_combo+ 
+					"where is_active=1", new ComboMapper());
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -31,7 +33,8 @@ public class ComboRepository implements Icrud<Combo>{
 		List<Combo> list = new ArrayList<>();
 		try {
 			int value=(page-1)*size;
-			list = db.query("select * from `combos` limit ? offset ? where is_active=1", new ComboMapper(),new Object[] {size,value});
+			list = db.query("select * from"+StringValue.tbl_combo+
+					" limit ? offset ? where is_active=1", new ComboMapper(),new Object[] {size,value});
 			return list;
 		}
 		catch (Exception e) {
@@ -43,7 +46,8 @@ public class ComboRepository implements Icrud<Combo>{
 	public Combo findById(int id){
 		Combo item = new Combo();
 		try {
-			item = db.query("select * from `combos` where id=? and is_active=1", new ComboMapper(),new Object[] {id}).get(0);
+			item = db.query("select * from "+StringValue.tbl_combo+
+					" where id=? and is_active=1", new ComboMapper(),new Object[] {id}).get(0);
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -53,7 +57,8 @@ public class ComboRepository implements Icrud<Combo>{
 	@Override
 	public int create(Combo item) {
 		try {
-			int rs = db.update("insert into `combo`(name,description,price,image_url,is_active,create_at) values(?,?,?,?,?,?)",
+			int rs = db.update("insert into"+StringValue.tbl_combo+
+					"(name,description,price,image_url,is_active,create_at) values(?,?,?,?,?,?)",
 					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
 							item.getImageUrl(),item.getIsActive(),item.getCreatedAt()});
 			return rs;
@@ -66,7 +71,8 @@ public class ComboRepository implements Icrud<Combo>{
 	@Override
 	public int update(Combo item) {
 		try {
-			int rs = db.update("update `combos` set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
+			int rs = db.update("update"+StringValue.tbl_combo+
+					" set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
 					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
 							item.getImageUrl(),item.getIsActive(),item.getCreatedAt(),item.getId()});
 			return rs;
@@ -80,7 +86,8 @@ public class ComboRepository implements Icrud<Combo>{
 	@Override
 	public int delete(int id) {
 		try {
-			int rs=db.update("delete from `combos` where id=?",
+			int rs=db.update("delete from"
+		+StringValue.tbl_combo+" where id=?",
 					new Object[] {id});
 			return rs;
 		}
@@ -92,7 +99,8 @@ public class ComboRepository implements Icrud<Combo>{
 	}
 	public int ChangeActive(int id,int active) {
 		try {
-			int rs = db.update("update `combos` set is_active=? where id=?",new Object[] {active,id});
+			int rs = db.update("update"+StringValue.tbl_combo+
+					" set is_active=? where id=?",new Object[] {active,id});
 			return rs;
 		}
 		catch (Exception e) {

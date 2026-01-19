@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import CinemaBooking.Group2.dtos.concession.ComboCRUDResponse;
+import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
@@ -47,9 +47,9 @@ public class ComboManageController {
 	}
 	@CrossOrigin
 	@PostMapping("/api/combo/add")
-	public ResponseEntity<ComboCRUDResponse> add(@RequestParam("name") String name,@RequestParam("description") String description,
+	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestParam("name") String name,@RequestParam("description") String description,
 			@RequestParam("price")BigDecimal price,@RequestParam("image_url")String image) {
-		ComboCRUDResponse res = new ComboCRUDResponse();
+		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			Combo item = new Combo();
 			item.setName(name);

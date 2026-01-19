@@ -12,6 +12,7 @@ import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
 import CinemaBooking.Group2.mappers.BannerMapper;
 import CinemaBooking.Group2.models.Banner;
+import CinemaBooking.Group2.models.Banner.BannerPosition;
 import CinemaBooking.Group2.pattern.Home;
 
 @Service
@@ -38,7 +39,22 @@ public class BannerService {
 				item = new ArrayList<>();
 			}
 			BannerListResponseDTO banner = new BannerListResponseDTO();
-			banner.setBanners(item);
+			banner.setData(item);
+			return banner;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	public BannerListResponseDTO getBannerByPosition(BannerPosition position,int count){
+		try {
+			List<Banner> item = home.findBannerByPosition(position, count);
+			if(item==null) {
+				item = new ArrayList<>();
+			}
+			BannerListResponseDTO banner = new BannerListResponseDTO();
+			banner.setData(item);
 			return banner;
 		}
 		catch (Exception e) {

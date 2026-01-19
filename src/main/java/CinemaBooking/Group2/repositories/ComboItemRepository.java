@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.ComboItem;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class ComboItemRepository implements Icrud<ComboItem>{
@@ -34,7 +35,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public List<ComboItem> getAll() {
 		List<ComboItem> list = new ArrayList<>();
 		try {
-			list = db.query("select * from `combo_items`", new ComboItemRowMapper());
+			list = db.query("select * from "+StringValue.tbl_comboItem, new ComboItemRowMapper());
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -44,7 +45,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public ComboItem findById(int id) {
 		ComboItem item = new ComboItem();
 		try {
-			item = db.query("select * from `combo_items` where id=?", 
+			item = db.query("select * from "+StringValue.tbl_comboItem +" where id=?", 
 					new ComboItemRowMapper(),new Object[] {id}).get(0);
 		}
 		catch(Exception e) {
@@ -55,7 +56,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public List<ComboItem> getByCombo(int order_id){
 		List<ComboItem> item = new ArrayList<>();
 		try {
-			item = db.query("select * from `combo_items` where combo_id=?", 
+			item = db.query("select * from "+StringValue.tbl_comboItem +" where combo_id=?", 
 					new ComboItemRowMapper(),new Object[] {order_id});
 		}
 		catch(Exception e) {
@@ -65,7 +66,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	}
 	public int create(ComboItem item) {
 		try {
-			int rs = db.update("insert into `combo_items`(combo_id,product_id,quantity) values(?,?,?)",
+			int rs = db.update("insert into "+StringValue.tbl_comboItem +"(combo_id,product_id,quantity) values(?,?,?)",
 					new Object[] {item.getComboId(),item.getProductId(),item.getQuantity()});
 			return rs;
 		}
@@ -76,7 +77,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	}
 	public int update(ComboItem item) {
 		try {
-			int rs = db.update("update `combo_items` set combo_id=?,product_id=?,quantity=? where id=?",
+			int rs = db.update("update "+StringValue.tbl_comboItem +" set combo_id=?,product_id=?,quantity=? where id=?",
 					new Object[] {item.getComboId(),item.getProductId(),item.getQuantity(),item.getId()});
 			return rs;
 		}
@@ -88,7 +89,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public int AddQuantity(ComboItem item,int quantity) {
 		try {
 			int total=quantity+=item.getQuantity();
-			int rs = db.update("update `combo_items` set quantity=? where id=?",
+			int rs = db.update("update "+StringValue.tbl_comboItem +" set quantity=? where id=?",
 					new Object[] {total,item.getId()});
 			return rs;
 		}
@@ -102,7 +103,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 			if (checkExist(id)) {
 				return 0;
 			}
-			int rs = db.update("delete from `combo_items` where id=?",
+			int rs = db.update("delete from "+StringValue.tbl_comboItem +" where id=?",
 					new Object[] {id});
 			return rs;
 		}
@@ -119,7 +120,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public boolean checkExist(int id) {
 		try {
 			ComboItem item=null;
-			item = db.query("select * from `combo_items` where id=?", new ComboItemRowMapper(),new Object[] {id}).get(0);
+			item = db.query("select * from "+StringValue.tbl_comboItem +" where id=?", new ComboItemRowMapper(),new Object[] {id}).get(0);
 			if(item!=null) {
 				return true;
 			}
