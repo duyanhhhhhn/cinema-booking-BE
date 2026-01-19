@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.BannerMapper;
 import CinemaBooking.Group2.models.Banner;
+import CinemaBooking.Group2.models.Banner.BannerPosition;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
@@ -107,5 +108,27 @@ public class BannerRepository implements Icrud<Banner>{
 		}
 		return null;
 	}
-	
+	public List<Banner> findByLinkURL(String link_url,int count){
+		try {
+			List<Banner> item = db.query("select * from "+StringValue.tbl_banner+"limit ? where link_url=?",
+					new BannerMapper(), new Object[] {count,link_url});
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	public List<Banner> findByPosition(BannerPosition position,int count){
+		try {
+			List<Banner> item = db.query("select * from "+StringValue.tbl_banner+" where position=? limit ? ",
+					new BannerMapper(), new Object[] {position.name(),count});
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
 }

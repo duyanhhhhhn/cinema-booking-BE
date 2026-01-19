@@ -5,10 +5,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
+import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
 import CinemaBooking.Group2.service.MarketingService;
@@ -22,6 +24,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class MarketingAdminController {
 	@Autowired
 	private MarketingService service;
+	@GetMapping("/admin/api/posts")
+	@CrossOrigin
+	public ResponseEntity<ListPostResponseDTO> getPost(){
+		ListPostResponseDTO item = service.getAllPost();
+		try {
+			
+			if(item.isIs_success()==false) {
+				return ResponseEntity.status(HttpStatus.NO_CONTENT).body(item);
+			}
+			else {
+				return ResponseEntity.ok(item);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item); 
+	}
 	@GetMapping("/admin/api/vouchers")
 	@CrossOrigin
 	public ResponseEntity<List<VoucherResponseDTO>> getVoucher(){

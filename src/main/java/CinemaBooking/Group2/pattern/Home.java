@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.Banner;
+import CinemaBooking.Group2.models.Banner.BannerPosition;
 import CinemaBooking.Group2.repositories.BannerRepository;
 
 @Repository
@@ -66,5 +67,14 @@ public class Home {
 			// TODO: handle exception
 		}
 		return 0;
+	}
+	public List<Banner> findBannerByPosition(BannerPosition position,int count){
+		try {
+			return bannerRep.findByPosition(position, count);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
 	}
 }

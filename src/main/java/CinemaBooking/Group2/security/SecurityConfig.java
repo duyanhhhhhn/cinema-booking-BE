@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/swagger-ui/index.html#/",
                                 "/api/posts",
                                 "/api/posts/paging",
-                                "/api/posts/**")
+                                "/api/posts/**",
+                                "/api/banner/**")
                         .permitAll()
 
                         // Protected (login required)

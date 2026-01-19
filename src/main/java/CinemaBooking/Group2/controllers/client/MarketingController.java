@@ -33,26 +33,6 @@ public class MarketingController {
 	MarketingService service;
 	@GetMapping("/api/posts")
 	@CrossOrigin
-	public ResponseEntity<ListPostResponseDTO> getPost(){
-		ListPostResponseDTO item = service.getAllPost();
-		try {
-			
-			if(item.isIs_success()==false) {
-				return ResponseEntity.status(HttpStatus.NO_CONTENT).body(item);
-			}
-			else {
-				return ResponseEntity.ok(item);
-			}
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item); 
-	}
-	@GetMapping("/api/posts/paging")
-	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam("page")int page,
 			@RequestParam("size")int size){
 		 List<PostResponseDTO> item = service.getPostPaging(page,size);

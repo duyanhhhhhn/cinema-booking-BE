@@ -1,5 +1,4 @@
 package CinemaBooking.Group2.controllers.client;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,10 +9,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
+import CinemaBooking.Group2.models.Banner.BannerPosition;
 import CinemaBooking.Group2.service.BannerService;
 
 @RestController
-@RequestMapping("/api/home")
+@RequestMapping("/api")
 public class HomeController {
 	@Autowired
 	private BannerService service;
@@ -49,7 +49,6 @@ public class HomeController {
 		BannerListResponseDTO list = new BannerListResponseDTO();
 		try {
 			if(url==null||url.isEmpty()) {
-				list.setIs_success(false);
 				list.setMessage("URL shouldn't be empty or null !");
 				return ResponseEntity.ok(list);
 			}
@@ -57,17 +56,40 @@ public class HomeController {
 				BannerListResponseDTO banner = service.getBanner(url);
 				if(banner==null) {
 					list.setMessage("Not found !");
-					list.setIs_success(false);
 					return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
 				}
-				list.setBanners(banner.getBanners());
+				list.setData(banner.getData());
 				list.setMessage("Success");
-				list.setIs_success(true);
 				return ResponseEntity.ok(list);
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+		}
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
+	}
+	@GetMapping("/banner/get")
+	public ResponseEntity<BannerListResponseDTO> getBannerByPosition(@RequestParam("position")BannerPosition position,@RequestParam("count")int count){
+		BannerListResponseDTO list = new BannerListResponseDTO();
+		try {
+			if(position==null) {
+				list.setMessage("position shouldn't be empty!");
+				return ResponseEntity.ok(list);
+			}
+			else {
+				BannerListResponseDTO banner = service.getBannerByPosition(position, count);
+				if(banner==null) {
+					list.setMessage("Not found !");
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
+				}
+				list = banner;
+				list.setMessage("Success");
+				return ResponseEntity.ok(list);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
 	}
