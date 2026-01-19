@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
@@ -127,6 +127,19 @@ public class UserController {
 
         return ResponseEntity.ok(
             new ApiResponse<>("Cập nhật thông tin thành công", null)
+        );
+    }
+    
+    // ================= UPDATE AVATAR =================
+    @PostMapping("/me/avatar")
+    public ResponseEntity<ApiResponse<String>> updateMyAvatar(
+        @RequestParam("avatar") MultipartFile avatar
+    ) {
+        String avatarUrl = userService.uploadAvatar(avatar);
+        userService.updateMyAvatar(avatarUrl);
+
+        return ResponseEntity.ok(
+            new ApiResponse<>("Cập nhật avatar thành công", avatarUrl)
         );
     }
 
