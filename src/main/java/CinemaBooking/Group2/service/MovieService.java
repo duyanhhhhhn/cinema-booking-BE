@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
@@ -40,7 +42,6 @@ public class MovieService {
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
-    // LẤY DANH SÁCH TẤT CẢ PHIM VÀ CHUYỂN SANG DTO (GHÉP THÊM /MEDIA).
     public List<MovieDtos> getAllMovie(int page, int perPage) {
         try {
             List<Movie> movies = movieRepository.getAllMovie(page, perPage);
@@ -55,7 +56,6 @@ public class MovieService {
         }
     }
 
-    // LẤY DANH SÁCH PHIM THEO TRẠNG THÁI (COMING_SOON/NOW_SHOWING) CÓ PHÂN TRANG (GHÉP THÊM /MEDIA).
     public List<MoviePublicDtos> getAllMovieStatus(int page, int perPage) {
         try {
             List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage);
@@ -70,7 +70,6 @@ public class MovieService {
         }
     }
 
-    // ĐẾM TỔNG SỐ PHIM TRẠNG THÁI COMING_SOON HOẶC NOW_SHOWING.
     public int countMovieStatus() {
         try {
             return movieRepository.countMovieComingSoonNowShowing();
@@ -79,7 +78,6 @@ public class MovieService {
         }
     }
 
-    // LẤY CHI TIẾT PHIM THEO ID (GHÉP THÊM /MEDIA).
     public MovieDetailDtos getMovieDetailById(int id) {
         try {
             Movie movie = movieRepository.getMovieDetailById(id);
@@ -95,7 +93,26 @@ public class MovieService {
         }
     }
 
-    // TẠO PHIM: LƯU POSTER/BANNER, LƯU RELATIVE PATH VÀO DB, TRẢ DTO (GHÉP THÊM /MEDIA).
+    public List<MovieCardtos> getMoviesComingSoonAndNowShowing() {
+        try {
+            List<Movie> movies = movieRepository.getMoviesComingSoonAndNowShowing();
+            if (movies == null) return List.of();
+
+            List<MovieCardtos> res = new ArrayList<>();
+            for (Movie m : movies) {
+                MovieCardtos dto = MovieMapper.toPublicMovieStatus(m);
+                if (dto != null) {
+                    dto.setPosterUrl(toPublicMediaUrl(dto.getPosterUrl()));
+                    res.add(dto);
+                }
+            }
+            return res;
+
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO FETCH MOVIES (COMING_SOON, NOW_SHOWING).", e);
+        }
+    }
+
     public MovieDetailDtos createMovie(MovieCreateDtos data, MultipartFile poster, MultipartFile banner) {
         if (poster == null || poster.isEmpty()) throw new IllegalArgumentException("POSTER IS REQUIRED.");
         if (banner == null || banner.isEmpty()) throw new IllegalArgumentException("BANNER IS REQUIRED.");
@@ -137,7 +154,6 @@ public class MovieService {
         }
     }
 
-    // EDIT MOVIE: UPDATE FIELD + OPTIONAL POSTER/BANNER, DELETE OLD FILES AFTER DB UPDATE SUCCESS (GHÉP THÊM /MEDIA).
     public MovieDetailDtos updateMovie(int id, MovieEditDtos data, MultipartFile poster, MultipartFile banner) {
         if (id <= 0) throw new IllegalArgumentException("INVALID MOVIE ID.");
 
@@ -230,8 +246,6 @@ public class MovieService {
         }
     }
 
-
-    // XÓA PHIM THEO ID.
     public boolean deleteMovie(int id) {
         try {
             if (id <= 0) return false;
@@ -241,19 +255,16 @@ public class MovieService {
         }
     }
 
-    // GHÉP URL PUBLIC TỪ RELATIVE PATH TRONG DB (VD: movie/posters/a.jpg -> /media/movie/posters/a.jpg).
     private String toPublicMediaUrl(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) return null;
         return normalizePrefix(publicPrefix) + "/" + relativePath;
     }
 
-    // KIỂM TRA FILE CÓ THỰC SỰ ĐƯỢC GỬI LÊN (TRÁNH PART RỖNG).
     private boolean isProvidedFile(MultipartFile f) {
         return f != null && !f.isEmpty() && f.getSize() > 0
                 && f.getOriginalFilename() != null && !f.getOriginalFilename().isBlank();
     }
 
-    // CHUẨN HÓA PUBLIC PREFIX ĐỂ GHÉP URL MEDIA (VD: /MEDIA).
     private String normalizePrefix(String prefix) {
         if (prefix == null || prefix.isBlank()) return "/media";
         String p = prefix.trim();
@@ -262,7 +273,6 @@ public class MovieService {
         return p;
     }
 
-    // XÓA FILE AN TOÀN (KHÔNG LÀM GIÁN ĐOẠN LUỒNG CHÍNH).
     private void safeDelete(Path path) {
         if (path == null) return;
         try {
@@ -271,7 +281,6 @@ public class MovieService {
         }
     }
 
-    // TẠO ROOT UPLOADS ỔN ĐỊNH (NẾU uploadDir RELATIVE THÌ NEO VÀO user.dir).
     private Path uploadRoot() {
         Path p = Paths.get(uploadDir);
         if (!p.isAbsolute()) {
@@ -280,7 +289,6 @@ public class MovieService {
         return p.toAbsolutePath().normalize();
     }
 
-    // LẤY EXTENSION TỪ TÊN FILE (VD: JPG, PNG, WEBP).
     private String getExtension(String filename) {
         if (filename == null) return "";
         String name = filename.trim();
@@ -293,7 +301,6 @@ public class MovieService {
         return name.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
-    // LƯU ẢNH VÀO UPLOADS/<FOLDER> VỚI TÊN UUID, KIỂM TRA EXTENSION, CONTENT-TYPE (NẾU CÓ).
     private Path saveImageToFolder(MultipartFile file, String folderName) throws Exception {
         String contentType = file.getContentType();
         if (contentType != null && !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
@@ -324,7 +331,6 @@ public class MovieService {
         return target;
     }
 
-    // CHUYỂN PATH TUYỆT ĐỐI THÀNH PATH RELATIVE ĐỂ LƯU DB (DẠNG movie/posters/xxx.jpg).
     private String toRelativePath(Path absoluteSavedPath) {
         Path root = uploadRoot();
         Path abs = absoluteSavedPath.toAbsolutePath().normalize();
@@ -336,7 +342,6 @@ public class MovieService {
         return root.relativize(abs).toString().replace('\\', '/');
     }
 
-    // CHUYỂN RELATIVE TRONG DB THÀNH PATH TUYỆT ĐỐI TRONG UPLOADS ĐỂ XÓA FILE.
     private Path resolveUploadPath(String relative) {
         if (relative == null || relative.isBlank()) return null;
 
@@ -353,14 +358,11 @@ public class MovieService {
 
         return full;
     }
-    
-    // ĐẾM TOTAL KHI GIAO DIỆN LẤY API 
+
     public long countTotalMovies() {
-    	return movieRepository.countMovies();
+        return movieRepository.countMovies();
     }
-    
-    
-    // FETCH MOVIE HIỆN TẠI 
+
     private String normalizeText(String s) {
         if (s == null) return null;
         s = s.trim();
@@ -375,6 +377,7 @@ public class MovieService {
     private <T> T pick(T newVal, T oldVal) {
         return newVal != null ? newVal : oldVal;
     }
+
     private Integer normalizeDurationFromPatch(Movie patch, MovieEditDtos data) {
         try {
             return normalizePositive((Integer) (Object) patch.getDurationMinutes());
@@ -383,11 +386,8 @@ public class MovieService {
             return v > 0 ? v : null;
         }
     }
-    
-    // FETCH MOVIE GENRE 
+
     private MovieGenre normalizeGenre(MovieGenre genre) {
         return genre;
     }
-
-
 }

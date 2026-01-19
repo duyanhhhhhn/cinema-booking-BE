@@ -100,8 +100,9 @@ public class MovieRepository {
 
             ps.setString(1, Movie.MovieStatus.COMING_SOON.name());
             ps.setString(2, Movie.MovieStatus.NOW_SHOWING.name());
-            ps.setInt(3, perPage);
-            ps.setInt(4, offset);
+            ps.setString(3, Movie.MovieStatus.ENDED.name());
+            ps.setInt(4, perPage);
+            ps.setInt(5, offset);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -138,9 +139,46 @@ public class MovieRepository {
         }
     }
 
-    /**
-     * Đếm tổng số lượng phim đang ở trạng thái Sắp chiếu hoặc Đang chiếu.
-     */
+    public List<Movie> getMoviesComingSoonAndNowShowing() {
+        String sql = """
+            SELECT poster_url, title, duration_minutes, genre, status
+            FROM movie
+            WHERE status IN ('COMING_SOON', 'NOW_SHOWING')
+            ORDER BY
+              CASE status
+                WHEN 'NOW_SHOWING' THEN 1
+                WHEN 'COMING_SOON' THEN 2
+                ELSE 3
+              END,
+              release_date DESC
+        """;
+
+        List<Movie> movies = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Movie m = new Movie();
+                m.setPosterUrl(rs.getString("poster_url"));
+                m.setTitle(rs.getString("title"));
+                m.setDurationMinutes(rs.getInt("duration_minutes"));
+                m.setGenre(parseMovieGenre(rs.getString("genre")));
+                m.setStatus(parseMovieStatus(rs.getString("status")));
+                movies.add(m);
+            }
+
+            return movies;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING).", e);
+        }
+    }
+
+
+    
+    // Đếm tổng số lượng phim đang ở trạng thái Sắp chiếu hoặc Đang chiếu.
     public int countMovieComingSoonNowShowing() {
         String sql = "SELECT COUNT(*) FROM movie WHERE status IN (?, ?)";
 
@@ -341,22 +379,7 @@ public class MovieRepository {
         }
     }
 
-    /**
-     * ============================
-     * GENRE FIX (TỐI ƯU THỰC TẾ)
-     * ============================
-     *
-     * DB đang lưu genre dạng: "Fantasy, Thriller" / "Drama, Coming-of-age" / "Sci-Fi, Adventure"...
-     * Trong khi MovieGenre là enum 1 giá trị.
-     *
-     * => parse tolerant:
-     *   - split theo , | /
-     *   - normalize token
-     *   - token hợp lệ -> enum
-     *   - token lạ -> bỏ qua
-     *   - trả về enum hợp lệ đầu tiên (primary genre)
-     *   - KHÔNG throw để tránh chết API.
-     */
+
     private MovieGenre parseMovieGenre(String raw) {
         if (raw == null || raw.isBlank()) return null;
 
@@ -381,13 +404,7 @@ public class MovieRepository {
         return null;
     }
 
-    /**
-     * Chuẩn hoá token genre về dạng ENUM_NAME.
-     * Ví dụ:
-     * - "Sci-Fi" -> "SCI_FI"
-     * - "Coming-of-age" -> "COMING_OF_AGE"
-     * - "  thriller  " -> "THRILLER"
-     */
+
     private String normalizeGenreToken(String input) {
         if (input == null) return null;
         String s = input.trim();
@@ -398,10 +415,8 @@ public class MovieRepository {
                 .replace(" ", "_");
     }
 
-    /**
-     * Map alias để tăng khả năng match enum mà không phải sửa DB.
-     * Bạn có thể mở rộng thêm nếu enum của bạn hỗ trợ.
-     */
+
+    
     private String mapGenreAlias(String token) {
         if (token == null) return null;
 

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
@@ -55,6 +56,12 @@ public class MoviePublicController {
 
 	    return ResponseEntity.ok(new ApiResponse<>("Success", data));
 	}
+	
+    @GetMapping("/movies/status")
+    public ResponseEntity<ApiResponse<List<MovieCardtos>>> getMoviesComingSoonAndNowShowing() {
+        List<MovieCardtos> movies = movieServices.getMoviesComingSoonAndNowShowing();
+        return ResponseEntity.ok(new ApiResponse<>("Success", movies));
+    }
 
 
 }
