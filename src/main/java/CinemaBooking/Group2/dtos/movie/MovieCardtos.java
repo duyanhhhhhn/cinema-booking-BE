@@ -4,7 +4,8 @@ import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
 
 public class MovieCardtos {
-    private String title;
+	private int id;
+	private String title;
     private int durationMinutes;
     private MovieGenre genre;
     private String posterUrl;
@@ -38,5 +39,11 @@ public class MovieCardtos {
 	}
 	public void setStatus(Movie.MovieStatus status) {
 		this.status = status;
+	}
+    public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
 	}
 }

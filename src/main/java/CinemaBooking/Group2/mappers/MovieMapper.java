@@ -137,6 +137,7 @@ public class MovieMapper {
         if (movie == null) return null;
 
         MovieCardtos dto = new MovieCardtos();
+        dto.setId(movie.getId());
         dto.setTitle(movie.getTitle());
         dto.setDurationMinutes(movie.getDurationMinutes());
         dto.setGenre(movie.getGenre());

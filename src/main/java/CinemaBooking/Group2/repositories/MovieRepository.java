@@ -100,9 +100,8 @@ public class MovieRepository {
 
             ps.setString(1, Movie.MovieStatus.COMING_SOON.name());
             ps.setString(2, Movie.MovieStatus.NOW_SHOWING.name());
-            ps.setString(3, Movie.MovieStatus.ENDED.name());
-            ps.setInt(4, perPage);
-            ps.setInt(5, offset);
+            ps.setInt(3, perPage);
+            ps.setInt(4, offset);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -141,7 +140,7 @@ public class MovieRepository {
 
     public List<Movie> getMoviesComingSoonAndNowShowing() {
         String sql = """
-            SELECT poster_url, title, duration_minutes, genre, status
+            SELECT id, title, duration_minutes, genre, poster_url, status
             FROM movie
             WHERE status IN ('COMING_SOON', 'NOW_SHOWING')
             ORDER BY
@@ -161,10 +160,11 @@ public class MovieRepository {
 
             while (rs.next()) {
                 Movie m = new Movie();
-                m.setPosterUrl(rs.getString("poster_url"));
+                m.setId(rs.getInt("id"));
                 m.setTitle(rs.getString("title"));
                 m.setDurationMinutes(rs.getInt("duration_minutes"));
                 m.setGenre(parseMovieGenre(rs.getString("genre")));
+                m.setPosterUrl(rs.getString("poster_url"));
                 m.setStatus(parseMovieStatus(rs.getString("status")));
                 movies.add(m);
             }
