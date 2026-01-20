@@ -2,12 +2,16 @@ package CinemaBooking.Group2.ultis;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import io.swagger.v3.oas.annotations.Hidden;
+
 import java.util.Map;
 
-@RestControllerAdvice
+@Hidden
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthException.class)
@@ -17,7 +21,6 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
-    @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleOtherExceptions(Exception ex) {
         // Trả 500 Internal Server Error cho các lỗi khác
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
