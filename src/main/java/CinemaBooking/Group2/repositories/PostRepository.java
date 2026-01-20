@@ -42,6 +42,20 @@ public class PostRepository implements Icrud<Post>{
 		}
 		return item;
 	}
+	public List<Post> PagingRelate(int size,int id){
+		List<Post> item = new ArrayList<>();
+		try {
+			Post i = findById(id);
+			item = db.query("select * from "+StringValue.tbl_post+
+					" where id!=? and category =? limit ? ",new PostMapper()
+					,new Object[] {id,i.getCategory(),size});
+			return item;
+		}
+		catch(Exception e) {
+			System.out.print(e.getMessage());
+		}
+		return item;
+	}
 	public int newPost(Post post) {
 		try {
 			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"

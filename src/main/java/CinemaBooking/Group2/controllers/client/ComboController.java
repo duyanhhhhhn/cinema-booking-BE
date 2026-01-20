@@ -32,31 +32,7 @@ public class ComboController {
 	private ComboService service;
 	@Autowired
 	private ProductService pro;
-
-	@GetMapping("/combo")
-	@CrossOrigin
-	public ResponseEntity<ComboListResponseDTO> getCombo() {
-		ComboListResponseDTO list = new ComboListResponseDTO();
-		// String message = "Error";
-		try {
-			List<ComboResponseDTO> item = new ArrayList<>();
-			item = service.getCombo();
-			if (item == null) {
-				list.setMessage("Not found any Combo");
-				list.setSuccess(false);
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
-			} else {
-				list.setMessage("Success");
-				list.setSuccess(true);
-				return ResponseEntity.ok(list);
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
-	}
-	@GetMapping("/combo/paging")
+	@GetMapping("/public/combo")
 	@CrossOrigin
 	public ResponseEntity<PageResponse<Combo>> getCombo(
 			@RequestParam("page")int page,@RequestParam("size")int size) {
@@ -86,7 +62,7 @@ public class ComboController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 	}
 
-	@GetMapping("/combo/{id}")
+	@GetMapping("/public/combo/{id}")
 	@CrossOrigin
 	public ResponseEntity<ComboResponseDTO> comboInfo(@Validated @PathVariable("id") int id) {
 		ComboResponseDTO item = null;
