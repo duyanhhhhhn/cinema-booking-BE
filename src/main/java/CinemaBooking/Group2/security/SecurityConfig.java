@@ -1,7 +1,6 @@
 package CinemaBooking.Group2.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -53,17 +52,21 @@ public class SecurityConfig {
                         // Public routes
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(
+                        		"/api/public/**",
                                 "/api/auth/register/**",
                                 "/api/auth/login",
+                                "/api/auth/logout",
                                 "/api/auth/refresh",
                                 "/api/auth/forgot/**",
                                 "/media/**",
                                 "/api/public/**",
-                                "/swagger-ui/index.html#/")
+                                "/swagger-ui/index.html#/",
+                                "/api/posts",
+                                "/api/posts/paging",
+                                "/api/posts/**",
+                                "/api/banner/**")
                         .permitAll()
 
-                        // Protected (login required)
-                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .requestMatchers("/api/auth/password/**").authenticated()
                         .requestMatchers("/api/users/me").authenticated()
 
@@ -73,6 +76,10 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**")
                         .permitAll()
+                        
+                        // ======= PUBLIC =======
+                        .requestMatchers("/api/client/reviews/*/comment").permitAll()
+
 
                         // ===== AUTHENTICATED =====
                         .requestMatchers(
@@ -83,6 +90,7 @@ public class SecurityConfig {
                         // ===== ROLE BASE =====
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
                         .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
                         .requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")

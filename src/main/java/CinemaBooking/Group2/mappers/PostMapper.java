@@ -44,7 +44,8 @@ public class PostMapper implements RowMapper<Post>{
 		post.setContent(rs.getString("content"));
 		post.setCoverUrl(rs.getString("cover_url"));
 		post.setPublished(rs.getInt("is_published"));
-		//post.setPublishedAt(rs.getDate("published_at"));
+		post.setCategory(rs.getString("category"));
+		post.setPublishedAt(rs.getTimestamp("published_at").toLocalDateTime());
 		//post.setCreatedAt();
 		return post;
 	}		

@@ -3,11 +3,11 @@ package CinemaBooking.Group2.dtos.concession;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.Enum.ResponseStatus;
 
-public class ComboCRUDResponse {
+public class ComboCRUDResponseDTO {
 	private ResponseStatus status;
 	private String message;
 	private Combo combo;
-	public ComboCRUDResponse(ResponseStatus status, String message, Combo combo) {
+	public ComboCRUDResponseDTO(ResponseStatus status, String message, Combo combo) {
 		super();
 		this.status = status;
 		this.message = message;
@@ -31,7 +31,7 @@ public class ComboCRUDResponse {
 	public void setCombo(Combo combo) {
 		this.combo = combo;
 	}
-	public ComboCRUDResponse() {
+	public ComboCRUDResponseDTO() {
 		
 	}
 }

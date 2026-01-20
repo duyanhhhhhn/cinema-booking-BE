@@ -2,19 +2,20 @@ package CinemaBooking.Group2.controllers.admin;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.dashboardnreports.AuditLogListResponseDTO;
 import CinemaBooking.Group2.dtos.dashboardnreports.auditLogResponseDTO;
 import CinemaBooking.Group2.dtos.dashboardnreports.revenueResponseDTO;
+import CinemaBooking.Group2.models.AuditLog;
 import CinemaBooking.Group2.models.Enum.Status;
 import CinemaBooking.Group2.service.DashboardService;
 
@@ -25,14 +26,43 @@ public class dashboardController {
 	private DashboardService service;
 	@GetMapping("/audit-logs")
 	@CrossOrigin
-	public List<auditLogResponseDTO> getLog(){
+	public ResponseEntity<AuditLogListResponseDTO> getLog(){
+		AuditLogListResponseDTO response = new AuditLogListResponseDTO();
 		try {
-			return service.getAuditLog();
+			 if(service.getAuditLog().getLog()==null) {
+				 response.setMessage("Not found");
+				 response.setSuccess(false);
+				 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+			 }
+			 else {
+				 return ResponseEntity.ok(response);
+			 }
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
 		return null;
+	}
+	@PostMapping("/audit-logs/write")
+	@CrossOrigin
+	public ResponseEntity<auditLogResponseDTO> writeLog(AuditLog item, int uid){
+		auditLogResponseDTO audit = new auditLogResponseDTO();
+		try {
+			auditLogResponseDTO rs =service.writeLog(item, uid);
+			if(service.writeLog(item, uid)==null) {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(audit);
+			}
+			else if(!rs.isSuccess()){
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(audit);
+			}
+			else {
+				return ResponseEntity.ok(audit);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(audit);
 	}
 	@GetMapping("/revenue/month")
 	@CrossOrigin

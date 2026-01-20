@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.sql.DataSource;
 
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieGenre;
 
 @Repository
 public class MovieRepository {
@@ -26,7 +28,6 @@ public class MovieRepository {
     public MovieRepository(DataSource dataSource) {
         this.dataSource = dataSource;
     }
-
 
     /**
      * Truy vấn danh sách phim có phân trang.
@@ -65,7 +66,6 @@ public class MovieRepository {
         }
     }
 
-
     /**
      * Lấy danh sách phim sắp chiếu và đang chiếu có áp dụng phân trang.
      */
@@ -82,7 +82,15 @@ public class MovieRepository {
             "  release_date, end_date, status, created_at " +
             "FROM movie " +
             "WHERE status IN (?, ?) " +
-            "ORDER BY id DESC " +
+            "ORDER BY " +
+            "  CASE status " +
+            "    WHEN 'NOW_SHOWING' THEN 0 " +
+            "    WHEN 'COMING_SOON' THEN 1 " +
+            "    WHEN 'ENDED' THEN 2 " +
+            "    ELSE 3 " +
+            "  END, " +
+            "  release_date DESC, " +
+            "  id DESC " +
             "LIMIT ? OFFSET ?;";
 
         List<Movie> movies = new ArrayList<>();
@@ -103,7 +111,10 @@ public class MovieRepository {
                     movie.setShortDescription(rs.getString("short_description"));
                     movie.setDescription(rs.getString("description"));
                     movie.setDurationMinutes(rs.getInt("duration_minutes"));
-                    movie.setGenre(rs.getString("genre"));
+
+                    // genre: DB VARCHAR (có thể nhiều genre) -> enum (lấy genre hợp lệ đầu tiên)
+                    movie.setGenre(parseMovieGenre(rs.getString("genre")));
+
                     movie.setLanguage(rs.getString("language"));
                     movie.setFormat(rs.getString("format"));
                     movie.setDirector(rs.getString("director"));
@@ -112,7 +123,9 @@ public class MovieRepository {
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
+
                     movie.setEndDate(rs.getTimestamp("end_date"));
+
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
                     movie.setCreatedAt(rs.getTimestamp("created_at"));
                     movies.add(movie);
@@ -124,7 +137,6 @@ public class MovieRepository {
             throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING) with pagination.", e);
         }
     }
-
 
     /**
      * Đếm tổng số lượng phim đang ở trạng thái Sắp chiếu hoặc Đang chiếu.
@@ -148,7 +160,6 @@ public class MovieRepository {
         }
     }
 
-
     /**
      * Truy vấn thông tin chi tiết của một bộ phim cụ thể qua ID.
      */
@@ -169,7 +180,6 @@ public class MovieRepository {
             throw new RuntimeException("Failed to fetch movie detail by id=" + id, e);
         }
     }
-
 
     /**
      * Thêm mới phim vào database và trả về ID tự động phát sinh.
@@ -198,7 +208,6 @@ public class MovieRepository {
             throw new RuntimeException("Failed to insert new movie and return id.", e);
         }
     }
-
 
     /**
      * Cập nhật đường dẫn ảnh Poster và Banner cho phim dựa trên ID.
@@ -238,8 +247,6 @@ public class MovieRepository {
         }
     }
 
-
-    // (NO AI) -> XÓA TOÀN BỘ PHIM RA KHỎI DB THÔNG QUA ID.
     public boolean deleteMovieById(int id) {
         String sql = "DELETE FROM movie WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
@@ -251,35 +258,30 @@ public class MovieRepository {
         }
     }
 
-    
-    // (NO AI) -> HÀM LẤY ẢNH CŨ ĐỂ EDIT SANG ẢNH MỚI.
     public MovieMediaDtos getMediaPathById(int id) {
-    	String sql = "SELECT poster_url, banner_url FROM movie WHERE id = ?";
-    	try (Connection conn = dataSource.getConnection();
-    		PreparedStatement ps = conn.prepareStatement(sql)) {
-    		ps.setInt(1,id);
-    		try (ResultSet rs = ps.executeQuery()) {
-    			if (!rs.next()) return null;
-    			return new MovieMediaDtos(rs.getString("poster_url"), rs.getString("banner_url"));
-    		}
-    	}
-    	catch(SQLException e) {
+        String sql = "SELECT poster_url, banner_url FROM movie WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                return new MovieMediaDtos(rs.getString("poster_url"), rs.getString("banner_url"));
+            }
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to load media paths for movie id=" + id, e);
-    	}
+        }
     }
-    
-    
-    //(NO AI) -> HÀM CHỈNH SỬA PHIM THEO ID.
+
     public boolean updateMovieById(int id, Movie movie) {
         String sql =
-                "UPDATE movie SET " +
-                        "title = ?, short_description = ?, description = ?, duration_minutes = ?, " +
-                        "genre = ?, language = ?, format = ?, director = ?, `cast` = ?, " +
-                        "poster_url = COALESCE(?, poster_url), " +
-                        "banner_url = COALESCE(?, banner_url), " +
-                        "trailer_url = ?, " +
-                        "release_date = ?, end_date = ?, status = ? " +
-                        "WHERE id = ?;";
+            "UPDATE movie SET " +
+                "title = ?, short_description = ?, description = ?, duration_minutes = ?, " +
+                "genre = ?, language = ?, format = ?, director = ?, `cast` = ?, " +
+                "poster_url = COALESCE(?, poster_url), " +
+                "banner_url = COALESCE(?, banner_url), " +
+                "trailer_url = ?, " +
+                "release_date = ?, end_date = ?, status = ? " +
+            "WHERE id = ?;";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -290,8 +292,6 @@ public class MovieRepository {
         }
     }
 
-
-    // (NO AI) -> HÀM KIỂM TRA XEM PHIM ĐÃ TỒN TẠI HAY CHƯA
     public boolean existsById(int id) {
         String sql = "SELECT 1 FROM movie WHERE id = ? LIMIT 1;";
         try (Connection conn = dataSource.getConnection();
@@ -307,10 +307,6 @@ public class MovieRepository {
         }
     }
 
-
-    /**
-     * Chuyển đổi dữ liệu từ ResultSet sang đối tượng Movie (Mapping).
-     */
     private Movie mapFullMovie(ResultSet rs) throws SQLException {
         Movie movie = new Movie();
         movie.setId(rs.getInt("id"));
@@ -318,7 +314,10 @@ public class MovieRepository {
         movie.setShortDescription(rs.getString("short_description"));
         movie.setDescription(rs.getString("description"));
         movie.setDurationMinutes(rs.getInt("duration_minutes"));
-        movie.setGenre(rs.getString("genre"));
+
+        // genre: DB VARCHAR (có thể nhiều genre) -> enum (lấy genre hợp lệ đầu tiên)
+        movie.setGenre(parseMovieGenre(rs.getString("genre")));
+
         movie.setLanguage(rs.getString("language"));
         movie.setFormat(rs.getString("format"));
         movie.setDirector(rs.getString("director"));
@@ -333,8 +332,6 @@ public class MovieRepository {
         return movie;
     }
 
-
-   // (NO AI) -> CHUYỂN TỪ STRING SANG ENUM PHÙ HỢP VỚI DATABASE.
     private Movie.MovieStatus parseMovieStatus(String statusStr) {
         if (statusStr == null || statusStr.isBlank()) return null;
         try {
@@ -344,81 +341,166 @@ public class MovieRepository {
         }
     }
 
-    
-    // (NO AI) -> Gán (bind) dữ liệu từ Movie vào các dấu ? của PreparedStatement để thực hiện INSERT.
-    private void bindMovieForInsert(PreparedStatement ps, Movie movie) throws SQLException {
-        try {
-            ps.setString(1, movie.getTitle());
-            ps.setString(2, movie.getShortDescription());
-            ps.setString(3, movie.getDescription());
-            ps.setInt(4, movie.getDurationMinutes());
-            ps.setString(5, movie.getGenre());
-            ps.setString(6, movie.getLanguage());
-            ps.setString(7, movie.getFormat());
-            ps.setString(8, movie.getDirector());
-            ps.setString(9, movie.getCast());
+    /**
+     * ============================
+     * GENRE FIX (TỐI ƯU THỰC TẾ)
+     * ============================
+     *
+     * DB đang lưu genre dạng: "Fantasy, Thriller" / "Drama, Coming-of-age" / "Sci-Fi, Adventure"...
+     * Trong khi MovieGenre là enum 1 giá trị.
+     *
+     * => parse tolerant:
+     *   - split theo , | /
+     *   - normalize token
+     *   - token hợp lệ -> enum
+     *   - token lạ -> bỏ qua
+     *   - trả về enum hợp lệ đầu tiên (primary genre)
+     *   - KHÔNG throw để tránh chết API.
+     */
+    private MovieGenre parseMovieGenre(String raw) {
+        if (raw == null || raw.isBlank()) return null;
 
-            ps.setString(10, movie.getPosterUrl());
-            ps.setString(11, movie.getBannerUrl());
+        // tách nhiều thể loại: "Sci-Fi, Thriller" / "Sci-Fi/Thriller" / "Sci-Fi | Thriller"
+        String[] parts = raw.split("[,|/]+");
 
-            if (movie.getTrailerUrl() != null && !movie.getTrailerUrl().isBlank()) {
-                ps.setString(12, movie.getTrailerUrl().trim());
-            } else {
-                ps.setNull(12, Types.VARCHAR);
+        for (String p : parts) {
+            String token = normalizeGenreToken(p);
+            if (token == null) continue;
+
+            // alias phổ biến (tuỳ enum của bạn có gì)
+            token = mapGenreAlias(token);
+
+            try {
+                return MovieGenre.valueOf(token);
+            } catch (IllegalArgumentException ignore) {
+                // token không có trong enum -> bỏ qua
             }
-
-            if (movie.getReleaseDate() != null) {
-                ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
-            } else {
-                ps.setNull(13, Types.DATE);
-            }
-
-            if (movie.getEndDate() != null) {
-                ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
-            } else {
-                ps.setNull(14, Types.DATE);
-            }
-
-            ps.setString(15,
-                movie.getStatus() == null ? Movie.MovieStatus.COMING_SOON.name() : movie.getStatus().name()
-            );
-
-        } catch (SQLException e) {
-            throw new RuntimeException("bindMovieForInsert failed", e);
         }
+
+        // không tìm được genre nào match enum -> return null để hệ thống không crash
+        return null;
     }
 
-    
- // GÁN (BIND) GIÁ TRỊ TỪ MOVIE VÀO CÁC DẤU ? TRONG PREPAREDSTATEMENT ĐỂ UPDATE THEO ID.
+    /**
+     * Chuẩn hoá token genre về dạng ENUM_NAME.
+     * Ví dụ:
+     * - "Sci-Fi" -> "SCI_FI"
+     * - "Coming-of-age" -> "COMING_OF_AGE"
+     * - "  thriller  " -> "THRILLER"
+     */
+    private String normalizeGenreToken(String input) {
+        if (input == null) return null;
+        String s = input.trim();
+        if (s.isEmpty()) return null;
+
+        return s.toUpperCase(Locale.ROOT)
+                .replace("-", "_")
+                .replace(" ", "_");
+    }
+
+    /**
+     * Map alias để tăng khả năng match enum mà không phải sửa DB.
+     * Bạn có thể mở rộng thêm nếu enum của bạn hỗ trợ.
+     */
+    private String mapGenreAlias(String token) {
+        if (token == null) return null;
+
+        // các biến thể Sci-Fi hay gặp
+        if (token.equals("SCIFI") || token.equals("SCI_FI") || token.equals("SCI__FI")) return "SCI_FI";
+        if (token.equals("SCI-FI")) return "SCI_FI"; // phòng trường hợp token chưa replace
+
+        // Coming-of-age -> COMING_OF_AGE (token normalize đã ra COMING_OF_AGE rồi, nhưng giữ để chắc)
+        if (token.equals("COMING_OF_AGE")) return "COMING_OF_AGE";
+
+        return token;
+    }
+
+    private void bindMovieForInsert(PreparedStatement ps, Movie movie) throws SQLException {
+        ps.setString(1, movie.getTitle());
+        ps.setString(2, movie.getShortDescription());
+        ps.setString(3, movie.getDescription());
+        ps.setInt(4, movie.getDurationMinutes());
+
+        // genre: enum -> DB VARCHAR (lưu 1 genre chính)
+        if (movie.getGenre() != null) ps.setString(5, movie.getGenre().name());
+        else ps.setNull(5, Types.VARCHAR);
+
+        ps.setString(6, movie.getLanguage());
+        ps.setString(7, movie.getFormat());
+        ps.setString(8, movie.getDirector());
+        ps.setString(9, movie.getCast());
+
+        ps.setString(10, movie.getPosterUrl());
+        ps.setString(11, movie.getBannerUrl());
+
+        if (movie.getTrailerUrl() != null && !movie.getTrailerUrl().isBlank()) {
+            ps.setString(12, movie.getTrailerUrl().trim());
+        } else {
+            ps.setNull(12, Types.VARCHAR);
+        }
+
+        if (movie.getReleaseDate() != null) {
+            ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
+        } else {
+            ps.setNull(13, Types.DATE);
+        }
+
+        if (movie.getEndDate() != null) {
+            ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
+        } else {
+            ps.setNull(14, Types.DATE);
+        }
+
+        ps.setString(15,
+            movie.getStatus() == null ? Movie.MovieStatus.COMING_SOON.name() : movie.getStatus().name()
+        );
+    }
+
     private void bindMovieForUpdate(PreparedStatement ps, int id, Movie movie) {
         try {
             ps.setString(1, movie.getTitle());
             ps.setString(2, movie.getShortDescription());
             ps.setString(3, movie.getDescription());
             ps.setInt(4, movie.getDurationMinutes());
-            ps.setString(5, movie.getGenre());
+
+            // genre: enum -> DB VARCHAR (lưu 1 genre chính)
+            if (movie.getGenre() != null) ps.setString(5, movie.getGenre().name());
+            else ps.setNull(5, Types.VARCHAR);
+
             ps.setString(6, movie.getLanguage());
             ps.setString(7, movie.getFormat());
             ps.setString(8, movie.getDirector());
             ps.setString(9, movie.getCast());
 
-            if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank()) ps.setString(10, movie.getPosterUrl().trim());
-            else ps.setNull(10, Types.VARCHAR);
+            if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank())
+                ps.setString(10, movie.getPosterUrl().trim());
+            else
+                ps.setNull(10, Types.VARCHAR);
 
-            if (movie.getBannerUrl() != null && !movie.getBannerUrl().isBlank()) ps.setString(11, movie.getBannerUrl().trim());
-            else ps.setNull(11, Types.VARCHAR);
+            if (movie.getBannerUrl() != null && !movie.getBannerUrl().isBlank())
+                ps.setString(11, movie.getBannerUrl().trim());
+            else
+                ps.setNull(11, Types.VARCHAR);
 
-            if (movie.getTrailerUrl() != null && !movie.getTrailerUrl().isBlank()) ps.setString(12, movie.getTrailerUrl().trim());
-            else ps.setNull(12, Types.VARCHAR);
+            if (movie.getTrailerUrl() != null && !movie.getTrailerUrl().isBlank())
+                ps.setString(12, movie.getTrailerUrl().trim());
+            else
+                ps.setNull(12, Types.VARCHAR);
 
-            if (movie.getReleaseDate() != null) ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
-            else ps.setNull(13, Types.DATE);
+            if (movie.getReleaseDate() != null)
+                ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
+            else
+                ps.setNull(13, Types.DATE);
 
-            if (movie.getEndDate() != null) ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
-            else ps.setNull(14, Types.DATE);
+            if (movie.getEndDate() != null)
+                ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
+            else
+                ps.setNull(14, Types.DATE);
 
-            if (movie.getStatus() != null) ps.setString(15, movie.getStatus().name());
-            else ps.setNull(15, Types.VARCHAR);
+            if (movie.getStatus() != null)
+                ps.setString(15, movie.getStatus().name());
+            else
+                ps.setNull(15, Types.VARCHAR);
 
             ps.setInt(16, id);
 
@@ -426,8 +508,7 @@ public class MovieRepository {
             throw new RuntimeException("BIND MOVIE FOR UPDATE FAILED (ID=" + id + ")", e);
         }
     }
-    
-    // function count movie
+
     public long countMovies() {
         String sql = "SELECT COUNT(*) AS total FROM movie";
 
@@ -443,5 +524,68 @@ public class MovieRepository {
         }
     }
 
-    	
+    public Movie findById(int id) {
+        String sql =
+            "SELECT id, title, short_description, description, duration_minutes, " +
+            "genre, language, format, director, `cast`, " +
+            "poster_url, banner_url, trailer_url, " +
+            "release_date, end_date, status, created_at " +
+            "FROM movie WHERE id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+
+                Movie m = new Movie();
+                m.setId(rs.getInt("id"));
+                m.setTitle(rs.getString("title"));
+                m.setShortDescription(rs.getString("short_description"));
+                m.setDescription(rs.getString("description"));
+
+                Integer dur = (Integer) rs.getObject("duration_minutes");
+                m.setDurationMinutes(dur != null ? dur : 0);
+
+                // genre: tolerant parse
+                m.setGenre(parseMovieGenre(rs.getString("genre")));
+
+                m.setLanguage(rs.getString("language"));
+                m.setFormat(rs.getString("format"));
+                m.setDirector(rs.getString("director"));
+                m.setCast(rs.getString("cast"));
+
+                m.setPosterUrl(rs.getString("poster_url"));
+                m.setBannerUrl(rs.getString("banner_url"));
+                m.setTrailerUrl(rs.getString("trailer_url"));
+
+                java.sql.Timestamp releaseTs = rs.getTimestamp("release_date");
+                m.setReleaseDate(releaseTs != null ? new java.util.Date(releaseTs.getTime()) : null);
+
+                java.sql.Timestamp endTs = rs.getTimestamp("end_date");
+                m.setEndDate(endTs != null ? new java.util.Date(endTs.getTime()) : null);
+
+                String statusStr = rs.getString("status");
+                if (statusStr != null && !statusStr.isBlank()) {
+                    try {
+                        m.setStatus(Movie.MovieStatus.valueOf(statusStr.trim()));
+                    } catch (IllegalArgumentException ex) {
+                        m.setStatus(null);
+                    }
+                } else {
+                    m.setStatus(null);
+                }
+
+                java.sql.Timestamp createdTs = rs.getTimestamp("created_at");
+                m.setCreatedAt(createdTs != null ? new java.util.Date(createdTs.getTime()) : null);
+
+                return m;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find movie by id=" + id, e);
+        }
+    }
 }

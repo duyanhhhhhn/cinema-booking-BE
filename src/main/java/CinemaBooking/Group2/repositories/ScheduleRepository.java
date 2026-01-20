@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.StaffMapper;
 import CinemaBooking.Group2.models.StaffSchedule;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class ScheduleRepository implements Icrud<StaffSchedule>{
@@ -20,7 +21,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 	}
 	public int assignSchedule(StaffSchedule item) {
 		try {
-			int rs = db.update("insert into `staff_schedule`(staff_id,shift_id,work_date,status,created_at) values(?,?,?,?,?)"
+			int rs = db.update("insert into "+StringValue.tbl_schedule+"(staff_id,shift_id,work_date,status,created_at) values(?,?,?,?,?)"
 					,new Object[] {item.getStaffId(),item.getShiftId(),item.getWorkDate(),item.getStatus().name(),LocalDate.now()});
 			return rs;
 		}
@@ -35,7 +36,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		// TODO Auto-generated method stub
 		List<StaffSchedule> list = new ArrayList<>();
 		try {
-			list = db.query("select * from `staff_schedule`", new StaffMapper());
+			list = db.query("select * from "+StringValue.tbl_schedule, new StaffMapper());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -49,7 +50,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		// TODO Auto-generated method stub
 				StaffSchedule item = new StaffSchedule();
 				try {
-					item = db.query("select * from `staff_schedule` where id=?",
+					item = db.query("select * from "+StringValue.tbl_schedule+" where id=?",
 							new StaffMapper(),new Object[] {id}).get(0);
 				}
 				catch (Exception e) {
@@ -61,7 +62,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 	public List<StaffSchedule> getByStaffId(int staff_id){
 		List<StaffSchedule> item = new ArrayList<>();
 		try {
-			item = db.query("select * from `staff_schedule` where staff_id=?",
+			item = db.query("select * from "+StringValue.tbl_schedule+" where staff_id=?",
 					new StaffMapper(),new Object[] {staff_id});
 		}
 		catch (Exception e) {
@@ -72,7 +73,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 	public List<StaffSchedule> getByShift(int shift_id){
 		List<StaffSchedule> item = new ArrayList<>();
 		try {
-			item = db.query("select * from `staff_schedule` where shift_id=?",
+			item = db.query("select * from "+StringValue.tbl_schedule+" where shift_id=?",
 					new StaffMapper(),new Object[] {shift_id});
 		}
 		catch (Exception e) {
@@ -91,7 +92,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 	public int create(StaffSchedule item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("insert into `staff_schedule`(staff_id,shift_id,work_date,status,created_at) values(?,?,?,?,?)"
+			int rs = db.update("insert into "+StringValue.tbl_schedule+"(staff_id,shift_id,work_date,status,created_at) values(?,?,?,?,?)"
 					,new Object[] {item.getStaffId(),item.getShiftId(),item.getWorkDate(),item.getStatus(),item.getCreatedAt()});
 			return rs;
 		}
@@ -109,7 +110,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 			if(item==null||findById(item.getId())==null) {
 				return 0;
 			}
-			int rs = db.update("update `staff_schedule` set staff_id=?,shift_id=?,work_date=?,status=? where id=?",
+			int rs = db.update("update "+StringValue.tbl_schedule+" set staff_id=?,shift_id=?,work_date=?,status=? where id=?",
 					new Object[] {item.getStaffId(),item.getShiftId(),item.getWorkDate(),item.getStatus(),item.getId()});
 			return rs;
 		}
@@ -126,7 +127,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		int rs=0;
 		try {
 			if(findById(id)!=null) {
-				rs = db.update("delete from `staff_schedule` where id=?",new Object[] {id});
+				rs = db.update("delete from "+StringValue.tbl_schedule+" where id=?",new Object[] {id});
 			}
 		}
 		catch (Exception e) {

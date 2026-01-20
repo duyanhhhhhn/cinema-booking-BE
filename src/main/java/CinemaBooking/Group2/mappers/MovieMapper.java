@@ -89,7 +89,11 @@ public class MovieMapper {
         movie.setTitle(data.getTitle());
         movie.setShortDescription(data.getShortDescription());
         movie.setDescription(data.getDescription());
-        movie.setDurationMinutes(data.getDurationMinutes());
+
+        if (data.getDurationMinutes() != null) {
+            movie.setDurationMinutes(data.getDurationMinutes());
+        }
+
         movie.setGenre(data.getGenre());
         movie.setLanguage(data.getLanguage());
         movie.setFormat(data.getFormat());
@@ -99,8 +103,6 @@ public class MovieMapper {
         movie.setTrailerUrl(data.getTrailerUrl());
         movie.setReleaseDate(data.getReleaseDate());
         movie.setEndDate(data.getEndDate());
-
-        // STATUS: CHO PHÉP NULL ĐỂ SERVICE QUYẾT ĐỊNH DEFAULT HOẶC GIỮ NGUYÊN THEO LOGIC CỦA BẠN.
         movie.setStatus(data.getStatus());
 
         return movie;

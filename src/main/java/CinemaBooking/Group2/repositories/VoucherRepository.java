@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import CinemaBooking.Group2.mappers.VoucherMapper;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class VoucherRepository implements Icrud<Voucher>{
@@ -22,7 +23,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 	public List<Voucher> getAll() {
 		// TODO Auto-generated method stub
 		try {
-			List<Voucher> item =  db.query("select * from `vouchers`", new VoucherMapper());
+			List<Voucher> item =  db.query("select * from "+StringValue.tbl_voucher, new VoucherMapper());
 			return item;
 		}
 		catch (Exception e) {
@@ -31,12 +32,26 @@ public class VoucherRepository implements Icrud<Voucher>{
 		}
 		return null;
 	}
-
+	public List<Voucher> Paging(int page,int size){
+		List<Voucher> list = null;
+		try {
+			int value = (page-1)*size;
+			List<Voucher> item =  db.query("select * from "+StringValue.tbl_voucher+
+					" limit ? offset ?",new VoucherMapper(),new Object[] {size,value} 
+					);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return list;
+	}
 	@Override
 	public Voucher findById(int id) {
 		// TODO Auto-generated method stub
 		try {
-			Voucher item = db.query("select * from `vouchers` where id=?", new VoucherMapper()
+			Voucher item = db.query("select * from "+StringValue.tbl_voucher+" where id=?", new VoucherMapper()
 					,new Object[] {id}).get(0);
 			return item;
 		}
@@ -48,7 +63,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 	
 	public Voucher findByCode(String code) {
 		try {
-			List<Voucher> items = db.query("select * from `vouchers` where code=?", new VoucherMapper()
+			List<Voucher> items = db.query("select * from "+StringValue.tbl_voucher+" where code=?", new VoucherMapper()
 					,new Object[] {code});
 			if(items != null && !items.isEmpty()) {
 				return items.get(0);
@@ -71,7 +86,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 	public int create(Voucher item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs =  db.update("insert into `vouchers`(code ,description,discount_type,discount_value,"
+			int rs =  db.update("insert into "+StringValue.tbl_voucher+"(code ,description,discount_type,discount_value,"
 					+ "min_order_amount,start_at,end_at,usage_limit,used_count,created_at) "
 					+ "values(?,?,?,?,?,?,?,?,?,?)",new Object[] {item.getCode(),item.getDescription(),
 							item.getDiscountType().name(),item.getDiscountValue(),item.getMinOrderAmount(),
@@ -127,7 +142,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 							return rs;
 					}
 					else if(item.getDiscountType()==DiscountType.PERCENT){
-						rs = price.multiply(item.getDiscountValue()).divide(BigDecimal.valueOf(100));
+						rs = price.subtract(price.multiply(item.getDiscountValue()).divide(BigDecimal.valueOf(100)));
 						return rs;
 					}
 				}
@@ -138,6 +153,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return rs;
 	}

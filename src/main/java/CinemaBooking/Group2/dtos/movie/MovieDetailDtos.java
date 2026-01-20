@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieGenre;
 import CinemaBooking.Group2.models.Movie.MovieStatus;
 
 public class MovieDetailDtos {
@@ -14,7 +15,7 @@ public class MovieDetailDtos {
     private String shortDescription;
     private String description;
     private int durationMinutes;
-    private String genre;
+    private MovieGenre genre;
     private String language;
     private String format;
     private String director;
@@ -32,7 +33,7 @@ public class MovieDetailDtos {
 
 	
 	public MovieDetailDtos(int id, String title, String shortDescription, String description, int durationMinutes,
-			String genre, String language, String format, String director, String cast, String posterUrl,
+			MovieGenre genre, String language, String format, String director, String cast, String posterUrl,
 			String bannerUrl, String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
 		super();
 		this.id = id;
@@ -105,12 +106,12 @@ public class MovieDetailDtos {
 	}
 
 
-	public String getGenre() {
+	public MovieGenre getGenre() {
 		return genre;
 	}
 
 
-	public void setGenre(String genre) {
+	public void setGenre(MovieGenre genre) {
 		this.genre = genre;
 	}
 

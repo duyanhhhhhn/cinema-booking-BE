@@ -5,6 +5,7 @@ import java.util.Date;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieGenre;
 import CinemaBooking.Group2.models.Movie.MovieStatus;
 
 public class MoviePublicDtos {
@@ -13,7 +14,7 @@ public class MoviePublicDtos {
     private String shortDescription;
     private String description;
     private int durationMinutes;
-    private String genre;
+    private MovieGenre genre;
     private String language;
     private String format;
     private String director;
@@ -58,10 +59,10 @@ public class MoviePublicDtos {
 	public void setDurationMinutes(int durationMinutes) {
 		this.durationMinutes = durationMinutes;
 	}
-	public String getGenre() {
+	public MovieGenre getGenre() {
 		return genre;
 	}
-	public void setGenre(String genre) {
+	public void setGenre(MovieGenre genre) {
 		this.genre = genre;
 	}
 	public String getLanguage() {
@@ -131,7 +132,7 @@ public class MoviePublicDtos {
 		this.createdAt = createdAt;
 	}
 	public MoviePublicDtos(int id, String title, String shortDescription, String description, int durationMinutes,
-			String genre, String language, String format, String director, String cast, String posterUrl,
+			MovieGenre genre, String language, String format, String director, String cast, String posterUrl,
 			String bannerUrl, String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
 		super();
 		this.id = id;

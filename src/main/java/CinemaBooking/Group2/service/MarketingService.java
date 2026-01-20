@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
+import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.mappers.VoucherMapper;
@@ -18,9 +19,28 @@ import CinemaBooking.Group2.pattern.Marketing;
 @Service
 public class MarketingService {
 	@Autowired private Marketing mk;
-	public List<PostResponseDTO> getAllPost() {
+	public ListPostResponseDTO getAllPost() {
 		try {
 			List<Post> item = mk.getPost();
+			ListPostResponseDTO list = new ListPostResponseDTO();
+			if(item==null) {
+				list.setIs_success(false);
+				list.setMessage("Not found");
+			}
+			
+			list.setList(item);
+			list.setIs_success(true);
+			list.setMessage("Success");
+			return list;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+	}
+	public List<PostResponseDTO> getPostPaging(int page,int size) {
+		try {
+			List<Post> item = mk.getPost(page,size);
 			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
@@ -28,14 +48,30 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
-	public String newPost(Post post) {
-		String s = "Failed to Create New Post";
+	public List<PostResponseDTO> searchPostPaging(String key,int page,int size) {
+		try {
+			List<Post> item = mk.searchPost(key, page, size);
+			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+	}
+	public PostResponseDTO newPost(Post post) {
+		PostResponseDTO res = new PostResponseDTO();
 		try {
 			int rs=mk.createPost(post);
 			if(rs==1) {
-				s="Success";
+				res = PostMapper.toResponseDTO(post);
+				res.setMessage("Created ");
+				res.setIsSuccess(true);
 			}
-			return s;
+			else if(rs==0){
+				res.setMessage("Error");
+				res.setIsSuccess(false);
+			}
+			return res;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -54,6 +90,18 @@ public class MarketingService {
 		}
 		return null;
 	}
+	public List<VoucherResponseDTO> getVoucherPaging(int page,int size){
+		List<Voucher> item =null;
+		try {
+			item = mk.getVoucher(page,size);
+			return item.stream().map(VoucherMapper::toResponseDTO)
+					.collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public String checkVoucher(int id) {
 		try {
 			
@@ -63,18 +111,23 @@ public class MarketingService {
 		}
 		return null;
 	}
-	public String addVoucher(Voucher item) {
-		String ms = "Failed";
+	public VoucherResponseDTO addVoucher(Voucher item) {
+		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
 			int rs = mk.createVoucher(item);
 			if(rs==1) {
-				ms = "Success";
+				dto = VoucherMapper.toResponseDTO(item);
+				dto.setMessage("Success");
+				dto.setIsSuccess(true);
+				return dto;
 			}
+			dto.setMessage("failed");
+			dto.setIsSuccess(false);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return ms;
+		return dto;
 	}
 	public PostResponseDTO postInfo(int id) {
 		try {
@@ -85,13 +138,26 @@ public class MarketingService {
 		}
 		return null;
 	}
-	public BigDecimal checkDiscount(int id,BigDecimal price) {
+	public VoucherResponseDTO checkDiscount(int id,BigDecimal price) {
+		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
-			return mk.checkPrice(id, price);
+			if(id==0) {
+				dto.setMessage("Id is shouldn't be 0");
+				dto.setIsSuccess(false);
+				return dto;
+			}
+			BigDecimal rs = mk.checkPrice(id, price);
+			if(rs==BigDecimal.valueOf(0)) {
+				return null;
+			}
+			dto.setDiscountPrice(rs);
+			dto.setMessage("Success");
+			dto.setIsSuccess(true);
+			return dto;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return null;
+		return dto;
 	}
 }

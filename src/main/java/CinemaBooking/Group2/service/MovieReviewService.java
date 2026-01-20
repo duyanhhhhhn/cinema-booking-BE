@@ -2,6 +2,8 @@ package CinemaBooking.Group2.service;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -9,6 +11,7 @@ import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
+import CinemaBooking.Group2.mappers.MovieReviewMapper;
 import CinemaBooking.Group2.repositories.MovieReviewRepository;
 
 @Service
@@ -88,6 +91,31 @@ public class MovieReviewService {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create movie review. Please check repository/database.", e);
+        }
+    }
+    
+    public List<MovieReviewClientDtos> getAllCommentById(int movieId, int limit, int offset) {
+        try {
+            if (movieId <= 0) {
+                throw new IllegalArgumentException("INVALID MOVIE ID.");
+            }
+
+            if (limit < 1) limit = 10;
+            if (offset < 0) offset = 0;
+
+            return mvRepositories.getAllCommnetByMovieId(movieId, limit, offset)
+                    .stream()
+                    .map(MovieReviewMapper::toDto)
+                    .collect(Collectors.toList());
+
+        } catch (IllegalArgumentException e) {
+            throw e;
+
+        } catch (Exception e) { 
+            throw new RuntimeException(
+                    "FAILED TO FETCH COMMENTS: movieId=" + movieId + ", limit=" + limit + ", offset=" + offset,
+                    e
+            );
         }
     }
 

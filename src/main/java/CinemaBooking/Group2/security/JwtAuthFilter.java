@@ -29,13 +29,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     		"/api/auth/login",
     	    "/api/auth/register",
     	    "/api/auth/forgot",
-    	    "/swagger-ui",
-    	    "/v3/api-docs"
+            "/api/public",
+            "/api/client/reviews",
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/swagger-ui.html",
+            "/media",
+            "/uploads",
+            "/static",
+            "/favicon.ico",
+            "/swagger-ui",
+            "/v3/api-docs"
+
     );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
 
@@ -69,19 +82,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String role = jwtService.getRole(token);
             Integer cinemaId = jwtService.getCinemaId(token);
 
-            AuthUserPrincipal principal =
-                    new AuthUserPrincipal(email, role, cinemaId);
+            AuthUserPrincipal principal = new AuthUserPrincipal(email, role, cinemaId);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            List.of(() -> role)
-                    );
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    List.of(() -> role));
 
             authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
+                    new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
