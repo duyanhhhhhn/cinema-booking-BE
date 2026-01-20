@@ -42,6 +42,47 @@ public class MovieService {
     private String publicPrefix;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+    
+    
+    public List<MovieDtos> getAllMovieAdmin(
+            int page,
+            int perPage,
+            String title,
+            Movie.MovieGenre genre,
+            Movie.MovieStatus status
+    	) {
+        try {
+            if (page < 1) page = 1;
+            if (perPage < 1) perPage = 10;
+
+            String q = (title == null) ? null : title.trim();
+            if (q != null && q.isBlank()) q = null;
+            List<Movie> movies = movieRepository.getAllMovieAdmin(page, perPage, q, genre, status);
+
+            return movies.stream().map(m -> {
+                MovieDtos dto = MovieMapper.toResponseDto(m); 
+                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
+                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
+                return dto;
+            }).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (ADMIN).", e);
+        }
+    }
+    
+    public long countAllMovieAdmin(String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
+        try {
+            String q = (title == null) ? null : title.trim();
+            if (q != null && q.isBlank()) q = null;
+
+            return (long) movieRepository.countAllMovieAdmin(q, genre, status);
+
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO COUNT MOVIES (ADMIN).", e);
+        }
+    }
+
 
     public List<MoviePublicDtos> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         try {
