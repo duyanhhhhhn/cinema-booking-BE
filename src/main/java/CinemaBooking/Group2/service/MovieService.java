@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
@@ -42,34 +43,30 @@ public class MovieService {
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
-    public List<MovieDtos> getAllMovie(int page, int perPage) {
+    public List<MoviePublicDtos> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         try {
-            List<Movie> movies = movieRepository.getAllMovie(page, perPage);
+            if (page < 1) page = 1;
+            if (perPage < 1) perPage = 10;
+
+            String q = (keyword == null) ? null : keyword.trim();
+            if (q != null && q.isBlank()) q = null;
+
+            List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage, q, genre);
+
             return movies.stream().map(m -> {
-                MovieDtos dto = MovieMapper.toResponseDto(m);
+            	MoviePublicDtos dto = MovieMapper.toPublicRes(m);
                 dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
                 dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
                 return dto;
             }).collect(Collectors.toList());
+
         } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIE LIST.", e);
+            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (COMING_SOON/NOW_SHOWING).", e);
         }
     }
 
-    public List<MoviePublicDtos> getAllMovieStatus(int page, int perPage) {
-        try {
-            List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage);
-            return movies.stream().map(m -> {
-                MoviePublicDtos dto = MovieMapper.toPublicRes(m);
-                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
-                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
-                return dto;
-            }).collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIES BY STATUS WITH PAGINATION.", e);
-        }
-    }
-
+    
+    
     public int countMovieStatus() {
         try {
             return movieRepository.countMovieComingSoonNowShowing();
@@ -390,4 +387,16 @@ public class MovieService {
     private MovieGenre normalizeGenre(MovieGenre genre) {
         return genre;
     }
+    
+    public long countMovieComingSoonNowShowing(String keyword, Movie.MovieGenre genre) {
+        try {
+            String q = (keyword == null) ? null : keyword.trim();
+            if (q != null && q.isBlank()) q = null;
+
+            return (long) movieRepository.countMoviesComingSoonNowShowing(q, genre);
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO COUNT MOVIES (COMING_SOON, NOW_SHOWING).", e);
+        }
+    }
+
 }

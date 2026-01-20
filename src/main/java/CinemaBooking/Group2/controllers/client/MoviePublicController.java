@@ -19,6 +19,8 @@ import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
+import CinemaBooking.Group2.mappers.MovieMapper;
+import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.service.MovieService;
 
 @RestController
@@ -30,20 +32,29 @@ public class MoviePublicController {
 	@GetMapping("/movies")
 	public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovieStatus(
 	        @RequestParam(defaultValue = "1") int page,
-	        @RequestParam(defaultValue = "10") int perPage) {
+	        @RequestParam(defaultValue = "10") int perPage,
+	        @RequestParam(required = false) String title,
+	        @RequestParam(required = false) Movie.MovieGenre genre
+	) {
 	    page = Math.max(page, 1);
 	    perPage = Math.max(perPage, 1);
 
-	    List<MoviePublicDtos> movies = movieServices.getAllMovieStatus(page, perPage);
-	    long total = movieServices.countMovieStatus();
+	    // Service đã trả DTO rồi => nhận luôn DTO
+	    List<MoviePublicDtos> data =
+	            movieServices.getAllMovieCommingSoon(page, perPage, title, genre);
+
+	    long total =
+	            movieServices.countMovieComingSoonNowShowing(title, genre);
 
 	    Map<String, Object> meta = new HashMap<>();
 	    meta.put("page", page);
 	    meta.put("perPage", perPage);
 	    meta.put("total", total);
-	    
-	    return ResponseEntity.ok(new ApiResponse<>("Success", movies, meta));
+
+	    return ResponseEntity.ok(new ApiResponse<>("Success", data, meta));
 	}
+
+
 
 	@GetMapping("/movie-detail/{id}")
 	public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {
