@@ -33,21 +33,16 @@ public class MarketingController {
 	@GetMapping("/api/public/posts")
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam("page")int page,
-			@RequestParam("perPage")int size){
-		 List<PostResponseDTO> item = service.getPostPaging(page,size);
+			@RequestParam("perPage")int size,@RequestParam("id")int id){
+		List<PostResponseDTO> item;
 		try {
+			item = service.getPostPaging(page,size,id);
 			Map<String, Object> meta = new HashMap<>();
-			float totalItem = service.getAllPost().getList().size();
-			float totalPage = StringValue.calculateTotalPage(totalItem, size);
+			float totalItem = service.getPostCount();
 			meta.put("page",page);
 			meta.put("perPage", size);
 			meta.put("total", totalItem);
-			if(page>totalPage) {
-				
-			}
-			else {
-				return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
-			}
+			return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
 		}
 		catch (Exception e) {
 			// TODO: handle exception

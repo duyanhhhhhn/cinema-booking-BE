@@ -32,10 +32,24 @@ public class Marketing {
 		}
 		return item;
 	}
-	public List<Post> getPost(int page,int size){
+	public int getPostCount() {
+		try {
+			return postRep.getPostCount();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	public List<Post> getPost(int page,int size,int id){
 		List<Post> item = new ArrayList<>();
 		try {
-			item = postRep.Paging(page, size);
+			if(id==0) {
+				item = postRep.PagingRelate(size, id);
+			}
+			else {
+				item = postRep.Paging(page, size);
+			}
 			return item;
 		}
 		catch (Exception e) {
