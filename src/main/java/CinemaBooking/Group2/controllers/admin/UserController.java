@@ -77,7 +77,7 @@ public class UserController {
 			throw new RuntimeException("Bạn chưa đăng nhập!");
 
 		User user = userService.findByEmail(principal.email());
-		System.out.println(user);
+		System.out.println(user.getAvatarUrl());
 		if (user == null)
 			throw new RuntimeException("Không tìm thấy người dùng!");
 

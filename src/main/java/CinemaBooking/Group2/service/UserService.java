@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
@@ -231,8 +232,12 @@ public class UserService {
     }
 
     private String toPublicMediaUrl(String relativePath) {
-        if (!relativePath.startsWith("/")) relativePath = "/" + relativePath;
-        return publicPrefix + relativePath;
+        if (relativePath == null) return "";
+        String prefix = publicPrefix == null ? "media" : publicPrefix;
+        // Remove leading slash if present
+        if (prefix.startsWith("/")) prefix = prefix.substring(1);
+        if (relativePath.startsWith("/")) relativePath = relativePath.substring(1);
+        return prefix + "/" + relativePath;
     }
 
     private String getExtension(String filename) {

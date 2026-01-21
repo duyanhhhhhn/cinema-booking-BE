@@ -43,7 +43,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/favicon.ico",
             "/swagger-ui",
             "/v3/api-docs"
-
     );
 
     @Override
