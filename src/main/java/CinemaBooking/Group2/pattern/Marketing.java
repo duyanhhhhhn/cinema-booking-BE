@@ -44,7 +44,7 @@ public class Marketing {
 	public List<Post> getPost(int page,int size,int id){
 		List<Post> item = new ArrayList<>();
 		try {
-			if(id==0) {
+			if(id!=0) {
 				item = postRep.PagingRelate(size, id);
 			}
 			else {
