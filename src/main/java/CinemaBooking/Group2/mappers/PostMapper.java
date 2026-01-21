@@ -38,14 +38,30 @@ public class PostMapper implements RowMapper<Post>{
 		// TODO Auto-generated method stub
 		Post post = new Post();
 		post.setId(rs.getInt("id"));
-		post.setTitle(rs.getString("title"));
-		post.setSlug(rs.getString("slug"));
-		post.setExcerpt(rs.getString("excerpt"));
-		post.setContent(rs.getString("content"));
-		post.setCoverUrl(rs.getString("cover_url"));
-		post.setPublished(rs.getInt("is_published"));
-		post.setCategory(rs.getString("category"));
-		post.setPublishedAt(rs.getTimestamp("published_at").toLocalDateTime());
+		if(rs.getString("title")!=null) {
+			post.setTitle(rs.getString("title"));
+		}
+		if(rs.getString("slug")!=null) {
+			post.setSlug(rs.getString("slug"));
+		}
+		if(rs.getString("excerpt")!=null) {
+			post.setExcerpt(rs.getString("excerpt"));
+		}
+		if(rs.getString("content")!=null) {
+			post.setContent(rs.getString("content"));
+		}
+		if(rs.getString("cover_url")!=null) {
+			post.setCoverUrl(rs.getString("cover_url"));
+		}
+		if(rs.getInt("is_published")!=0) {
+			post.setPublished(rs.getInt("is_published"));
+		}
+		if(rs.getString("category")!=null) {
+			post.setCategory(rs.getString("category"));
+		}
+		if(rs.getTimestamp("published_at").toLocalDateTime()!=null) {
+			post.setPublishedAt(rs.getTimestamp("published_at").toLocalDateTime());
+		}
 		//post.setCreatedAt();
 		return post;
 	}		
