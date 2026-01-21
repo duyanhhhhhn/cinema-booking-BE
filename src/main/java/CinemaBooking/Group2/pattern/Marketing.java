@@ -43,17 +43,6 @@ public class Marketing {
 		}
 		return item;
 	}
-	public List<Post> getPostRelate(int size,int id){
-		List<Post> item = new ArrayList<>();
-		try {
-			item = postRep.PagingRelate( size,id);
-			return item;
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return item;
-	}
 	public Post postInfo(int id) {
 		try {
 			Post item = postRep.findById(id);
@@ -73,16 +62,6 @@ public class Marketing {
 			// TODO: handle exception
 		}
 		return 0;
-	}
-	public List<Post> searchPost(String key,int page,int size){
-		try {
-			List<Post> item = postRep.search(key,page,size);
-			return item;
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
 	}
 	//Voucher
 	public List<Voucher> getVoucher(){

@@ -56,51 +56,6 @@ public class MarketingController {
 		
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
 	}
-	@GetMapping("/api/public/posts/{id}/relate")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPostRelate(
-			@RequestParam("perPage")int size,@PathVariable("id")int id){
-		 List<PostResponseDTO> item = service.getPostPagingRelate(size,id);
-		try {
-			Map<String, Object> meta = new HashMap<>();
-			float totalItem = service.getAllPost().getList().size();
-			meta.put("perPage", size);
-			meta.put("total", totalItem);
-			return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
-	}
-	@GetMapping("/api/public/posts/search")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> searchPost(@RequestParam("key")String key,@RequestParam("page")int page,
-			@RequestParam("size")int size){
-		 List<PostResponseDTO> item = service.searchPostPaging(key,page,size);
-		try {
-			Map<String, Object> meta = new HashMap<>();
-			float totalItem = service.getAllPost().getList().size();
-			float totalPage = StringValue.calculateTotalPage(totalItem, size);
-			meta.put("page",page);
-			meta.put("perPage", size);
-			meta.put("total", totalItem);
-			if(page>totalPage) {
-				
-			}
-			else {
-				return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
-			}
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
-	}
 	@PostMapping("/api/posts")
 	@CrossOrigin
 	public ResponseEntity<PostResponseDTO> newPost(@RequestBody Post item){

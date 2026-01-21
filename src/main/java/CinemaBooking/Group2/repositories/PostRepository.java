@@ -42,20 +42,6 @@ public class PostRepository implements Icrud<Post>{
 		}
 		return item;
 	}
-	public List<Post> PagingRelate(int size,int id){
-		List<Post> item = new ArrayList<>();
-		try {
-			Post i = findById(id);
-			item = db.query("select * from "+StringValue.tbl_post+
-					" where id!=? and category =? limit ? ",new PostMapper()
-					,new Object[] {id,i.getCategory(),size});
-			return item;
-		}
-		catch(Exception e) {
-			System.out.print(e.getMessage());
-		}
-		return item;
-	}
 	public int newPost(Post post) {
 		try {
 			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"
@@ -89,21 +75,6 @@ public class PostRepository implements Icrud<Post>{
 		try {
 			item = db.query("select * from"+StringValue.tbl_post+"where title like %?% or content ", 
 					new PostMapper(),new Object[] {key});
-			return item;
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		return null;
-	}
-	public List<Post> search(String key,int page,int size) {
-		// TODO Auto-generated method stub
-		List<Post> item = new ArrayList<>();
-		try {
-			int value = (page-1)*size;
-			item = db.query("select * from"+StringValue.tbl_post+"limit ? offset ? where title like %?% or content ", 
-					new PostMapper(),new Object[] {size,value,key});
 			return item;
 		}
 		catch (Exception e) {

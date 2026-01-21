@@ -26,10 +26,10 @@ public class ProductService {
 			throw new RuntimeException();
 		}
 	}
-	public List<Product> getProducts (int page,int size){
+	public List<ProductResponseDTO> getProducts (int page,int size){
 		try{
 			List<Product> item = con.getProduct(page,size);
-			return item;
+			return item.stream().map(ProductMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
