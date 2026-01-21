@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.mappers;
 
+import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
@@ -129,6 +130,19 @@ public class MovieMapper {
         dto.setEndDate(movie.getEndDate());
         dto.setStatus(movie.getStatus());
         dto.setCreatedAt(movie.getCreatedAt());
+        return dto;
+    }
+    
+    public static MovieCardtos toPublicMovieStatus(Movie movie) {
+        if (movie == null) return null;
+
+        MovieCardtos dto = new MovieCardtos();
+        dto.setId(movie.getId());
+        dto.setTitle(movie.getTitle());
+        dto.setDurationMinutes(movie.getDurationMinutes());
+        dto.setGenre(movie.getGenre());
+        dto.setPosterUrl(movie.getPosterUrl());
+        dto.setStatus(movie.getStatus());
         return dto;
     }
 

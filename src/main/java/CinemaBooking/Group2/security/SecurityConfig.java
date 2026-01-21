@@ -74,9 +74,12 @@ public class SecurityConfig {
                         .permitAll()
                         
                         // ======= PUBLIC =======
-                        .requestMatchers("/api/client/reviews/*/comment").permitAll()
+                        .requestMatchers("/api/client/reviews/*/comment",
+                        				 "/api/client/reviews/*/rating").permitAll()
 
-
+                     // ===== PRIVATE (Client tạo comment) =====
+                        .requestMatchers(HttpMethod.POST, "/api/client/reviews/create-comment").permitAll()
+                        
                         // ===== AUTHENTICATED =====
                         .requestMatchers(
                                 "/api/auth/password/**",
@@ -91,6 +94,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
                         .requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
                         .requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
+
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

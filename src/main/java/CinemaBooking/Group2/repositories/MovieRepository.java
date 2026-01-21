@@ -32,48 +32,156 @@ public class MovieRepository {
     /**
      * Truy vấn danh sách phim có phân trang.
      */
-    public List<Movie> getAllMovie(int page, int perPage) {
+    public List<Movie> getAllMovieAdmin(int page, int perPage, String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
         if (page < 1) page = 1;
         if (perPage < 1) perPage = 10;
 
         int offset = (page - 1) * perPage;
 
-        String sql = """
-            SELECT *
-            FROM movie
-            ORDER BY id DESC
-            LIMIT ? OFFSET ?
-        """;
+        // normalize: blank -> null
+        String q = (title == null) ? null : title.trim();
+        if (q != null && q.isBlank()) q = null;
+
+        boolean hasTitle = (q != null);
+
+        String sql =
+            "SELECT " +
+            "  id, title, short_description, description, duration_minutes, genre, language, format, " +
+            "  director, `cast` AS cast, poster_url, banner_url, trailer_url, " +
+            "  release_date, end_date, status, created_at " +
+            "FROM movie " +
+            "WHERE 1=1 " +
+            (hasTitle
+                ? " AND LOWER(title) LIKE CONCAT('%', LOWER(?), '%') "
+                : "") +
+            (genre != null
+                ? " AND REPLACE(UPPER(genre), '-', '_') = ? "
+                : "") +
+            (status != null
+                ? " AND status = ? "
+                : "") +
+            "ORDER BY id DESC " +
+            "LIMIT ? OFFSET ?;";
 
         List<Movie> movies = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, perPage);
-            ps.setInt(2, offset);
+            int idx = 1;
+
+            if (hasTitle) {
+                ps.setString(idx++, q);
+            }
+
+            if (genre != null) {
+                ps.setString(idx++, genre.name());
+            }
+
+            if (status != null) {
+                ps.setString(idx++, status.name());
+            }
+
+            ps.setInt(idx++, perPage);
+            ps.setInt(idx++, offset);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    movies.add(mapFullMovie(rs));
+                    Movie movie = new Movie();
+                    movie.setId(rs.getInt("id"));
+                    movie.setTitle(rs.getString("title"));
+                    movie.setShortDescription(rs.getString("short_description"));
+                    movie.setDescription(rs.getString("description"));
+                    movie.setDurationMinutes(rs.getInt("duration_minutes"));
+
+                    movie.setGenre(parseMovieGenre(rs.getString("genre")));
+                    movie.setLanguage(rs.getString("language"));
+                    movie.setFormat(rs.getString("format"));
+                    movie.setDirector(rs.getString("director"));
+                    movie.setCast(rs.getString("cast"));
+                    movie.setPosterUrl(rs.getString("poster_url"));
+                    movie.setBannerUrl(rs.getString("banner_url"));
+                    movie.setTrailerUrl(rs.getString("trailer_url"));
+
+                    movie.setReleaseDate(rs.getTimestamp("release_date"));
+                    movie.setEndDate(rs.getTimestamp("end_date"));
+
+                    movie.setStatus(parseMovieStatus(rs.getString("status")));
+                    movie.setCreatedAt(rs.getTimestamp("created_at"));
+
+                    movies.add(movie);
                 }
             }
 
             return movies;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch movies from database.", e);
+            throw new RuntimeException("Failed to fetch movies (ADMIN) with filters + pagination.", e);
         }
     }
 
+    public int countAllMovieAdmin(String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
+        // normalize title
+        String q = (title == null) ? null : title.trim();
+        boolean hasTitle = (q != null && !q.isEmpty());
+
+        String sql =
+            "SELECT COUNT(*) AS total " +
+            "FROM movie " +
+            "WHERE 1=1 " +
+            (hasTitle
+                ? " AND LOWER(title) LIKE CONCAT('%', LOWER(?), '%') "
+                : "") +
+            (genre != null
+                ? " AND REPLACE(UPPER(genre), '-', '_') = ? "
+                : "") +
+            (status != null
+                ? " AND status = ? "
+                : "");
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            int idx = 1;
+
+            // title filter
+            if (hasTitle) {
+                ps.setString(idx++, q);
+            }
+
+            // genre filter
+            if (genre != null) {
+                ps.setString(idx++, genre.name()); // ACTION, SCI_FI, ...
+            }
+
+            // status filter
+            if (status != null) {
+                ps.setString(idx++, status.name()); // COMING_SOON, NOW_SHOWING, ENDED
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("total");
+                return 0;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to count movies (ADMIN) with filters.", e);
+        }
+    }
+
+
     /**
-     * Lấy danh sách phim sắp chiếu và đang chiếu có áp dụng phân trang.
+     * Lấy danh sách phim sắp chiếu và đang chiếu có áp dụng phân trang + filter (keyword, genre).
      */
-    public List<Movie> getAllMovieCommingSoon(int page, int perPage) {
+    public List<Movie> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         if (page < 1) page = 1;
         if (perPage < 1) perPage = 10;
 
         int offset = (page - 1) * perPage;
+
+        // normalize keyword
+        String q = (keyword == null) ? null : keyword.trim();
+        boolean hasKeyword = (q != null && !q.isEmpty());
 
         String sql =
             "SELECT " +
@@ -82,6 +190,18 @@ public class MovieRepository {
             "  release_date, end_date, status, created_at " +
             "FROM movie " +
             "WHERE status IN (?, ?) " +
+            (hasKeyword
+                ? "  AND ( " +
+                  "    LOWER(title) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "    OR LOWER(short_description) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "    OR LOWER(description) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "    OR LOWER(director) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "    OR LOWER(`cast`) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "  ) "
+                : "") +
+            (genre != null
+                ? "  AND REPLACE(UPPER(genre), '-', '_') = ? "
+                : "") +
             "ORDER BY " +
             "  CASE status " +
             "    WHEN 'NOW_SHOWING' THEN 0 " +
@@ -98,10 +218,29 @@ public class MovieRepository {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, Movie.MovieStatus.COMING_SOON.name());
-            ps.setString(2, Movie.MovieStatus.NOW_SHOWING.name());
-            ps.setInt(3, perPage);
-            ps.setInt(4, offset);
+            int idx = 1;
+
+            // status filter: COMING_SOON + NOW_SHOWING
+            ps.setString(idx++, Movie.MovieStatus.COMING_SOON.name());
+            ps.setString(idx++, Movie.MovieStatus.NOW_SHOWING.name());
+
+            // keyword filter (nếu có)
+            if (hasKeyword) {
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+            }
+
+            // genre filter (nếu có)
+            if (genre != null) {
+                ps.setString(idx++, genre.name()); // ACTION, SCI_FI, ...
+            }
+
+            // pagination
+            ps.setInt(idx++, perPage);
+            ps.setInt(idx++, offset);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -112,7 +251,7 @@ public class MovieRepository {
                     movie.setDescription(rs.getString("description"));
                     movie.setDurationMinutes(rs.getInt("duration_minutes"));
 
-                    // genre: DB VARCHAR (có thể nhiều genre) -> enum (lấy genre hợp lệ đầu tiên)
+                    // genre: DB VARCHAR (có thể không đồng nhất format) -> enum
                     movie.setGenre(parseMovieGenre(rs.getString("genre")));
 
                     movie.setLanguage(rs.getString("language"));
@@ -122,25 +261,63 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
-                    movie.setReleaseDate(rs.getTimestamp("release_date"));
 
+                    movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
 
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
                     movie.setCreatedAt(rs.getTimestamp("created_at"));
+
                     movies.add(movie);
                 }
             }
+
             return movies;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING) with pagination.", e);
+            throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING) with filters + pagination.", e);
         }
     }
 
-    /**
-     * Đếm tổng số lượng phim đang ở trạng thái Sắp chiếu hoặc Đang chiếu.
-     */
+    public List<Movie> getMoviesComingSoonAndNowShowing() {
+        String sql = """
+            SELECT id, title, duration_minutes, genre, poster_url, status
+            FROM movie
+            WHERE status IN ('COMING_SOON', 'NOW_SHOWING')
+            ORDER BY
+              CASE status
+                WHEN 'NOW_SHOWING' THEN 1
+                WHEN 'COMING_SOON' THEN 2
+                ELSE 3
+              END,
+              release_date DESC
+        """;
+
+        List<Movie> movies = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Movie m = new Movie();
+                m.setId(rs.getInt("id"));
+                m.setTitle(rs.getString("title"));
+                m.setDurationMinutes(rs.getInt("duration_minutes"));
+                m.setGenre(parseMovieGenre(rs.getString("genre")));
+                m.setPosterUrl(rs.getString("poster_url"));
+                m.setStatus(parseMovieStatus(rs.getString("status")));
+                movies.add(m);
+            }
+
+            return movies;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING).", e);
+        }
+    }
+
+    // Đếm tổng số lượng phim đang ở trạng thái Sắp chiếu hoặc Đang chiếu (không filter).
     public int countMovieComingSoonNowShowing() {
         String sql = "SELECT COUNT(*) FROM movie WHERE status IN (?, ?)";
 
@@ -315,7 +492,6 @@ public class MovieRepository {
         movie.setDescription(rs.getString("description"));
         movie.setDurationMinutes(rs.getInt("duration_minutes"));
 
-        // genre: DB VARCHAR (có thể nhiều genre) -> enum (lấy genre hợp lệ đầu tiên)
         movie.setGenre(parseMovieGenre(rs.getString("genre")));
 
         movie.setLanguage(rs.getString("language"));
@@ -341,53 +517,25 @@ public class MovieRepository {
         }
     }
 
-    /**
-     * ============================
-     * GENRE FIX (TỐI ƯU THỰC TẾ)
-     * ============================
-     *
-     * DB đang lưu genre dạng: "Fantasy, Thriller" / "Drama, Coming-of-age" / "Sci-Fi, Adventure"...
-     * Trong khi MovieGenre là enum 1 giá trị.
-     *
-     * => parse tolerant:
-     *   - split theo , | /
-     *   - normalize token
-     *   - token hợp lệ -> enum
-     *   - token lạ -> bỏ qua
-     *   - trả về enum hợp lệ đầu tiên (primary genre)
-     *   - KHÔNG throw để tránh chết API.
-     */
     private MovieGenre parseMovieGenre(String raw) {
         if (raw == null || raw.isBlank()) return null;
 
-        // tách nhiều thể loại: "Sci-Fi, Thriller" / "Sci-Fi/Thriller" / "Sci-Fi | Thriller"
         String[] parts = raw.split("[,|/]+");
 
         for (String p : parts) {
             String token = normalizeGenreToken(p);
             if (token == null) continue;
 
-            // alias phổ biến (tuỳ enum của bạn có gì)
             token = mapGenreAlias(token);
 
             try {
                 return MovieGenre.valueOf(token);
             } catch (IllegalArgumentException ignore) {
-                // token không có trong enum -> bỏ qua
             }
         }
-
-        // không tìm được genre nào match enum -> return null để hệ thống không crash
         return null;
     }
 
-    /**
-     * Chuẩn hoá token genre về dạng ENUM_NAME.
-     * Ví dụ:
-     * - "Sci-Fi" -> "SCI_FI"
-     * - "Coming-of-age" -> "COMING_OF_AGE"
-     * - "  thriller  " -> "THRILLER"
-     */
     private String normalizeGenreToken(String input) {
         if (input == null) return null;
         String s = input.trim();
@@ -398,18 +546,11 @@ public class MovieRepository {
                 .replace(" ", "_");
     }
 
-    /**
-     * Map alias để tăng khả năng match enum mà không phải sửa DB.
-     * Bạn có thể mở rộng thêm nếu enum của bạn hỗ trợ.
-     */
     private String mapGenreAlias(String token) {
         if (token == null) return null;
 
-        // các biến thể Sci-Fi hay gặp
         if (token.equals("SCIFI") || token.equals("SCI_FI") || token.equals("SCI__FI")) return "SCI_FI";
-        if (token.equals("SCI-FI")) return "SCI_FI"; // phòng trường hợp token chưa replace
-
-        // Coming-of-age -> COMING_OF_AGE (token normalize đã ra COMING_OF_AGE rồi, nhưng giữ để chắc)
+        if (token.equals("SCI-FI")) return "SCI_FI";
         if (token.equals("COMING_OF_AGE")) return "COMING_OF_AGE";
 
         return token;
@@ -421,7 +562,6 @@ public class MovieRepository {
         ps.setString(3, movie.getDescription());
         ps.setInt(4, movie.getDurationMinutes());
 
-        // genre: enum -> DB VARCHAR (lưu 1 genre chính)
         if (movie.getGenre() != null) ps.setString(5, movie.getGenre().name());
         else ps.setNull(5, Types.VARCHAR);
 
@@ -463,7 +603,6 @@ public class MovieRepository {
             ps.setString(3, movie.getDescription());
             ps.setInt(4, movie.getDurationMinutes());
 
-            // genre: enum -> DB VARCHAR (lưu 1 genre chính)
             if (movie.getGenre() != null) ps.setString(5, movie.getGenre().name());
             else ps.setNull(5, Types.VARCHAR);
 
@@ -549,7 +688,6 @@ public class MovieRepository {
                 Integer dur = (Integer) rs.getObject("duration_minutes");
                 m.setDurationMinutes(dur != null ? dur : 0);
 
-                // genre: tolerant parse
                 m.setGenre(parseMovieGenre(rs.getString("genre")));
 
                 m.setLanguage(rs.getString("language"));
@@ -586,6 +724,56 @@ public class MovieRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to find movie by id=" + id, e);
+        }
+    }
+
+    public int countMoviesComingSoonNowShowing(String keyword, Movie.MovieGenre genre) {
+        String q = (keyword == null) ? null : keyword.trim();
+        boolean hasKeyword = (q != null && !q.isEmpty());
+
+        String sql =
+            "SELECT COUNT(*) AS total " +
+            "FROM movie " +
+            "WHERE status IN (?, ?) " +
+            (hasKeyword
+                ? " AND ( " +
+                  "   LOWER(title) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "   OR LOWER(short_description) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "   OR LOWER(description) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "   OR LOWER(director) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "   OR LOWER(`cast`) LIKE CONCAT('%', LOWER(?), '%') " +
+                  " ) "
+                : "") +
+            (genre != null
+                ? " AND REPLACE(UPPER(genre), '-', '_') = ? "
+                : "");
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            int idx = 1;
+            ps.setString(idx++, Movie.MovieStatus.COMING_SOON.name());
+            ps.setString(idx++, Movie.MovieStatus.NOW_SHOWING.name());
+
+            if (hasKeyword) {
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+                ps.setString(idx++, q);
+            }
+
+            if (genre != null) {
+                ps.setString(idx++, genre.name());
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("total");
+                return 0;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to count movies (COMING_SOON, NOW_SHOWING) with filters.", e);
         }
     }
 }
