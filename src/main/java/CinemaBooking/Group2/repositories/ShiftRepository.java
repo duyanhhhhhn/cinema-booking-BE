@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.WorkShift;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class ShiftRepository implements Icrud<WorkShift>{
@@ -39,7 +40,7 @@ public class ShiftRepository implements Icrud<WorkShift>{
 		// TODO Auto-generated method stub
 		List<WorkShift> list = new ArrayList<>();
 		try {
-			list = db.query("select * from `work_shifts`", new ShiftMapper());
+			list = db.query("select * from "+ StringValue.tbl_shift, new ShiftMapper());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -53,7 +54,8 @@ public class ShiftRepository implements Icrud<WorkShift>{
 		// TODO Auto-generated method stub
 		WorkShift item = new WorkShift();
 		try {
-			item = db.query("select * from `work_shifts`", new ShiftMapper()).get(0);
+			item = db.query("select * from "+ StringValue.tbl_shift+" where id=?", 
+					new ShiftMapper(),new Object[] {id}).get(0);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -72,7 +74,8 @@ public class ShiftRepository implements Icrud<WorkShift>{
 	public int create(WorkShift item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("insert into `work_shifts`()");
+			int rs = db.update("insert into "+ StringValue.tbl_shift+"(name,start_time,end_time,created_at) values(?,?,?,?)",
+					new Object[] {item.getName(),item.getStartTime(),item.getEndTime(),item.getCreatedAt()});
 			return rs;
 		}
 		catch (Exception e) {
@@ -86,7 +89,7 @@ public class ShiftRepository implements Icrud<WorkShift>{
 	public int update(WorkShift item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("update from `work_shifts` set name=?,start_time=?,end_time=? where id=?",
+			int rs = db.update("update from "+ StringValue.tbl_shift+" set name=?,start_time=?,end_time=? where id=?",
 					new Object[] {item.getName(),item.getStartTime(),item.getEndTime(),item.getId()});
 			return rs;
 		}
@@ -101,7 +104,7 @@ public class ShiftRepository implements Icrud<WorkShift>{
 	public int delete(int id) {
 		// TODO Auto-generated method stub
 		try {
-			int rs = db.update("delete from `work_shifts` where id=?",new Object[] {id});
+			int rs = db.update("delete from "+ StringValue.tbl_shift+" where id=?",new Object[] {id});
 			return rs;
 		}
 		catch (Exception e) {

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.PaymentMapper;
 import CinemaBooking.Group2.models.Payment;
+import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
 public class PaymentRepository implements Icrud<Payment>{
@@ -24,7 +25,7 @@ public class PaymentRepository implements Icrud<Payment>{
 		// TODO Auto-generated method stub
 		try {
 			List<Payment> item = new ArrayList<>();
-			item = db.query("select * from `payments`", new PaymentMapper());
+			item = db.query("select * from "+StringValue.tbl_payment, new PaymentMapper());
 			return item;
 		}
 		catch (Exception e) {
@@ -37,7 +38,8 @@ public class PaymentRepository implements Icrud<Payment>{
 	public Payment findById(int id) {
 		try {
 			Payment item = new Payment();
-			item = db.query("select * from `payments`", new PaymentMapper()).get(0);
+			item = db.query("select * from "+StringValue.tbl_payment+" where id=?",
+					new PaymentMapper(),new Object[] {id}).get(0);
 			return item;
 		}
 		catch (Exception e) {
@@ -51,7 +53,7 @@ public class PaymentRepository implements Icrud<Payment>{
 		// TODO Auto-generated method stub
 		try {
 			List<Payment> item = new ArrayList<>();
-			item = db.query("select * from `payments` where like ?", new PaymentMapper(),new Object[] {key});
+			item = db.query("select * from "+StringValue.tbl_payment+" where like ?", new PaymentMapper(),new Object[] {key});
 			return item;
 		}
 		catch (Exception e) {
@@ -78,7 +80,7 @@ public class PaymentRepository implements Icrud<Payment>{
 	public BigDecimal getRevenueByMonth(int month) {
 		BigDecimal rs = new BigDecimal(0);
 		try {
-			List<Payment> list = db.query("select * from `payments` where month(paid_at)=?", 
+			List<Payment> list = db.query("select * from "+StringValue.tbl_payment+" where month(paid_at)=?", 
 					new PaymentMapper(),new Object[] {month});
 			for(int i=0;i<list.size();i++) {
 				rs=rs.add(list.get(i).getAmount());
@@ -94,7 +96,7 @@ public class PaymentRepository implements Icrud<Payment>{
 	public BigDecimal getRevenueByDay(LocalDate date) {
 		BigDecimal rs = new BigDecimal(0);
 		try {
-			List<Payment> list = db.query("select * from `payments` where paid_at=?", 
+			List<Payment> list = db.query("select * from "+StringValue.tbl_payment+" where paid_at=?", 
 					new PaymentMapper(),new Object[] {date});
 			for(int i=0;i<list.size();i++) {
 				rs=rs.add(list.get(i).getAmount());

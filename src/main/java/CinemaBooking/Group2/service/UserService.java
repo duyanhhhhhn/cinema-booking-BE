@@ -1,15 +1,22 @@
 package CinemaBooking.Group2.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
+import CinemaBooking.Group2.dtos.client.UpdateProfileRequestDTO;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.repositories.UserRepository;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
@@ -144,4 +151,64 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepo.findByEmail(email);
     }
+    
+    //===Update Profile===
+    public void updateMyProfile(UpdateProfileRequestDTO req) {
+
+        AuthUserPrincipal principal =
+            (AuthUserPrincipal) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+
+        User user = userRepo.findByEmail(principal.email());
+        if (user == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
+
+        userRepo.updateProfile(
+            user.getId(),
+            req.getFullName(),
+            req.getPhone()       
+        );
+    }
+    
+    //================ UPDATE AVATAR =================
+    public String uploadAvatar(MultipartFile file) {
+
+        if (file.isEmpty()) {
+            throw new RuntimeException("File rỗng");
+        }
+
+        if (!file.getContentType().startsWith("image/")) {
+            throw new RuntimeException("File không phải ảnh");
+        }
+
+        // Ví dụ: lưu local / cloud
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path path = Paths.get("uploads/avatar/" + fileName);
+
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, file.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể upload ảnh");
+        }
+
+        return "/uploads/avatar/" + fileName;
+    }
+
+    
+    public void updateMyAvatar(String avatarUrl) {
+
+        AuthUserPrincipal principal =
+            (AuthUserPrincipal) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+
+        User user = userRepo.findByEmail(principal.email());
+        if (user == null) {
+            throw new RuntimeException("User không tồn tại");
+        }
+
+        userRepo.updateAvatar(user.getId(), avatarUrl);
+    }
+
 }

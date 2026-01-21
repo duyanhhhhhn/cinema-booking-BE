@@ -26,6 +26,16 @@ public class ProductService {
 			throw new RuntimeException();
 		}
 	}
+	public List<Product> getProducts (int page,int size){
+		try{
+			List<Product> item = con.getProduct(page,size);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+	}
 	public ProductResponseDTO productInfo (int id){
 		try{
 			Product item = con.productInfo(id);

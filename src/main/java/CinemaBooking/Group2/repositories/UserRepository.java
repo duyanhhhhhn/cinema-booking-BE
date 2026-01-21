@@ -6,11 +6,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.dtos.auth.RegisterRequestDTO;
+import CinemaBooking.Group2.mappers.UserMapper;
 import CinemaBooking.Group2.models.User;
 
 @Repository
@@ -31,9 +31,9 @@ public class UserRepository {
 
 	public int createUser(RegisterRequestDTO u, String hashedPassword) {
 		String sql = """
-				    INSERT INTO user (role_id, full_name, email, password, phone, is_active)
-				    VALUES (4, ?, ?, ?, ?, 1)
-				""";
+				INSERT INTO user (role_id, full_name, email, password, phone, is_active)
+				VALUES (4, ?, ?, ?, ?, 1)
+			""";
 
 		try {
 			return jdbc.update(sql, u.getFullName(), u.getEmail(), hashedPassword, u.getPhone());
@@ -44,13 +44,16 @@ public class UserRepository {
 
 	public User findByEmail(String email) {
 		String sql = """
-				    SELECT u.*, r.name AS role_name
-				    FROM user u
-				    JOIN role r ON u.role_id = r.id
-				    WHERE u.email = ?
-				""";
+				SELECT u.*, r.name AS role_name
+				FROM user u
+				JOIN role r ON u.role_id = r.id
+				WHERE u.email = ?
+			""";
 		try {
-			return jdbc.queryForObject(sql, new CinemaBooking.Group2.mappers.UserMapper(), email);
+			User user = jdbc.queryForObject(sql, new UserMapper(), email);
+			System.out.println(user);
+			return jdbc.queryForObject(sql, new UserMapper(), email);
+			
 		} catch (Exception e) {
 			return null;
 		}
@@ -59,7 +62,7 @@ public class UserRepository {
 	public User findById(int id) {
 		String sql = "SELECT u.*, r.name AS role_name FROM user u JOIN role r ON u.role_id = r.id WHERE u.id = ?";
 		try {
-			return jdbc.queryForObject(sql, new CinemaBooking.Group2.mappers.UserMapper(), id);
+			return jdbc.queryForObject(sql, new UserMapper(), id);
 		} catch (Exception ex) {
 			return null;
 		}
@@ -77,12 +80,12 @@ public class UserRepository {
 	// tạo staff mới
 	public int createStaff(CreateUserRequestDTO u, String hashedPassword) {
 		String sql = """
-				    INSERT INTO user (
-				        role_id, cinema_id, position,
-				        full_name, email, password, phone, is_active
-				    )
-				    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-				""";
+				INSERT INTO user (
+				    role_id, cinema_id, position,
+				    full_name, email, password, phone, is_active
+				)
+				VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+			""";
 
 		try {
 			return jdbc.update(sql, u.getRoleId(), u.getCinemaId(), u.getPosition(), u.getFullName(), u.getEmail(),
@@ -218,5 +221,44 @@ public class UserRepository {
         }
     }
 
+	public void updateProfile(int userId, String fullName, String phone) {
 
+	    StringBuilder sql = new StringBuilder("UPDATE user SET ");
+	    List<Object> params = new ArrayList<>();
+
+	    try {
+	    	if (fullName != null) {
+	            sql.append("full_name = ?, ");
+	            params.add(fullName);
+	        }
+
+	        if (phone != null) {
+	            sql.append("phone = ?, ");
+	            params.add(phone);
+	        }
+
+	        if (params.isEmpty()) {
+	            return; // không có gì để update
+	        }
+
+	        sql.setLength(sql.length() - 2); // bỏ ", "
+	        sql.append(" WHERE id = ?");
+	        params.add(userId);
+
+	        jdbc.update(sql.toString(), params.toArray());
+	    }
+	    catch (Exception e) {
+	    	throw new RuntimeException("Lỗi khi cập nhật profile: " + e.getMessage());
+	    }
+	}
+	
+	public void updateAvatar(int userId, String avatarUrl) {
+	    String sql = "UPDATE user SET avatar_url = ? WHERE id = ?";
+
+	    try {
+	        jdbc.update(sql, avatarUrl, userId);
+	    } catch (Exception e) {
+	        throw new RuntimeException("Lỗi khi cập nhật avatar: " + e.getMessage());
+	    }
+	}
 }

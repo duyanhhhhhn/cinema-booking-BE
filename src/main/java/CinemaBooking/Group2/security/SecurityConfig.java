@@ -60,7 +60,11 @@ public class SecurityConfig {
                                 "/api/auth/forgot/**",
                                 "/media/**",
                                 "/api/public/**",
-                                "/swagger-ui/index.html#/")
+                                "/swagger-ui/index.html#/",
+                                "/api/posts",
+                                "/api/posts/paging",
+                                "/api/posts/**",
+                                "/api/banner/**")
                         .permitAll()
 
                         .requestMatchers("/api/auth/password/**").authenticated()

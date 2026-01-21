@@ -26,19 +26,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     // Các endpoint public
     private static final List<String> PUBLIC_PATHS = List.of(
-    		  "/api/auth",
-              "/api/public",
-              "/api/client/reviews",
-              "/swagger-ui",
-              "/v3/api-docs",
-              "/swagger-ui.html",
-              "/media",
-              "/uploads",
-              "/static",
-              "/favicon.ico",
+    		"/api/auth/login",
+    	    "/api/auth/register",
+    	    "/api/auth/forgot",
+            "/api/public",
+            "/api/client/reviews",
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/swagger-ui.html",
+            "/media",
+            "/uploads",
+            "/static",
+            "/favicon.ico",
             "/swagger-ui",
             "/v3/api-docs"
-            
+
     );
 
     @Override
@@ -80,19 +82,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String role = jwtService.getRole(token);
             Integer cinemaId = jwtService.getCinemaId(token);
 
-            AuthUserPrincipal principal =
-                    new AuthUserPrincipal(email, role, cinemaId);
+            AuthUserPrincipal principal = new AuthUserPrincipal(email, role, cinemaId);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            List.of(() -> role)
-                    );
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    List.of(() -> role));
 
             authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
+                    new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

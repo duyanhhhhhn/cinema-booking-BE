@@ -7,12 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.dtos.auth.UserDTO;
+import CinemaBooking.Group2.dtos.client.UpdateProfileRequestDTO;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.UserService;
@@ -106,11 +108,40 @@ public class UserController {
                 user.getPhone(),
                 user.getAvatarUrl(),
                 user.getRoleName(),
+                user.getCreatedAt(),
                 user.getCinemaId()
         );
-
+        System.out.println(dto);
+        
         return ResponseEntity.ok(
                 new ApiResponse<>("Success", dto)
         );
     }
+    
+    // ================= UPDATE PROFILE =================
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> updateMyProfile(
+            @RequestBody UpdateProfileRequestDTO req) {
+
+        userService.updateMyProfile(req);
+
+        return ResponseEntity.ok(
+            new ApiResponse<>("Cập nhật thông tin thành công", null)
+        );
+    }
+    
+    // ================= UPDATE AVATAR =================
+    @PostMapping("/me/avatar")
+    public ResponseEntity<ApiResponse<String>> updateMyAvatar(
+        @RequestParam("avatar") MultipartFile avatar
+    ) {
+        String avatarUrl = userService.uploadAvatar(avatar);
+        userService.updateMyAvatar(avatarUrl);
+
+        return ResponseEntity.ok(
+            new ApiResponse<>("Cập nhật avatar thành công", avatarUrl)
+        );
+    }
+
 }
+

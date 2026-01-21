@@ -213,9 +213,7 @@ public class AuthController {
 
     @PostMapping("/password/send-otp")
     public ResponseEntity<ApiResponse<Void>> sendChangePasswordOtp() {
-
         changeService.sendOtp();
-
         return ResponseEntity.ok(
                 new ApiResponse<>("OTP đổi mật khẩu đã được gửi", null)
         );
