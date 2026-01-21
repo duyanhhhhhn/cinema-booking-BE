@@ -50,7 +50,6 @@ public class MovieReviewClientController {
 	        new ApiResponse<>("OK", items, meta)
 	    );
 	}
-
 	
 	@GetMapping("/{movie_id}/rating")
 	public ResponseEntity<ApiResponse<RatingSummaryDtos>> countRatingMovieById(
