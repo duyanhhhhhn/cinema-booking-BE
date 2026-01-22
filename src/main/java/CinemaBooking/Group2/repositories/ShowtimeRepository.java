@@ -8,7 +8,9 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -17,11 +19,12 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.dtos.showtime.MovieShowtimeGroupDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimePublicDtos;
 import CinemaBooking.Group2.models.Showtime;
 
 @Repository
-public class ShowtimeRepository {
+public class ShowtimeRepository {		
 
 	@Autowired
 	private DataSource dataSource;
@@ -49,101 +52,84 @@ public class ShowtimeRepository {
     }
     
     // (codeser) -> HÀM TRUY VẤN LẤY LỊCH CHIẾU CỦA CÁC BỘ PHIM (RẠP + THỜI GIAN...)
-    public List<ShowtimePublicDtos> getShowtimesPublic(Integer cinemaId, Integer movieId, LocalDate date) {
+    public List<MovieShowtimeGroupDtos> getShowtimesPublicGrouped(int cinemaId, Integer movieId, LocalDate date) {
 
-        boolean hasCinema = (cinemaId != null && cinemaId > 0);
-        boolean hasMovie  = (movieId != null && movieId > 0);
-        boolean hasDate   = (date != null);
+        if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
+        if (date == null) throw new IllegalArgumentException("date is required (yyyy-MM-dd).");
+        if (movieId != null && movieId <= 0) throw new IllegalArgumentException("movieId invalid.");
 
-        LocalDateTime startOfDay = null;
-        LocalDateTime endOfDay = null;
-        if (hasDate) {
-            startOfDay = date.atStartOfDay();
-            endOfDay = date.plusDays(1).atStartOfDay();
-        }
+        boolean hasMovie = (movieId != null && movieId > 0);
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
 
         String sql =
             "SELECT " +
-            "  s.id          AS id, " +
-            "  s.start_time  AS start_time, " +
-            "  s.end_time    AS end_time, " +
-            "  s.base_price  AS base_price, " +
-            "  s.status      AS status, " +
-            "  m.id          AS movie_id, " +
-            "  m.title       AS movie_title, " +
-            "  m.status      AS movie_status, " +
-            "  m.duration_minutes AS duration_minutes, " +
-            "  r.id          AS room_id, " +
-            "  r.name        AS room_name, " +
-            "  c.id          AS cinema_id, " +
-            "  c.name        AS cinema_name, " +
-            "  c.address     AS cinema_address " +
+            "  m.id    AS movie_id, " +
+            "  m.title AS movie_title, " +
+            "  COALESCE(m.poster_url, m.banner_url) AS cover_url, " +
+            "  s.id    AS showtime_id, " +
+            "  TIME_FORMAT(s.start_time, '%H:%i') AS start_time, " +
+            "  s.base_price AS price, " +
+            "  r.name AS room_name " +
             "FROM showtime s " +
             "JOIN movie  m ON m.id = s.movie_id " +
             "JOIN room   r ON r.id = s.room_id " +
             "JOIN cinema c ON c.id = r.cinema_id " +
-            "WHERE 1=1 " +
-            "  AND c.is_active = 1 " +
+            "WHERE c.is_active = 1 " +
             "  AND s.status = 'SCHEDULED' " +
-            "  AND m.status IN ('COMING_SOON', 'NOW_SHOWING') " +
-            (hasCinema ? " AND r.cinema_id = ? " : "") +
-            (hasMovie  ? " AND s.movie_id  = ? " : "") +
-            (hasDate   ? " AND s.start_time >= ? AND s.start_time < ? " : "") +
-            "ORDER BY s.start_time ASC, r.name ASC, s.id ASC;";
+            "  AND m.status IN ('COMING_SOON','NOW_SHOWING') " +
+            "  AND r.cinema_id = ? " +
+            (hasMovie ? "  AND s.movie_id = ? " : "") +
+            "  AND s.start_time >= ? " +
+            "  AND s.start_time <  ? " +
+            "ORDER BY m.id ASC, s.start_time ASC, r.name ASC, s.id ASC;";
 
-        List<ShowtimePublicDtos> items = new ArrayList<>();
+        Map<Integer, MovieShowtimeGroupDtos> map = new LinkedHashMap<>();
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            int idx = 1;
+            conn.setReadOnly(true);
 
-            if (hasCinema) {
-                ps.setInt(idx++, cinemaId);
-            }
+            int idx = 1;
+            ps.setInt(idx++, cinemaId);
 
             if (hasMovie) {
                 ps.setInt(idx++, movieId);
             }
 
-            if (hasDate) {
-                ps.setTimestamp(idx++, Timestamp.valueOf(startOfDay));
-                ps.setTimestamp(idx++, Timestamp.valueOf(endOfDay));
-            }
+            ps.setTimestamp(idx++, Timestamp.valueOf(startOfDay));
+            ps.setTimestamp(idx++, Timestamp.valueOf(endOfDay));
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    ShowtimePublicDtos dto = new ShowtimePublicDtos();
+                    int mid = rs.getInt("movie_id");
 
-                    Timestamp st = rs.getTimestamp("start_time");
-                    Timestamp et = rs.getTimestamp("end_time");
+                    MovieShowtimeGroupDtos group = map.get(mid);
+                    if (group == null) {
+                        group = new MovieShowtimeGroupDtos();
+                        group.setMovieId(mid);
+                        group.setMovieTitle(rs.getString("movie_title"));
+                        group.setCoverUrl(rs.getString("cover_url"));
+                        group.setShowtimes(new ArrayList<>());
+                        map.put(mid, group);
+                    }
 
-                    dto.setId(rs.getInt("id"));
-                    dto.setStartTime(st != null ? st.toLocalDateTime() : null);
-                    dto.setEndTime(et != null ? et.toLocalDateTime() : null);
-                    dto.setBasePrice(rs.getBigDecimal("base_price"));
-                    dto.setStatus(rs.getString("status"));
+                    ShowtimePublicDtos item = new ShowtimePublicDtos();
+                    item.setId(rs.getInt("showtime_id"));
+                    item.setStartTime(rs.getString("start_time"));
+                    item.setPrice(rs.getBigDecimal("price"));
+                    item.setRoomName(rs.getString("room_name"));
 
-                    dto.setMovieId(rs.getInt("movie_id"));
-                    dto.setMovieTitle(rs.getString("movie_title"));
-                    dto.setMovieStatus(rs.getString("movie_status"));
-                    dto.setDurationMinutes(rs.getInt("duration_minutes"));
-
-                    dto.setRoomId(rs.getInt("room_id"));
-                    dto.setRoomName(rs.getString("room_name"));
-
-                    dto.setCinemaId(rs.getInt("cinema_id"));
-                    dto.setCinemaName(rs.getString("cinema_name"));
-                    dto.setCinemaAddress(rs.getString("cinema_address"));
-
-                    items.add(dto);
+                    group.getShowtimes().add(item);
                 }
             }
 
-            return items;
+            return new ArrayList<>(map.values());
 
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch showtimes (PUBLIC) with filters.", e);
+            throw new RuntimeException("Failed to fetch showtimes (PUBLIC GROUPED) with filters.", e);
         }
     }
     
@@ -209,7 +195,6 @@ public class ShowtimeRepository {
         }
     }
 
-    // Map đúng theo model Showtime bạn đã đưa
     private Showtime mapShowtimeItem(ResultSet rs) throws SQLException {
         Showtime s = new Showtime();
 
