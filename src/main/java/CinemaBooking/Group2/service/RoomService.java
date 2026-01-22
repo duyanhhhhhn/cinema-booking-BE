@@ -91,4 +91,13 @@ public class RoomService {
                 r.getSeatLayout()
         );
     }
+    
+    // ================= GET ROOM DETAIL =================
+    public RoomResponseDTO getRoomDetail(int id) {
+		Room r = repo.findById(id);
+		if (r == null) {
+			throw new RuntimeException("Room not found");
+		}
+		return toResponse(r);
+	}
 }

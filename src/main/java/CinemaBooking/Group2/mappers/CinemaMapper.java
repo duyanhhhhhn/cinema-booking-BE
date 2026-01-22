@@ -17,6 +17,7 @@ public class CinemaMapper implements RowMapper<Cinema> {
         c.setPhone(rs.getString("phone"));
         c.setDescription(rs.getString("description"));
         c.setIsActive(rs.getInt("is_active"));
+        c.setImageUrl(rs.getString("image_url"));
         c.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         return c;
     }

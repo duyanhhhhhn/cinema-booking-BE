@@ -6,7 +6,20 @@ public class CinemaRequestDTO {
     private String phone;
     private String description;
     private Integer isActive;
+    private String imageUrl;
     
+	/**
+	 * @return the imageUrl
+	 */
+	public String getImageUrl() {
+		return imageUrl;
+	}
+	/**
+	 * @param imageUrl the imageUrl to set
+	 */
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
 	/**
 	 * @return the isActive
 	 */
@@ -75,17 +88,28 @@ public class CinemaRequestDTO {
 	 * @param description
 	 * @param isActive
 	 */
-	public CinemaRequestDTO(String name, String address, String phone, String description, Integer isActive) {
+	
+	public CinemaRequestDTO() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	/**
+	 * @param name
+	 * @param address
+	 * @param phone
+	 * @param description
+	 * @param isActive
+	 * @param imageUrl
+	 */
+	public CinemaRequestDTO(String name, String address, String phone, String description, Integer isActive,
+			String imageUrl) {
 		super();
 		this.name = name;
 		this.address = address;
 		this.phone = phone;
 		this.description = description;
 		this.isActive = isActive;
-	}
-	public CinemaRequestDTO() {
-		super();
-		// TODO Auto-generated constructor stub
+		this.imageUrl = imageUrl;
 	}
     
     

@@ -42,6 +42,7 @@ public class CinemaService {
         c.setAddress(dto.getAddress());
         c.setPhone(dto.getPhone());
         c.setDescription(dto.getDescription());
+        c.setImageUrl(dto.getImageUrl()); 
         c.setIsActive(1); // mặc định active
 
         repo.insert(c);
@@ -62,6 +63,7 @@ public class CinemaService {
         existing.setAddress(dto.getAddress());
         existing.setPhone(dto.getPhone());
         existing.setDescription(dto.getDescription());
+        existing.setImageUrl(dto.getImageUrl());
         existing.setIsActive(dto.getIsActive());
 
         repo.update(id, existing);
@@ -83,12 +85,14 @@ public class CinemaService {
     // ================= MAPPER =================
     private CinemaResponseDTO toResponse(Cinema c) {
         return new CinemaResponseDTO(
-                c.getId(),
-                c.getName(),
-                c.getAddress(),
-                c.getPhone(),
-                c.getDescription(),
-                c.getIsActive()
-        );
+            c.getId(),
+			c.getName(),
+			c.getAddress(),
+			c.getPhone(),
+			c.getDescription(),
+			c.getIsActive(),
+			c.getImageUrl(),
+			c.getCreatedAt()
+		);
     }
 }
