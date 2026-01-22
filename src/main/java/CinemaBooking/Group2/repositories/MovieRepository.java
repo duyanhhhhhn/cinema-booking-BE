@@ -170,16 +170,12 @@ public class MovieRepository {
     }
 
 
-    /**
-     * Lấy danh sách phim sắp chiếu và đang chiếu có áp dụng phân trang + filter (keyword, genre).
-     */
     public List<Movie> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         if (page < 1) page = 1;
         if (perPage < 1) perPage = 10;
 
         int offset = (page - 1) * perPage;
 
-        // normalize keyword
         String q = (keyword == null) ? null : keyword.trim();
         boolean hasKeyword = (q != null && !q.isEmpty());
 
@@ -192,11 +188,7 @@ public class MovieRepository {
             "WHERE status IN (?, ?) " +
             (hasKeyword
                 ? "  AND ( " +
-                  "    LOWER(title) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(short_description) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(description) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(director) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(`cast`) LIKE CONCAT('%', LOWER(?), '%') " +
+                  "    title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci " +
                   "  ) "
                 : "") +
             (genre != null
@@ -220,25 +212,17 @@ public class MovieRepository {
 
             int idx = 1;
 
-            // status filter: COMING_SOON + NOW_SHOWING
             ps.setString(idx++, Movie.MovieStatus.COMING_SOON.name());
             ps.setString(idx++, Movie.MovieStatus.NOW_SHOWING.name());
 
-            // keyword filter (nếu có)
             if (hasKeyword) {
                 ps.setString(idx++, q);
-                ps.setString(idx++, q);
-                ps.setString(idx++, q);
-                ps.setString(idx++, q);
-                ps.setString(idx++, q);
             }
 
-            // genre filter (nếu có)
             if (genre != null) {
-                ps.setString(idx++, genre.name()); // ACTION, SCI_FI, ...
+                ps.setString(idx++, genre.name());
             }
 
-            // pagination
             ps.setInt(idx++, perPage);
             ps.setInt(idx++, offset);
 
@@ -250,10 +234,7 @@ public class MovieRepository {
                     movie.setShortDescription(rs.getString("short_description"));
                     movie.setDescription(rs.getString("description"));
                     movie.setDurationMinutes(rs.getInt("duration_minutes"));
-
-                    // genre: DB VARCHAR (có thể không đồng nhất format) -> enum
                     movie.setGenre(parseMovieGenre(rs.getString("genre")));
-
                     movie.setLanguage(rs.getString("language"));
                     movie.setFormat(rs.getString("format"));
                     movie.setDirector(rs.getString("director"));
@@ -261,13 +242,10 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
-
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
-
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
                     movie.setCreatedAt(rs.getTimestamp("created_at"));
-
                     movies.add(movie);
                 }
             }
@@ -278,6 +256,8 @@ public class MovieRepository {
             throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING) with filters + pagination.", e);
         }
     }
+
+
 
     public List<Movie> getMoviesComingSoonAndNowShowing() {
         String sql = """
