@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.controllers.client;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,38 +34,52 @@ public class MovieReviewClientController {
 	MovieReviewService mv;
 	
 	@GetMapping({"", "/"})
-	public ResponseEntity<PageResponse<MovieReviewClientDtos>> getAllReviews(
+	public ResponseEntity<ApiResponse<List<MovieReviewClientDtos>>> getAllReviews(
 	        @RequestParam(defaultValue = "1") int page,
 	        @RequestParam(defaultValue = "20") int perPage
 	) {
-	    if (page < 1) page = 1;
-	    if (perPage < 1) perPage = 10;
-	    if (perPage > 100) perPage = 100;
+	    List<MovieReviewClientDtos> items =
+	    		mv.getAllReviewClient(page, perPage);
 
-	    PageResponse<MovieReviewClientDtos> res = mv.getAllReviewClient(page, perPage);
-	    return ResponseEntity.ok(res);
+	    Map<String, Object> meta = new LinkedHashMap<>();
+	    meta.put("page", page);
+	    meta.put("perPage", perPage);
+	    meta.put("total", items.size()); 
+
+	    return ResponseEntity.ok(
+	        new ApiResponse<>("OK", items, meta)
+	    );
 	}
 	
 	@GetMapping("/{movie_id}/rating")
-	public ResponseEntity<RatingSummaryDtos> countRatingMovieById(
+	public ResponseEntity<ApiResponse<RatingSummaryDtos>> countRatingMovieById(
 	        @PathVariable("movie_id") int movieId
 	) {
-	    RatingSummaryDtos res = mv.countRatingAverage(movieId);
-	    return ResponseEntity.ok(res);
+	    if (movieId <= 0) {
+	        return ResponseEntity.badRequest()
+	            .body(new ApiResponse<>("INVALID MOVIE ID.", null, null));
+	    }
+
+	    RatingSummaryDtos data = mv.countRatingAverage(movieId);
+
+	    return ResponseEntity.ok(
+	        new ApiResponse<>("success", data, null)
+	    );
 	}
+
 
 	// đánh giá comment của khách hàng với điều kiện, người dùng đã mua vé.
 	@PostMapping(
 		    value = "/create-comment",
-		    consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
 		    produces = MediaType.APPLICATION_JSON_VALUE
 		)
 		public ResponseEntity<ApiResponse<MovieReviewDtos>> createComment(
-		    @RequestParam int userId,
-		    @RequestParam int movieId,
-		    @RequestParam int rating,
+		    @RequestParam Integer userId,
+		    @RequestParam Integer movieId,
+		    @RequestParam Integer rating,
 		    @RequestParam(required = false, defaultValue = "") String comment
 		) {
+		System.out.println("HIT create-comment: userId=" + userId + ", movieId=" + movieId);
 		    try {
 		        if (userId <= 0) {
 		            return ResponseEntity.status(401).body(new ApiResponse<>("UNAUTHORIZED: userId invalid.", null));
@@ -88,39 +103,36 @@ public class MovieReviewClientController {
 		    }
 		}
     
-    @GetMapping("/{movie_id}/comment")
-    public ResponseEntity<PageResponse<MovieReviewClientDtos>> getAllComment(
-            @PathVariable("movie_id") int movieId,
+		@GetMapping("/{movie_id}/comment")
+		public ResponseEntity<ApiResponse<List<MovieReviewClientDtos>>> getAllComment(
+		        @PathVariable("movie_id") int movieId,
+		        @RequestParam(defaultValue = "1") int page,
+		        @RequestParam(defaultValue = "20") int perPage
+		) {
+		    if (movieId <= 0) {
+		        throw new IllegalArgumentException("INVALID MOVIE ID.");
+		    }
+	
+		    if (page < 1) page = 1;
+		    if (perPage < 1) perPage = 10;
+		    if (perPage > 100) perPage = 100;
+	
+		    int limit = perPage;
+		    int offset = (page - 1) * perPage;
+	
+		    List<MovieReviewClientDtos> data =
+		            mv.getAllCommentById(movieId, limit, offset);
+		    long total = 0L;
+	
+		    Map<String, Object> meta = new LinkedHashMap<>();
+		    meta.put("page", page);
+		    meta.put("perPage", perPage);
+		    meta.put("total", total);
+	
+		    return ResponseEntity.ok(
+		            new ApiResponse<>("success", data, meta)
+		    );
+		}
 
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int perPage
-    ) {
-        if (movieId <= 0) {
-            throw new IllegalArgumentException("INVALID MOVIE ID.");
-        }
-
-        if (page < 1) page = 1;
-        if (perPage < 1) perPage = 10;
-        if (perPage > 100) perPage = 100;
-
-        int limit = perPage;
-        int offset = (page - 1) * perPage;
-
-        // service vẫn trả List như bạn muốn
-        List<MovieReviewClientDtos> items = mv.getAllCommentById(movieId, limit, offset);
-
-        PageResponse<MovieReviewClientDtos> res = new PageResponse<>();
-        res.setSuccess(true);
-        res.setMessage("OK");
-        res.setItems(items);
-        res.setPage(page);
-        res.setSize(perPage);
-
-        // Chưa có COUNT -> để 0 (hoặc -1 tuỳ quy ước của bạn)
-        res.setTotalItems(0);
-        res.setTotalPages(0);
-
-        return ResponseEntity.ok(res);
-    }
 
 }

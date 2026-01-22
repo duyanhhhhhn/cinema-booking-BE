@@ -38,19 +38,18 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
-	public List<PostResponseDTO> getPostPaging(int page,int size) {
+	public int getPostCount() {
 		try {
-			List<Post> item = mk.getPost(page,size);
-			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
+			return mk.getPostCount();
 		}
 		catch (Exception e) {
 			// TODO: handle exception
-			throw new RuntimeException();
 		}
+		return 0;
 	}
-	public List<PostResponseDTO> searchPostPaging(String key,int page,int size) {
+	public List<PostResponseDTO> getPostPaging(int page,int size,int id) {
 		try {
-			List<Post> item = mk.searchPost(key, page, size);
+			List<Post> item = mk.getPost(page,size,id);
 			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {

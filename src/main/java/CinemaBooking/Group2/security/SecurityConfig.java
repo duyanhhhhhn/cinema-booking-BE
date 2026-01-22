@@ -13,100 +13,78 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import java.util.Arrays;
 
 @Configuration
 public class SecurityConfig {
+	@Autowired
+	private JwtAuthFilter jwtAuthFilter;
 
-    @Autowired
-    private JwtAuthFilter jwtAuthFilter;
+	@Bean
+	public BCryptPasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOriginPatterns(Arrays.asList("*"));
+		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+		config.setAllowedHeaders(Arrays.asList("*"));
+		config.setExposedHeaders(Arrays.asList("Authorization"));
+		config.setAllowCredentials(true);
+		config.setMaxAge(3600L);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
+	}
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("*"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("*"));
-        config.setExposedHeaders(Arrays.asList("Authorization"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.cors(cors -> cors.configurationSource(corsConfigurationSource())).csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth
+						// Public routes
+						.requestMatchers("/swagger-ui/**", 
+								"/v3/api-docs/**", 
+								"/swagger-ui.html").permitAll()
+						.requestMatchers("/api/public/**", 
+								"/api/auth/register/**", 
+								"/api/auth/login",
+								"/api/auth/logout", 
+								"/api/auth/refresh", 
+								"/api/auth/forgot/**", 
+								"/media/**",
+								"/api/public/**", 
+								"/swagger-ui/index.html#/", 
+								"/api/posts", 
+								"/api/posts/paging",
+								"/api/posts/**", 
+								"/api/banner/**")
+						.permitAll()
+						.requestMatchers("/api/auth/password/**").authenticated()
+						.requestMatchers("/api/users/me").authenticated()
+						// ===== PUBLIC =====
+						.requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+						// ======= PUBLIC =======
+						.requestMatchers("/api/client/reviews/*/comment").permitAll()
+						// ===== AUTHENTICATED =====
+						.requestMatchers("/api/auth/password/**", "/api/users/me", "/api/users/me/avatar")
+						.authenticated()
+						// ===== ROLE BASE =====
+						.requestMatchers("/api/admin/**").hasAuthority("ADMIN").requestMatchers("/api/manager/**")
+						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/movies/**")
+						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/users/**")
+						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/staff/**")
+						.hasAnyAuthority("ADMIN", "MANAGER", "STAFF").requestMatchers("/api/cinemas/**")
+						.hasAnyAuthority("ADMIN").requestMatchers("/api/room/**").hasAnyAuthority("ADMIN").anyRequest()
+						.authenticated())
+				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+				.httpBasic(httpBasic -> httpBasic.disable());
+		return http.build();
+	}
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // Public routes
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers(
-                        		"/api/public/**",
-                                "/api/auth/register/**",
-                                "/api/auth/login",
-                                "/api/auth/logout",
-                                "/api/auth/refresh",
-                                "/api/auth/forgot/**",
-                                "/media/**",
-                                "/api/public/**",
-                                "/swagger-ui/index.html#/",
-                                "/api/posts",
-                                "/api/posts/paging",
-                                "/api/posts/**",                           
-                                "/api/banner/**")
-                        .permitAll()
-
-                        .requestMatchers("/api/auth/password/**").authenticated()
-                        .requestMatchers("/api/users/me").authenticated()
-
-                        // ===== PUBLIC =====
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**")
-                        .permitAll()
-                        
-                        // ======= PUBLIC =======
-                        .requestMatchers("/api/client/reviews/*/comment").permitAll()
-
-
-                        // ===== AUTHENTICATED =====
-                        .requestMatchers(
-                                "/api/auth/password/**",
-                                "/api/users/me",
-                        		"/api/users/me/avatar")
-                        .authenticated()
-
-                        // ===== ROLE BASE =====
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
-                        .requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
-                        .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
-                        .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
-                        .requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
-                        .requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
-                        .anyRequest().authenticated())
-
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .httpBasic(httpBasic -> httpBasic.disable());
-
-        return http.build();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+		return config.getAuthenticationManager();
+	}
 }

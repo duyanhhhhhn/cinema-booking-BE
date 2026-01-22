@@ -60,25 +60,26 @@ import CinemaBooking.Group2.dtos.cinema.CinemaResponseDTO;
 import CinemaBooking.Group2.service.CinemaService;
 
 @RestController
-@RequestMapping("/api/cinemas")
 public class CinemaController {
 
     @Autowired
     private CinemaService service;
 
-    // ================= GET ALL =================
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAll() {
+    // ================= PUBLIC GET =================
+    // URL: /api/public/cinemas
+    @GetMapping("/api/public/cinemas")
+    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> publicGetAll() {
 
         List<CinemaResponseDTO> data = service.getAll();
 
         return ResponseEntity.ok(
-                new ApiResponse<>("Success", data)
+            new ApiResponse<>("Success", data)
         );
     }
 
-    // ================= CREATE =================
-    @PostMapping
+    // ================= ADMIN APIs =================
+    // URL: /api/cinemas
+    @PostMapping("/api/cinemas")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<CinemaResponseDTO>> create(
             @RequestBody CinemaRequestDTO dto) {
@@ -89,8 +90,7 @@ public class CinemaController {
                 .body(new ApiResponse<>("Cinema created", created));
     }
 
-    // ================= UPDATE =================
-    @PutMapping("/{id}")
+    @PutMapping("/api/cinemas/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<CinemaResponseDTO>> update(
             @PathVariable int id,
@@ -103,4 +103,5 @@ public class CinemaController {
         );
     }
 }
+
 

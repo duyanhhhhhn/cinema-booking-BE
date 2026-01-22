@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.controllers.auth;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.auth.AuthRequestDTO;
 import CinemaBooking.Group2.dtos.auth.RegisterRequestDTO;
 import CinemaBooking.Group2.dtos.auth.SendOtpRequestDTO;
@@ -27,17 +29,22 @@ public class AuthController {
     // ================= REGISTER =================
 
     @PostMapping("/register/send-otp")
-    public ResponseEntity<ApiResponse<Void>> sendRegisterOtp(
+    public ResponseEntity<PageResponse<Void>> sendRegisterOtp(
             @RequestBody SendOtpRequestDTO req) {
 
         registerService.sendOtp(req.getEmail());
-        return ResponseEntity.ok(
-                new ApiResponse<>("Đã gửi OTP đăng ký", null)
-        );
+
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Đã gửi OTP đăng ký");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
 
+
     @PostMapping("/register/verify")
-    public ResponseEntity<ApiResponse<Void>> verifyRegister(
+    public ResponseEntity<PageResponse<Void>> verifyRegister(
             @RequestBody Map<String, String> body) {
 
         RegisterRequestDTO req = new RegisterRequestDTO();
@@ -48,59 +55,83 @@ public class AuthController {
 
         registerService.verify(req, body.get("otp"));
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Đăng ký thành công", null)
-        );
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Đăng ký thành công");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
+
 
     // ================= LOGIN =================
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Map<String, String>>> login(
+    public ResponseEntity<PageResponse<Map<String, String>>> login(
             @RequestBody AuthRequestDTO req) {
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Đăng nhập thành công",
-                        authService.login(req.getEmail(), req.getPassword()))
-        );
+        Map<String, String> tokens =
+                authService.login(req.getEmail(), req.getPassword());
+
+        PageResponse<Map<String, String>> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Đăng nhập thành công");
+        res.setData(List.of(tokens)); // ⚠️ bọc object vào List
+
+        return ResponseEntity.ok(res);
     }
+
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<Map<String, String>>> refresh(
+    public ResponseEntity<PageResponse<Map<String, String>>> refresh(
             @RequestBody Map<String, String> req) {
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Refresh token thành công",
-                        authService.refresh(req.get("refreshToken")))
-        );
+        Map<String, String> tokens =
+                authService.refresh(req.get("refreshToken"));
+
+        PageResponse<Map<String, String>> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Refresh token thành công");
+        res.setData(List.of(tokens));
+
+        return ResponseEntity.ok(res);
     }
 
+
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(
+    public ResponseEntity<PageResponse<Void>> logout(
             @RequestBody Map<String, String> req) {
 
         authService.logout(req.get("refreshToken"));
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Đăng xuất thành công", null)
-        );
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Đăng xuất thành công");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
+
 
     // ================= FORGOT PASSWORD =================
 
     @PostMapping("/forgot/send-otp")
-    public ResponseEntity<ApiResponse<Void>> sendForgotOtp(
+    public ResponseEntity<PageResponse<Void>> sendForgotOtp(
             @RequestBody Map<String, String> body) {
 
         forgotService.sendOtp(body.get("email"));
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("OTP đã được gửi tới email", null)
-        );
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("OTP đã được gửi tới email");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
 
+
     @PostMapping("/forgot/verify")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(
+    public ResponseEntity<PageResponse<Void>> resetPassword(
             @RequestBody Map<String, String> body) {
 
         forgotService.verifyAndChangePassword(
@@ -109,23 +140,33 @@ public class AuthController {
                 body.get("newPassword")
         );
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Đổi mật khẩu thành công", null)
-        );
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Đổi mật khẩu thành công");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
+
 
     // ================= CHANGE PASSWORD (PROTECTED) =================
 
     @PostMapping("/password/send-otp")
-    public ResponseEntity<ApiResponse<Void>> sendChangePasswordOtp() {
+    public ResponseEntity<PageResponse<Void>> sendChangePasswordOtp() {
+
         changeService.sendOtp();
-        return ResponseEntity.ok(
-                new ApiResponse<>("OTP đổi mật khẩu đã được gửi", null)
-        );
+
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("OTP đổi mật khẩu đã được gửi");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
 
+
     @PostMapping("/password/verify")
-    public ResponseEntity<ApiResponse<Void>> changePassword(
+    public ResponseEntity<PageResponse<Void>> changePassword(
             @RequestBody Map<String, String> body) {
 
         changeService.changePassword(
@@ -133,9 +174,13 @@ public class AuthController {
                 body.get("newPassword")
         );
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Đổi mật khẩu thành công", null)
-        );
+        PageResponse<Void> res = new PageResponse<>();
+        res.setSuccess(true);
+        res.setMessage("Đổi mật khẩu thành công");
+        res.setData(null);
+
+        return ResponseEntity.ok(res);
     }
+
 }
 
