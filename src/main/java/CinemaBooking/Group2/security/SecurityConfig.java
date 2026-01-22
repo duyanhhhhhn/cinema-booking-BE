@@ -81,14 +81,21 @@ public class SecurityConfig {
                         .requestMatchers("/api/client/reviews/*/comment",
                         				 "/api/client/reviews/*/rating").permitAll()
 
-                     // ===== PRIVATE (Client tạo comment) =====
+                        // ===== PRIVATE (Client tạo comment) =====
                         .requestMatchers(HttpMethod.POST, "/api/client/reviews/create-comment").permitAll()
+                        
+                        // ===== PUBLIC (SHOWTIME SEAT) =========
+                        .requestMatchers("/api/showtimes-seat/**").permitAll()
+                        
+                        // ==== PUBLIC showtimes =====
+                        .requestMatchers("/api/showtimes/public/**").permitAll()
                         
                         // ===== AUTHENTICATED =====
                         .requestMatchers(
                                 "/api/auth/password/**",
                                 "/api/users/me")
                         .authenticated()
+                        
 
                         // ===== ROLE BASE =====
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
