@@ -228,7 +228,6 @@ public class ShowtimeRepository {
             throw new RuntimeException("Invalid showtime.status value in DB: " + dbValue, ex);
         }
     }
-
     public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
         String sql =
             "SELECT " +
@@ -239,6 +238,7 @@ public class ShowtimeRepository {
             "  m.duration_minutes AS duration_minutes, " +
             "  s.id AS showtime_id, " +
             "  s.start_time AS start_time, " +
+            "  s.end_time AS end_time, " +
             "  r.type AS room_type " +
             "FROM showtime s " +
             "JOIN room r ON r.id = s.room_id " +
@@ -247,10 +247,15 @@ public class ShowtimeRepository {
             "WHERE s.movie_id = ? " +
             "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
             "  AND s.start_time >= NOW() " +
+            "  AND s.end_time > s.start_time " +
+            "  AND (m.duration_minutes IS NULL OR " +
+            "       TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time) >= m.duration_minutes) " +
             "  AND (c.is_active = 1 OR c.is_active IS NULL) " +
             "ORDER BY c.id ASC, s.start_time ASC";
 
-        java.time.format.DateTimeFormatter HH_MM = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+        java.time.format.DateTimeFormatter ISO =
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
         java.util.Map<Integer, MovieWithShowtimesDtos> grouped = new java.util.LinkedHashMap<>();
 
         try (java.sql.Connection con = dataSource.getConnection();
@@ -259,10 +264,20 @@ public class ShowtimeRepository {
             ps.setInt(1, movieId);
 
             try (java.sql.ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int cinemaId = rs.getInt("cinema_id");
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
+                while (rs.next()) {
+                    java.time.LocalDateTime startTime =
+                        rs.getTimestamp("start_time").toLocalDateTime();
+                    java.time.LocalDateTime endTime =
+                        rs.getTimestamp("end_time").toLocalDateTime();
+
+                    if (startTime.isBefore(now)) continue;
+                    if (!endTime.isAfter(startTime)) continue;
+
+                    int cinemaId = rs.getInt("cinema_id");
                     MovieWithShowtimesDtos dto = grouped.get(cinemaId);
+
                     if (dto == null) {
                         dto = new MovieWithShowtimesDtos();
                         dto.setCinemaId(cinemaId);
@@ -271,22 +286,26 @@ public class ShowtimeRepository {
                         dto.setPosterUrl(rs.getString("poster_url"));
 
                         Object durObj = rs.getObject("duration_minutes");
-                        dto.setDurationMinutes(durObj == null ? null : ((Number) durObj).intValue());
+                        Integer durationMinutes = (durObj == null) ? null : ((Number) durObj).intValue();
+                        dto.setDurationMinutes(durationMinutes);
 
                         grouped.put(cinemaId, dto);
                     }
 
-                    int showtimeId = rs.getInt("showtime_id");
-                    java.time.LocalDateTime startTime =
-                        rs.getTimestamp("start_time").toLocalDateTime();
+                    Integer dur = dto.getDurationMinutes();
+                    if (dur != null) {
+                        long diffMin = java.time.Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < dur) continue;
+                    }
 
                     String roomType = rs.getString("room_type");
                     String type = (roomType == null || roomType.isBlank()) ? "2D" : roomType.trim();
 
                     CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos st =
                         new CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos();
-                    st.setId(showtimeId);
-                    st.setStartTime(startTime.format(HH_MM));
+
+                    st.setId(rs.getInt("showtime_id"));
+                    st.setStartTime(startTime.format(ISO));
                     st.setType(type);
 
                     dto.getShowtimes().add(st);
