@@ -5,6 +5,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
+import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
 import CinemaBooking.Group2.dtos.showtime.MovieShowtimeGroupDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimePublicDtos;
 import CinemaBooking.Group2.repositories.ShowtimeRepository;
@@ -41,6 +42,14 @@ public class ShowtimeService {
         validate(cinemaId, movieId, date);
         return date;
     }
+
+    public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
+        if (movieId <= 0) {
+            throw new IllegalArgumentException("movieId must be > 0");
+        }
+        return stRepo.getCinemasWithShowtimesByMovieId(movieId);
+    }
+    
 
     private void validate(int cinemaId, Integer movieId, LocalDate date) {
         if (cinemaId <= 0) {

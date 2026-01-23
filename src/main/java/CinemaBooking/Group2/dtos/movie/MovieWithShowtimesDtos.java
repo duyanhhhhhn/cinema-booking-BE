@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.dtos.movie;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos;
@@ -8,13 +9,9 @@ public class MovieWithShowtimesDtos {
     private int cinemaId;
     private String cinemaName;
     private String address;
-
     private String posterUrl;
-    private String movieTitle;
-    private String movieGenre;
     private Integer durationMinutes;
-
-    private List<ShowtimeItemDtos> showtimes;
+    private List<ShowtimeItemDtos> showtimes = new ArrayList<>();
 
     public MovieWithShowtimesDtos() {}
 
@@ -50,22 +47,6 @@ public class MovieWithShowtimesDtos {
         this.posterUrl = posterUrl;
     }
 
-    public String getMovieTitle() {
-        return movieTitle;
-    }
-
-    public void setMovieTitle(String movieTitle) {
-        this.movieTitle = movieTitle;
-    }
-
-    public String getMovieGenre() {
-        return movieGenre;
-    }
-
-    public void setMovieGenre(String movieGenre) {
-        this.movieGenre = movieGenre;
-    }
-
     public Integer getDurationMinutes() {
         return durationMinutes;
     }
@@ -79,6 +60,6 @@ public class MovieWithShowtimesDtos {
     }
 
     public void setShowtimes(List<ShowtimeItemDtos> showtimes) {
-        this.showtimes = showtimes;
+        this.showtimes = (showtimes == null) ? new ArrayList<>() : showtimes;
     }
 }

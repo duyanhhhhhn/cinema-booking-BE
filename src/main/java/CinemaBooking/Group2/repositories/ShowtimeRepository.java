@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
 import CinemaBooking.Group2.dtos.showtime.MovieShowtimeGroupDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimePublicDtos;
 import CinemaBooking.Group2.models.Showtime;
@@ -195,6 +196,8 @@ public class ShowtimeRepository {
         }
     }
 
+    
+    	
     private Showtime mapShowtimeItem(ResultSet rs) throws SQLException {
         Showtime s = new Showtime();
 
@@ -223,6 +226,77 @@ public class ShowtimeRepository {
             return Showtime.ShowtimeStatus.valueOf(dbValue.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new RuntimeException("Invalid showtime.status value in DB: " + dbValue, ex);
+        }
+    }
+
+    public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
+        String sql =
+            "SELECT " +
+            "  c.id AS cinema_id, " +
+            "  c.name AS cinema_name, " +
+            "  c.address AS address, " +
+            "  m.poster_url AS poster_url, " +
+            "  m.duration_minutes AS duration_minutes, " +
+            "  s.id AS showtime_id, " +
+            "  s.start_time AS start_time, " +
+            "  r.type AS room_type " +
+            "FROM showtime s " +
+            "JOIN room r ON r.id = s.room_id " +
+            "JOIN cinema c ON c.id = r.cinema_id " +
+            "JOIN movie m ON m.id = s.movie_id " +
+            "WHERE s.movie_id = ? " +
+            "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
+            "  AND s.start_time >= NOW() " +
+            "  AND (c.is_active = 1 OR c.is_active IS NULL) " +
+            "ORDER BY c.id ASC, s.start_time ASC";
+
+        java.time.format.DateTimeFormatter HH_MM = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+        java.util.Map<Integer, MovieWithShowtimesDtos> grouped = new java.util.LinkedHashMap<>();
+
+        try (java.sql.Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, movieId);
+
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int cinemaId = rs.getInt("cinema_id");
+
+                    MovieWithShowtimesDtos dto = grouped.get(cinemaId);
+                    if (dto == null) {
+                        dto = new MovieWithShowtimesDtos();
+                        dto.setCinemaId(cinemaId);
+                        dto.setCinemaName(rs.getString("cinema_name"));
+                        dto.setAddress(rs.getString("address"));
+                        dto.setPosterUrl(rs.getString("poster_url"));
+
+                        Object durObj = rs.getObject("duration_minutes");
+                        dto.setDurationMinutes(durObj == null ? null : ((Number) durObj).intValue());
+
+                        grouped.put(cinemaId, dto);
+                    }
+
+                    int showtimeId = rs.getInt("showtime_id");
+                    java.time.LocalDateTime startTime =
+                        rs.getTimestamp("start_time").toLocalDateTime();
+
+                    String roomType = rs.getString("room_type");
+                    String type = (roomType == null || roomType.isBlank()) ? "2D" : roomType.trim();
+
+                    CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos st =
+                        new CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos();
+                    st.setId(showtimeId);
+                    st.setStartTime(startTime.format(HH_MM));
+                    st.setType(type);
+
+                    dto.getShowtimes().add(st);
+                }
+            }
+
+            return new java.util.ArrayList<>(grouped.values());
+
+        } catch (java.sql.SQLException e) {
+            throw new RuntimeException("FAILED TO FETCH CINEMAS & SHOWTIMES BY MOVIE ID: " + movieId, e);
         }
     }
 
