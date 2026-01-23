@@ -47,9 +47,9 @@ public class MarketingService {
 		}
 		return 0;
 	}
-	public List<PostResponseDTO> getPostPaging(int page,int size,int id) {
+	public List<PostResponseDTO> getPostPaging(int page,int size) {
 		try {
-			List<Post> item = mk.getPost(page,size,id);
+			List<Post> item = mk.getPost(page,size);
 			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {

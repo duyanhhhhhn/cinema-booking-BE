@@ -1,6 +1,7 @@
 package CinemaBooking.Group2.controllers.client;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
@@ -33,10 +35,10 @@ public class MarketingController {
 	@GetMapping("/api/public/posts")
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam("page")int page,
-			@RequestParam("perPage")int size,@RequestParam("id")int id){
+			@RequestParam("perPage")int size){
 		List<PostResponseDTO> item;
 		try {
-			item = service.getPostPaging(page,size,id);
+			item = service.getPostPaging(page,size);
 			Map<String, Object> meta = new HashMap<>();
 			float totalItem = service.getPostCount();
 			meta.put("page",page);
@@ -74,22 +76,30 @@ public class MarketingController {
 	
 	@GetMapping("/api/public/posts/{id}")
 	@CrossOrigin
-	public ResponseEntity<PostResponseDTO> postInfo(@PathVariable("id")int id){
+	public ResponseEntity<PageResponse<PostResponseDTO>> postInfo(@PathVariable("id")int id){
+		PageResponse<PostResponseDTO> res= new PageResponse<>();
 		PostResponseDTO item = new PostResponseDTO();
 		try {
 			item = service.postInfo(id);
 			if(item==null) {
-				item =  new PostResponseDTO();
-				item.setMessage("Not found");
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(item);
+				res.setMessage("Not found");
+				res.setSuccess(false);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
 			}
-			return ResponseEntity.ok(item);
+			else{
+				List<PostResponseDTO> post = new ArrayList<>();
+				post.add(item);
+				res.setMessage("success");
+				res.setSuccess(true);
+				res.setData(post);
+			}
+			return ResponseEntity.ok(res);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
 		item.setMessage("Error");
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 	}
 	@GetMapping("/api/vouchers/paging")
 	@CrossOrigin
