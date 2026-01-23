@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
+import CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
 
@@ -233,9 +234,7 @@ public class MovieRepository {
         }
     }
 
-    /**
-     * Thêm mới phim vào database và trả về ID tự động phát sinh.
-     */
+    
     public int createNewMovieReturnId(Movie movie) {
         String sql =
             "INSERT INTO movie " +
@@ -358,6 +357,59 @@ public class MovieRepository {
             throw new RuntimeException("Failed to check movie existence by id=" + id, e);
         }
     }
+    
+    public List<RelatedMovieItemDtos> getRelatedMoviesByGenre(
+            String genre, Integer excludeId, int limit
+    ) {
+        String sql =
+            "SELECT id, title, poster_url, duration_minutes, genre, status " +
+            "FROM movie " +
+            "WHERE genre = ? " +
+            (excludeId != null ? "  AND id <> ? " : "") +
+            "  AND (status IS NULL OR status IN ('NOW_SHOWING','COMING_SOON')) " +
+            "ORDER BY created_at DESC " +
+            "LIMIT ?";
+
+        java.util.List<CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos> out = new java.util.ArrayList<>();
+
+        try (java.sql.Connection con = dataSource.getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+
+            int i = 1;
+            ps.setString(i++, genre);
+
+            if (excludeId != null) {
+                ps.setInt(i++, excludeId);
+            }
+
+            ps.setInt(i++, limit);
+
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Object durObj = rs.getObject("duration_minutes");
+                    Integer durationMinutes = (durObj == null) ? null : ((Number) durObj).intValue();
+
+                    CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos dto =
+                        new CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos(
+                            rs.getInt("id"),
+                            rs.getString("title"),
+                            rs.getString("poster_url"),
+                            durationMinutes,
+                            rs.getString("genre"),
+                            rs.getString("status")
+                        );
+
+                    out.add(dto);
+                }
+            }
+
+            return out;
+
+        } catch (java.sql.SQLException e) {
+            throw new RuntimeException("FAILED TO FETCH RELATED MOVIES BY GENRE: " + genre, e);
+        }
+    }
+
 
     private Movie mapFullMovie(ResultSet rs) throws SQLException {
         Movie movie = new Movie();

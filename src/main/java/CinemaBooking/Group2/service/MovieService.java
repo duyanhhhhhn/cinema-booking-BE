@@ -23,6 +23,7 @@ import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
+import CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
@@ -397,5 +398,27 @@ public class MovieService {
             throw new RuntimeException("FAILED TO COUNT MOVIES (COMING_SOON, NOW_SHOWING).", e);
         }
     }
+    
+    public List<RelatedMovieItemDtos> getRelatedMovies(
+            String genre, Integer excludeId, Integer limit
+    ) {
+        String g = (genre == null) ? null : genre.trim();
+        if (g == null || g.isEmpty()) {
+            throw new IllegalArgumentException("genre is required");
+        }
+
+        String normalized = g.toUpperCase();
+
+        try {
+            CinemaBooking.Group2.models.Movie.MovieGenre.valueOf(normalized);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("invalid genre: " + genre);
+        }
+
+        int lim = (limit == null) ? 8 : Math.max(1, Math.min(limit, 24));
+
+        return movieRepository.getRelatedMoviesByGenre(normalized, excludeId, lim);
+    }
+
 
 }
