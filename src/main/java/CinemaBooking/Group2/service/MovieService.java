@@ -17,16 +17,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
-import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
-import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
-import CinemaBooking.Group2.dtos.showtime.CinemaOptionsDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
@@ -44,91 +40,26 @@ public class MovieService {
     private String publicPrefix;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
-    
-    
-    public List<MovieDtos> getAllMovieAdmin(
-            int page,
-            int perPage,
-            String title,
-            Movie.MovieGenre genre,
-            Movie.MovieStatus status
-    	) {
+
+    public List<MoviePublicDtos> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         try {
             if (page < 1) page = 1;
             if (perPage < 1) perPage = 10;
 
-            String q = (title == null) ? null : title.trim();
+            String q = (keyword == null) ? null : keyword.trim();
             if (q != null && q.isBlank()) q = null;
-            List<Movie> movies = movieRepository.getAllMovieAdmin(page, perPage, q, genre, status);
+
+            List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage, q, genre);
 
             return movies.stream().map(m -> {
-                MovieDtos dto = MovieMapper.toResponseDto(m); 
+            	MoviePublicDtos dto = MovieMapper.toPublicRes(m);
                 dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
                 dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
                 return dto;
             }).collect(Collectors.toList());
 
         } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (ADMIN).", e);
-        }
-    }
-    
-    public long countAllMovieAdmin(String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
-        try {
-            String q = (title == null) ? null : title.trim();
-            if (q != null && q.isBlank()) q = null;
-
-            return (long) movieRepository.countAllMovieAdmin(q, genre, status);
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO COUNT MOVIES (ADMIN).", e);
-        }
-    }
-
-    public List<MovieWithShowtimesDtos> getMoviesWithShowtimesByCinema(
-            int cinemaId,
-            String keyword,
-            Movie.MovieGenre genre
-    ) {
-        try {
-            if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
-
-            String q = (keyword == null) ? null : keyword.trim();
-            if (q != null && q.isBlank()) q = null;
-
-            List<MovieWithShowtimesDtos> data =
-                    movieRepository.getMoviesWithShowtimesByCinema(cinemaId, q, genre);
-
-            for (MovieWithShowtimesDtos c : data) {
-                String p = c.getPosterUrl();
-                c.setPosterUrl(p == null ? null : toPublicMediaUrl(p));
-            }
-
-            return data;
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIES WITH SHOWTIMES BY CINEMA.", e);
-        }
-    }
-
-    
-    public List<CinemaOptionsDtos> getCinemaOptions() {
-        return movieRepository.getCinemaOptions();
-    }
-
-
-    
-    public long countMovieCardsByCinema(int cinemaId, String keyword, Movie.MovieGenre genre) {
-        try {
-            if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
-
-            String q = (keyword == null) ? null : keyword.trim();
-            if (q != null && q.isBlank()) q = null;
-
-            return movieRepository.countMovieCardsByCinema(cinemaId, q, genre);
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO COUNT MOVIE CARDS BY CINEMA.", e);
+            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (COMING_SOON/NOW_SHOWING).", e);
         }
     }
 
@@ -465,6 +396,5 @@ public class MovieService {
             throw new RuntimeException("FAILED TO COUNT MOVIES (COMING_SOON, NOW_SHOWING).", e);
         }
     }
-
 
 }

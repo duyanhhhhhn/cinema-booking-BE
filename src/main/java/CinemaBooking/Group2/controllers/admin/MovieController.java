@@ -27,7 +27,9 @@ import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
+import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.models.Movie;
+import CinemaBooking.Group2.models.Movie.MovieGenre;
 import CinemaBooking.Group2.service.MovieService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -39,18 +41,18 @@ public class MovieController {
     private MovieService movieService;
 
     @GetMapping("")
-    public ResponseEntity<ApiResponse<List<MovieDtos>>> getAllMovie(
+    public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovie(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int perPage,
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) Movie.MovieGenre genre,
-            @RequestParam(required = false) Movie.MovieStatus status
-    ) {
+            @RequestParam(required = false) Movie.MovieGenre genre) {
+
+        // 1. Logic tính toán
         page = Math.max(page, 1);
         perPage = Math.max(perPage, 1);
 
-        List<MovieDtos> movies = movieService.getAllMovieAdmin(page, perPage, title, genre, status);
-        long total = movieService.countAllMovieAdmin(title, genre, status);
+        List<MoviePublicDtos> movies = movieService.getAllMovieCommingSoon(page, perPage, title, genre);
+        long total = movieService.countTotalMovies();
 
         Map<String, Object> meta = new HashMap<>();
         meta.put("page", page);
@@ -59,7 +61,7 @@ public class MovieController {
 
         return ResponseEntity.ok(new ApiResponse<>("Success", movies, meta));
     }
-
+    
     
     @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<MovieDetailDtos>> createMovie(@ModelAttribute MovieCreateDtos dto) {
