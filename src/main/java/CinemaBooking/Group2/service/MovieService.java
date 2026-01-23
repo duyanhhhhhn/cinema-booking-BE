@@ -25,6 +25,8 @@ import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
+import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
+import CinemaBooking.Group2.dtos.showtime.CinemaOptionsDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
@@ -83,26 +85,50 @@ public class MovieService {
         }
     }
 
-
-    public List<MoviePublicDtos> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
+    public List<MovieWithShowtimesDtos> getMoviesWithShowtimesByCinema(
+            int cinemaId,
+            String keyword,
+            Movie.MovieGenre genre
+    ) {
         try {
-            if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
+            if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
 
             String q = (keyword == null) ? null : keyword.trim();
             if (q != null && q.isBlank()) q = null;
 
-            List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage, q, genre);
+            List<MovieWithShowtimesDtos> data =
+                    movieRepository.getMoviesWithShowtimesByCinema(cinemaId, q, genre);
 
-            return movies.stream().map(m -> {
-            	MoviePublicDtos dto = MovieMapper.toPublicRes(m);
-                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
-                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
-                return dto;
-            }).collect(Collectors.toList());
+            for (MovieWithShowtimesDtos c : data) {
+                String p = c.getPosterUrl();
+                c.setPosterUrl(p == null ? null : toPublicMediaUrl(p));
+            }
+
+            return data;
 
         } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (COMING_SOON/NOW_SHOWING).", e);
+            throw new RuntimeException("FAILED TO FETCH MOVIES WITH SHOWTIMES BY CINEMA.", e);
+        }
+    }
+
+    
+    public List<CinemaOptionsDtos> getCinemaOptions() {
+        return movieRepository.getCinemaOptions();
+    }
+
+
+    
+    public long countMovieCardsByCinema(int cinemaId, String keyword, Movie.MovieGenre genre) {
+        try {
+            if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
+
+            String q = (keyword == null) ? null : keyword.trim();
+            if (q != null && q.isBlank()) q = null;
+
+            return movieRepository.countMovieCardsByCinema(cinemaId, q, genre);
+
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO COUNT MOVIE CARDS BY CINEMA.", e);
         }
     }
 
@@ -439,5 +465,6 @@ public class MovieService {
             throw new RuntimeException("FAILED TO COUNT MOVIES (COMING_SOON, NOW_SHOWING).", e);
         }
     }
+
 
 }
