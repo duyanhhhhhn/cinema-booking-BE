@@ -228,6 +228,8 @@ public class ShowtimeRepository {
             throw new RuntimeException("Invalid showtime.status value in DB: " + dbValue, ex);
         }
     }
+    
+ 
     public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
         String sql =
             "SELECT " +
@@ -253,8 +255,9 @@ public class ShowtimeRepository {
             "  AND (c.is_active = 1 OR c.is_active IS NULL) " +
             "ORDER BY c.id ASC, s.start_time ASC";
 
-        java.time.format.DateTimeFormatter ISO =
-            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        java.time.ZoneId VN_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        java.time.format.DateTimeFormatter ISO_OFFSET =
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
 
         java.util.Map<Integer, MovieWithShowtimesDtos> grouped = new java.util.LinkedHashMap<>();
 
@@ -305,7 +308,10 @@ public class ShowtimeRepository {
                         new CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos();
 
                     st.setId(rs.getInt("showtime_id"));
-                    st.setStartTime(startTime.format(ISO));
+
+                    String startIso = startTime.atZone(VN_ZONE).format(ISO_OFFSET);
+                    st.setStartTime(startIso);
+
                     st.setType(type);
 
                     dto.getShowtimes().add(st);
@@ -318,6 +324,7 @@ public class ShowtimeRepository {
             throw new RuntimeException("FAILED TO FETCH CINEMAS & SHOWTIMES BY MOVIE ID: " + movieId, e);
         }
     }
+
 
 
 }
