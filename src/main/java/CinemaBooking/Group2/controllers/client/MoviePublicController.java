@@ -82,4 +82,16 @@ public class MoviePublicController {
         return ResponseEntity.ok(data);
     }
 
+    @GetMapping("/movies/related")
+    public ResponseEntity<List<CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos>> getRelatedMovies(
+            @RequestParam String genre,
+            @RequestParam(required = false) Integer excludeId,
+            @RequestParam(defaultValue = "8") Integer limit
+    ) {
+        List<CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos> data =
+        		movieServices.getRelatedMovies(genre, excludeId, limit);
+
+        return ResponseEntity.ok(data);
+    }
+
 }
