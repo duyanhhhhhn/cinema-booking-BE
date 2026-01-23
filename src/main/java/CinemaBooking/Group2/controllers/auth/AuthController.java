@@ -76,8 +76,7 @@ public class AuthController {
         PageResponse<Map<String, String>> res = new PageResponse<>();
         res.setSuccess(true);
         res.setMessage("Đăng nhập thành công");
-        res.setData(List.of(tokens)); // ⚠️ bọc object vào List
-
+        res.setData(tokens);
         return ResponseEntity.ok(res);
     }
 
@@ -92,7 +91,7 @@ public class AuthController {
         PageResponse<Map<String, String>> res = new PageResponse<>();
         res.setSuccess(true);
         res.setMessage("Refresh token thành công");
-        res.setData(List.of(tokens));
+        res.setData(tokens);
 
         return ResponseEntity.ok(res);
     }

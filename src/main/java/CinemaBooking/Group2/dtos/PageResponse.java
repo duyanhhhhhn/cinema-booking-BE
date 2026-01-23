@@ -6,7 +6,7 @@ public class PageResponse<T> {
     private boolean success;
     private String message;
 
-    private List<T> data;
+    private T data;
 
 	public boolean isSuccess() {
 		return success;
@@ -24,11 +24,10 @@ public class PageResponse<T> {
 		this.message = message;
 	}
 
-	public List<T> getData() {
+	public T getData() {
 		return data;
 	}
-
-	public void setData(List<T> data) {
+	public void setData(T data) {
 		this.data = data;
 	}
 

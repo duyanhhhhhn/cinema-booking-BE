@@ -72,7 +72,7 @@ public class CinemaRepository {
 		}
 	}
 	
-	public void updateImage (int id, String imageUrl) {
+	public void uploadImage (int id, String imageUrl) {
 		String sql = "UPDATE cinema SET image_url = ? WHERE id = ?";
 		try {
 			jdbc.update(sql, imageUrl, id);
