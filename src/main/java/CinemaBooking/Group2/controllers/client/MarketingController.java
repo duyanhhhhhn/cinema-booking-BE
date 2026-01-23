@@ -34,8 +34,8 @@ public class MarketingController {
 	MarketingService service;
 	@GetMapping("/api/public/posts")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam("page")int page,
-			@RequestParam("perPage")int size){
+	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam(value="page", required = false, defaultValue = "1")int page 
+			,@RequestParam(value="perPage", required = false, defaultValue = "6")int size){
 		List<PostResponseDTO> item;
 		try {
 			item = service.getPostPaging(page,size);
