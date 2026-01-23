@@ -296,6 +296,11 @@ public class ShowtimeRepository {
                     }
 
                     Integer dur = dto.getDurationMinutes();
+                    if (dur != null) {
+                        long diffMin = java.time.Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < dur) continue;
+                    }
+
                     String roomType = rs.getString("room_type");
                     String type = (roomType == null || roomType.isBlank()) ? "2D" : roomType.trim();
 
