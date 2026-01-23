@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 
 public class ShowtimePublicDtos {
     private int id;               // showtimeId
-    private String startTime;     // "HH:mm"
-    private BigDecimal price;     // base_price
+    private String startTime;    
+    private BigDecimal price;    
     private String roomName;
 
     public int getId() { return id; }

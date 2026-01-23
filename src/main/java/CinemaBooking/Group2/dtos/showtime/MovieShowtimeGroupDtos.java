@@ -19,4 +19,17 @@ public class MovieShowtimeGroupDtos {
 
 	    public List<ShowtimePublicDtos> getShowtimes() { return showtimes; }
 	    public void setShowtimes(List<ShowtimePublicDtos> showtimes) { this.showtimes = showtimes; }
+		public MovieShowtimeGroupDtos(int movieId, String movieTitle, String coverUrl,
+				List<ShowtimePublicDtos> showtimes) {
+			super();
+			this.movieId = movieId;
+			this.movieTitle = movieTitle;
+			this.coverUrl = coverUrl;
+			this.showtimes = showtimes;
+		}
+		public MovieShowtimeGroupDtos() {
+			super();
+			// TODO Auto-generated constructor stub
+		}
+	    
 }
