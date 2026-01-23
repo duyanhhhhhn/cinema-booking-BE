@@ -302,6 +302,7 @@ public class MovieService {
             throw new IllegalArgumentException("FILE MUST BE AN IMAGE.");
         }
 
+        
         String original = file.getOriginalFilename();
         String ext = getExtension(original);
         if (ext.isBlank() || !ALLOWED_EXT.contains(ext)) {
