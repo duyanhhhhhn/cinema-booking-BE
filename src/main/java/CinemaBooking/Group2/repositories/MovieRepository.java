@@ -5,13 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -19,10 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
-import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
-import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
-import CinemaBooking.Group2.dtos.showtime.CinemaOptionsDtos;
-import CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
 
@@ -31,19 +24,57 @@ public class MovieRepository {
 
     private final DataSource dataSource;
 
+    @Autowired
     public MovieRepository(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
-    public List<Movie> getAllMovieAdmin(int page, int perPage, String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
+    /**
+     * Truy vấn danh sách phim có phân trang.
+     */
+    public List<Movie> getAllMovie(int page, int perPage) {
         if (page < 1) page = 1;
         if (perPage < 1) perPage = 10;
 
         int offset = (page - 1) * perPage;
-        String q = (title == null) ? null : title.trim();
-        if (q != null && q.isBlank()) q = null;
 
-        boolean hasTitle = (q != null);
+        String sql = """
+            SELECT *
+            FROM movie
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+        """;
+
+        List<Movie> movies = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, perPage);
+            ps.setInt(2, offset);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    movies.add(mapFullMovie(rs));
+                }
+            }
+
+            return movies;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to fetch movies from database.", e);
+        }
+    }
+
+
+    public List<Movie> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
+        if (page < 1) page = 1;
+        if (perPage < 1) perPage = 10;
+
+        int offset = (page - 1) * perPage;
+
+        String q = (keyword == null) ? null : keyword.trim();
+        boolean hasKeyword = (q != null && !q.isEmpty());
 
         String sql =
             "SELECT " +
@@ -51,17 +82,24 @@ public class MovieRepository {
             "  director, `cast` AS cast, poster_url, banner_url, trailer_url, " +
             "  release_date, end_date, status, created_at " +
             "FROM movie " +
-            "WHERE 1=1 " +
-            (hasTitle
-                ? " AND LOWER(title) LIKE CONCAT('%', LOWER(?), '%') "
+            "WHERE status IN (?, ?) " +
+            (hasKeyword
+                ? "  AND ( " +
+                  "    title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci " +
+                  "  ) "
                 : "") +
             (genre != null
-                ? " AND REPLACE(UPPER(genre), '-', '_') = ? "
+                ? "  AND REPLACE(UPPER(genre), '-', '_') = ? "
                 : "") +
-            (status != null
-                ? " AND status = ? "
-                : "") +
-            "ORDER BY id DESC " +
+            "ORDER BY " +
+            "  CASE status " +
+            "    WHEN 'NOW_SHOWING' THEN 0 " +
+            "    WHEN 'COMING_SOON' THEN 1 " +
+            "    WHEN 'ENDED' THEN 2 " +
+            "    ELSE 3 " +
+            "  END, " +
+            "  release_date DESC, " +
+            "  id DESC " +
             "LIMIT ? OFFSET ?;";
 
         List<Movie> movies = new ArrayList<>();
@@ -71,16 +109,15 @@ public class MovieRepository {
 
             int idx = 1;
 
-            if (hasTitle) {
+            ps.setString(idx++, Movie.MovieStatus.COMING_SOON.name());
+            ps.setString(idx++, Movie.MovieStatus.NOW_SHOWING.name());
+
+            if (hasKeyword) {
                 ps.setString(idx++, q);
             }
 
             if (genre != null) {
                 ps.setString(idx++, genre.name());
-            }
-
-            if (status != null) {
-                ps.setString(idx++, status.name());
             }
 
             ps.setInt(idx++, perPage);
@@ -94,7 +131,6 @@ public class MovieRepository {
                     movie.setShortDescription(rs.getString("short_description"));
                     movie.setDescription(rs.getString("description"));
                     movie.setDurationMinutes(rs.getInt("duration_minutes"));
-
                     movie.setGenre(parseMovieGenre(rs.getString("genre")));
                     movie.setLanguage(rs.getString("language"));
                     movie.setFormat(rs.getString("format"));
@@ -103,13 +139,10 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
-
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
-
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
                     movie.setCreatedAt(rs.getTimestamp("created_at"));
-
                     movies.add(movie);
                 }
             }
@@ -117,164 +150,9 @@ public class MovieRepository {
             return movies;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch movies (ADMIN) with filters + pagination.", e);
+            throw new RuntimeException("Failed to fetch movies (COMING_SOON, NOW_SHOWING) with filters + pagination.", e);
         }
     }
-
-    public int countAllMovieAdmin(String title, Movie.MovieGenre genre, Movie.MovieStatus status) {        String q = (title == null) ? null : title.trim();
-        boolean hasTitle = (q != null && !q.isEmpty());
-
-        String sql =
-            "SELECT COUNT(*) AS total " +
-            "FROM movie " +
-            "WHERE 1=1 " +
-            (hasTitle
-                ? " AND LOWER(title) LIKE CONCAT('%', LOWER(?), '%') "
-                : "") +
-            (genre != null
-                ? " AND REPLACE(UPPER(genre), '-', '_') = ? "
-                : "") +
-            (status != null
-                ? " AND status = ? "
-                : "");
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            int idx = 1;
-            if (hasTitle) {
-                ps.setString(idx++, q);
-            }
-            if (genre != null) {
-                ps.setString(idx++, genre.name());
-            }
-            if (status != null) {
-                ps.setString(idx++, status.name()); 
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("total");
-                return 0;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to count movies (ADMIN) with filters.", e);
-        }
-    }
-    
-
-    public List<MovieWithShowtimesDtos> getMoviesWithShowtimesByCinema(
-            int cinemaId,
-            String keyword,
-            Movie.MovieGenre genre
-    ) {
-        if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
-
-        String q = (keyword == null) ? null : keyword.trim();
-        if (q != null && q.isBlank()) q = null;
-        boolean hasKeyword = (q != null);
-
-        String sql =
-            "SELECT " +
-            "  c.id AS cinemaId, c.name AS cinemaName, c.address AS address, " +
-            "  m.poster_url AS posterUrl, m.title AS movieTitle, m.genre AS movieGenre, m.duration_minutes AS durationMinutes, " +
-            "  s.id AS showtimeId, DATE_FORMAT(s.start_time, '%H:%i') AS startTime, r.type AS type " +
-            "FROM movie m " +
-            "JOIN showtime s ON s.movie_id = m.id " +
-            "JOIN room r     ON r.id = s.room_id " +
-            "JOIN cinema c   ON c.id = r.cinema_id " +
-            "WHERE r.cinema_id = ? " +
-            "  AND s.status = 'SCHEDULED' " +
-            "  AND m.status IN (?, ?) " +
-            "  AND s.start_time >= NOW() " +
-            "  AND (m.release_date IS NULL OR DATE(s.start_time) >= m.release_date) " +
-            "  AND (m.end_date    IS NULL OR DATE(s.start_time) <= m.end_date) " +
-            (hasKeyword
-                ? "  AND m.title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci "
-                : "") +
-            (genre != null
-                ? "  AND REPLACE(UPPER(m.genre), '-', '_') = ? "
-                : "") +
-            "ORDER BY " +
-            "  CASE m.status " +
-            "    WHEN 'NOW_SHOWING' THEN 0 " +
-            "    WHEN 'COMING_SOON' THEN 1 " +
-            "    WHEN 'ENDED' THEN 2 " +
-            "    ELSE 3 " +
-            "  END, " +
-            "  s.start_time ASC, " +
-            "  s.id ASC;";
-
-        Map<Integer, MovieWithShowtimesDtos> grouped = new LinkedHashMap<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            int idx = 1;
-            ps.setInt(idx++, cinemaId);
-
-            ps.setString(idx++, Movie.MovieStatus.NOW_SHOWING.name());
-            ps.setString(idx++, Movie.MovieStatus.COMING_SOON.name());
-
-            if (hasKeyword) ps.setString(idx++, q);
-            if (genre != null) ps.setString(idx++, genre.name());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int cid = rs.getInt("cinemaId");
-
-                    MovieWithShowtimesDtos cinema = grouped.get(cid);
-                    if (cinema == null) {
-                        cinema = new MovieWithShowtimesDtos();
-                        cinema.setCinemaId(cid);
-                        cinema.setCinemaName(rs.getString("cinemaName"));
-                        cinema.setAddress(rs.getString("address"));
-                        cinema.setPosterUrl(rs.getString("posterUrl"));
-                        cinema.setMovieTitle(rs.getString("movieTitle"));
-                        cinema.setMovieGenre(rs.getString("movieGenre"));
-                        cinema.setDurationMinutes(rs.getInt("durationMinutes"));
-                        cinema.setShowtimes(new ArrayList<>());
-                        grouped.put(cid, cinema);
-                    } else {
-                        if (cinema.getPosterUrl() == null) {
-                            String p = rs.getString("posterUrl");
-                            if (p != null && !p.isBlank()) cinema.setPosterUrl(p);
-                        }
-                    }
-
-                    ShowtimeItemDtos st = new ShowtimeItemDtos();
-                    st.setId(rs.getInt("showtimeId"));
-                    st.setStartTime(rs.getString("startTime"));
-                    st.setType(rs.getString("type"));
-                    cinema.getShowtimes().add(st);
-                }
-            }
-
-            return new ArrayList<>(grouped.values());
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch movies with showtimes by cinemaId.", e);
-        }
-    }
-    
-    public List<CinemaOptionsDtos> getCinemaOptions() {
-        String sql = "SELECT id, name FROM cinema WHERE is_active = 1 ORDER BY name ASC;";
-        List<CinemaOptionsDtos> out = new ArrayList<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                out.add(new CinemaOptionsDtos(rs.getInt("id"), rs.getString("name")));
-            }
-            return out;
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch cinema options.", e);
-        }
-    }
-
-
-
 
     public List<Movie> getMoviesComingSoonAndNowShowing() {
         String sql = """
@@ -334,7 +212,9 @@ public class MovieRepository {
         }
     }
 
-
+    /**
+     * Truy vấn thông tin chi tiết của một bộ phim cụ thể qua ID.
+     */
     public Movie getMovieDetailById(int id) {
         String sql = "SELECT * FROM movie WHERE id = ?";
 
@@ -353,6 +233,9 @@ public class MovieRepository {
         }
     }
 
+    /**
+     * Thêm mới phim vào database và trả về ID tự động phát sinh.
+     */
     public int createNewMovieReturnId(Movie movie) {
         String sql =
             "INSERT INTO movie " +
@@ -378,6 +261,9 @@ public class MovieRepository {
         }
     }
 
+    /**
+     * Cập nhật đường dẫn ảnh Poster và Banner cho phim dựa trên ID.
+     */
     public void updateMovieImages(int movieId, String posterPath, String bannerPath) {
         if ((posterPath == null || posterPath.isBlank()) && (bannerPath == null || bannerPath.isBlank())) {
             return;
@@ -765,54 +651,4 @@ public class MovieRepository {
             throw new RuntimeException("Failed to count movies (COMING_SOON, NOW_SHOWING) with filters.", e);
         }
     }
-    
-    public long countMovieCardsByCinema(int cinemaId, String keyword, Movie.MovieGenre genre) {
-        if (cinemaId <= 0) throw new IllegalArgumentException("cinemaId invalid.");
-
-        String q = (keyword == null) ? null : keyword.trim();
-        boolean hasKeyword = (q != null && !q.isEmpty());
-
-        String sql =
-            "SELECT COUNT(*) AS total " +
-            "FROM movie m " +
-            "WHERE m.status IN (?, ?) " +
-            (hasKeyword
-                ? "  AND ( " +
-                  "    m.title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci " +
-                  "  ) "
-                : "") +
-            (genre != null
-                ? "  AND REPLACE(UPPER(m.genre), '-', '_') = ? "
-                : "") +
-            "  AND EXISTS ( " +
-            "    SELECT 1 " +
-            "    FROM showtime s " +
-            "    JOIN room r ON r.id = s.room_id " +
-            "    WHERE s.movie_id = m.id " +
-            "      AND r.cinema_id = ? " +
-            "      AND s.status = 'SCHEDULED' " +
-            "  );";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            int idx = 1;
-
-            ps.setString(idx++, Movie.MovieStatus.NOW_SHOWING.name());
-            ps.setString(idx++, Movie.MovieStatus.COMING_SOON.name()); // DB đang là COMING_SOON
-
-            if (hasKeyword) ps.setString(idx++, q);
-            if (genre != null) ps.setString(idx++, genre.name());
-
-            ps.setInt(idx++, cinemaId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getLong("total") : 0L;
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to count movie cards by cinemaId.", e);
-        }
-    }
-
 }
