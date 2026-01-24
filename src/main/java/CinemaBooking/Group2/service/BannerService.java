@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dtos.home.BannerCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
 import CinemaBooking.Group2.mappers.BannerMapper;
@@ -82,21 +81,20 @@ public class BannerService {
 		}
 		return banner;
 	}
-	public BannerCRUDResponseDTO addBanner(Banner banner) {
-		BannerCRUDResponseDTO res = new BannerCRUDResponseDTO();
+	public BannerResponseDTO addBanner(Banner banner) {
+		BannerResponseDTO res = new BannerResponseDTO();
 		try {
 			int rs = home.AddBanner(banner);
-			if(rs==0) {
-				res.setIs_active(false);
-				res.setMessage("Error");
+			if(rs==1) {
+				res.setMessage("created");
 			}
 			else {
-				res.setIs_active(true);
-				res.setMessage("Created");
+				res.setMessage("error");
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return res;
 	}

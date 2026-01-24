@@ -1,19 +1,28 @@
 package CinemaBooking.Group2.controllers.client;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
+import CinemaBooking.Group2.dtos.home.BannerRequestDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
+import CinemaBooking.Group2.models.Banner;
 import CinemaBooking.Group2.models.Banner.BannerPosition;
 import CinemaBooking.Group2.service.BannerService;
+import CinemaBooking.Group2.ultis.FileUltility;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
 @RequestMapping("/api")
@@ -92,5 +101,38 @@ public class HomeController {
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
+	}
+	@PostMapping("/public/banner")
+	@PreAuthorize("hasAuthority('ADMIN')")
+	public ResponseEntity<PageResponse<BannerResponseDTO>> addBanner(@RequestBody() BannerRequestDTO dto,@RequestParam("Image")MultipartFile image){
+		PageResponse<BannerResponseDTO> res = new PageResponse<>();
+		try {
+			if(dto==null) {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+			}
+			else {
+				String url =FileUltility.uploadFileImage(image, "uploads/banner");
+				System.out.print(url);
+				Banner banner = new Banner();
+				banner.setTitle(dto.getTitle());
+				banner.setLinkUrl(dto.getLinkUrl());
+				banner.setImageUrl(url);
+				banner.setPosition(dto.getPosition());
+				banner.setCreatedAt(LocalDateTime.now());
+				banner.setIsActive(dto.getIsActive());
+				BannerResponseDTO item = service.addBanner(banner);
+				if(item!=null) {
+					res.setMessage("created");
+					res.setSuccess(true);
+					return ResponseEntity.ok(res);
+				}
+				return null;
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
 	}
 }
