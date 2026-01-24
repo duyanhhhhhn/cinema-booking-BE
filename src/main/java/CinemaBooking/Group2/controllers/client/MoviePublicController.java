@@ -17,11 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
-import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
-import CinemaBooking.Group2.mappers.MovieMapper;
+import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.service.MovieService;
+import CinemaBooking.Group2.service.ShowtimeService;
 
 @RestController
 @RequestMapping("/api/public")
@@ -29,6 +29,8 @@ public class MoviePublicController {
 	@Autowired
     private MovieService movieServices;
 	
+	@Autowired
+	private ShowtimeService showtimeServices;
 	@GetMapping("/movies")
 	public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovieStatus(
 	        @RequestParam(defaultValue = "1") int page,
@@ -54,8 +56,6 @@ public class MoviePublicController {
 	    return ResponseEntity.ok(new ApiResponse<>("Success", data, meta));
 	}
 
-
-
 	@GetMapping("/movie-detail/{id}")
 	public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {
 	    MovieDetailDtos data = movieServices.getMovieDetailById(id);
@@ -74,5 +74,12 @@ public class MoviePublicController {
         return ResponseEntity.ok(new ApiResponse<>("Success", movies));
     }
 
+    @GetMapping("/{movieId}/cinemas-showtimes")
+    public ResponseEntity<List<MovieWithShowtimesDtos>> getCinemasWithShowtimesByMovieId(
+            @PathVariable int movieId
+    ) {
+        List<MovieWithShowtimesDtos> data = showtimeServices.getCinemasWithShowtimesByMovieId(movieId);
+        return ResponseEntity.ok(data);
+    }
 
 }

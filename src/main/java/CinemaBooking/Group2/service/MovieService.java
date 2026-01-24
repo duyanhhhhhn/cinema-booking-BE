@@ -17,11 +17,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
-import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
@@ -42,47 +40,6 @@ public class MovieService {
     private String publicPrefix;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
-    
-    
-    public List<MovieDtos> getAllMovieAdmin(
-            int page,
-            int perPage,
-            String title,
-            Movie.MovieGenre genre,
-            Movie.MovieStatus status
-    	) {
-        try {
-            if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
-
-            String q = (title == null) ? null : title.trim();
-            if (q != null && q.isBlank()) q = null;
-            List<Movie> movies = movieRepository.getAllMovieAdmin(page, perPage, q, genre, status);
-
-            return movies.stream().map(m -> {
-                MovieDtos dto = MovieMapper.toResponseDto(m); 
-                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
-                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
-                return dto;
-            }).collect(Collectors.toList());
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (ADMIN).", e);
-        }
-    }
-    
-    public long countAllMovieAdmin(String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
-        try {
-            String q = (title == null) ? null : title.trim();
-            if (q != null && q.isBlank()) q = null;
-
-            return (long) movieRepository.countAllMovieAdmin(q, genre, status);
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO COUNT MOVIES (ADMIN).", e);
-        }
-    }
-
 
     public List<MoviePublicDtos> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         try {
@@ -345,6 +302,7 @@ public class MovieService {
             throw new IllegalArgumentException("FILE MUST BE AN IMAGE.");
         }
 
+        
         String original = file.getOriginalFilename();
         String ext = getExtension(original);
         if (ext.isBlank() || !ALLOWED_EXT.contains(ext)) {
