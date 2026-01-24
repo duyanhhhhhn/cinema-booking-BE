@@ -1,6 +1,8 @@
 package CinemaBooking.Group2.controllers.admin;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
+import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
+import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
@@ -26,6 +31,29 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 public class ComboManageController {
 	@Autowired
 	ComboService service;
+	@GetMapping("/public/combo")
+	@CrossOrigin
+	public ResponseEntity<ComboListResponseDTO> getCombo() {
+		ComboListResponseDTO list = new ComboListResponseDTO();
+		// String message = "Error";
+		try {
+			List<ComboResponseDTO> item = new ArrayList<>();
+			item = service.getCombo();
+			if (item == null) {
+				list.setMessage("Not found any Combo");
+				list.setSuccess(false);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
+			} else {
+				list.setMessage("Success");
+				list.setSuccess(true);
+				return ResponseEntity.ok(list);
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
+	}
 	@PutMapping("/api/combo/{id}")
 	@CrossOrigin
 	public ResponseEntity<String> edit(@RequestBody Combo entity,@PathVariable("id")int id) {

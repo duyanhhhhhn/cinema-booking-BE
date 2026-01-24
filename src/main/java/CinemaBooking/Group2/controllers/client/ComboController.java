@@ -1,7 +1,9 @@
 package CinemaBooking.Group2.controllers.client;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,10 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
+import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.service.ComboService;
@@ -32,61 +36,35 @@ public class ComboController {
 	private ComboService service;
 	@Autowired
 	private ProductService pro;
-
-	@GetMapping("/combo")
+	@GetMapping("/public/combo")
 	@CrossOrigin
-	public ResponseEntity<ComboListResponseDTO> getCombo() {
-		ComboListResponseDTO list = new ComboListResponseDTO();
-		// String message = "Error";
-		try {
-			List<ComboResponseDTO> item = new ArrayList<>();
-			item = service.getCombo();
-			if (item == null) {
-				list.setMessage("Not found any Combo");
-				list.setSuccess(false);
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
-			} else {
-				list.setMessage("Success");
-				list.setSuccess(true);
-				return ResponseEntity.ok(list);
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
-	}
-	@GetMapping("/combo/paging")
-	@CrossOrigin
-	public ResponseEntity<PageResponse<Combo>> getCombo(
+	public ResponseEntity<ApiResponse<List<ComboResponseDTO>>> getCombo(
 			@RequestParam("page")int page,@RequestParam("size")int size) {
-		PageResponse<Combo> response = new PageResponse<>();
+		ApiResponse<List<ComboResponseDTO>> response;
 		// String message = "Error";
 		try {
 			float totalItem = service.getCombo().size();
-			float totalPage = StringValue.calculateTotalPage(totalItem, size);
-			List<Combo> item = new ArrayList<>();
+			Map<String, Object> meta = new HashMap<>();
+			List<ComboResponseDTO> item = new ArrayList<>();
 			item = service.getCombo(page,size);
 			if (item == null) {
+				response = new ApiResponse<List<ComboResponseDTO>>("Not found", null);
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 			} else {
-				response.setItems(item);
-				response.setTotalItems((long)totalItem);
-				response.setTotalPages((long)totalPage);
-				response.setPage(page);
-				response.setSize(size);
-				response.setMessage("Success");
-				response.setSuccess(true);
+				meta.put("perPage", size);
+				meta.put("page",page);
+				meta.put("total", totalItem);
+				response = new ApiResponse<List<ComboResponseDTO>>("Success",item,meta);
 				return ResponseEntity.ok(response);
 			}
 		} catch (Exception e) {
 			// TODO: handle exception
 		}
 
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 	}
 
-	@GetMapping("/combo/{id}")
+	@GetMapping("/public/combo/{id}")
 	@CrossOrigin
 	public ResponseEntity<ComboResponseDTO> comboInfo(@Validated @PathVariable("id") int id) {
 		ComboResponseDTO item = null;
@@ -121,30 +99,24 @@ public class ComboController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item);
 	}
 
-	public ResponseEntity<PageResponse<Product>> getProduct(@RequestParam("page") int page,
+	public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getProduct(@RequestParam("page") int page,
 			@RequestParam("size") int size) {
-		PageResponse<Product> res = new PageResponse<>();
+		ApiResponse<List<ProductResponseDTO>> res;
 		try {
-			List<Product> item = null;
+			List<ProductResponseDTO> item = null;
 			float totalItem = pro.getProducts().size();
-			float totalPage = StringValue.calculateTotalPage(totalItem, size);
-			if (totalPage < page) {
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
-			}
 			item = pro.getProducts(page, size);
-			res.setSize(size);
-			res.setPage(page);
-			res.setSuccess(true);
-			res.setItems(item);
-			res.setTotalItems((int) totalItem);
-			res.setTotalPages((long)totalPage);
-			res.setMessage("Success");
+			Map<String, Object> meta = new HashMap<>();
+			meta.put("perPage", size);
+			meta.put("page",page);
+			meta.put("total", totalItem);
+			res = new ApiResponse<List<ProductResponseDTO>>("success", item);
 			return ResponseEntity.ok(res);
 		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 	}
 
 	@GetMapping("/products/{id}")
