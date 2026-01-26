@@ -5,18 +5,25 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.dtos.auth.UserDTO;
+import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.dtos.client.UpdateProfileRequestDTO;
+import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
+import CinemaBooking.Group2.service.BookingService;
 import CinemaBooking.Group2.service.UserService;
 
 @RestController
@@ -25,6 +32,8 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private BookingService bookingService;
 
     // ================= CREATE USER =================
     @PostMapping
@@ -142,6 +151,34 @@ public class UserController {
             new ApiResponse<>("Cập nhật avatar thành công", avatarUrl)
         );
     }
+    @GetMapping("/me/bookings")
+    public ResponseEntity<PageResponse<BookingHistoryResponse>> getMyBookings(
+    		 @RequestParam(defaultValue = "1") int page,
+             @RequestParam(defaultValue = "10") int perPage,
+             @RequestParam(required = false) String movieTitle,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Booking.PaymentStatus status
+
+           
+    ) {
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !(auth.getPrincipal() instanceof AuthUserPrincipal principal)) {
+            throw new RuntimeException("Bạn chưa đăng nhập!");
+        }
+
+        User user = userService.findByEmail(principal.email());
+        if (user == null) {
+            throw new RuntimeException("Không tìm thấy người dùng!");
+        }
+
+        PageResponse<BookingHistoryResponse> response = bookingService.getMyBookingHistory(
+                user.getId(), startDate, endDate, status, movieTitle, page, perPage
+        );
+
+        return ResponseEntity.ok(response);
+    }
 
 }
-

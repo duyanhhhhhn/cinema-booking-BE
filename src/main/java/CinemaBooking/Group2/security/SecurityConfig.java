@@ -63,9 +63,6 @@ public class SecurityConfig {
                                 "/swagger-ui/index.html#/")
                         .permitAll()
 
-                        .requestMatchers("/api/auth/password/**").authenticated()
-                        .requestMatchers("/api/users/me").authenticated()
-
                         // ===== PUBLIC =====
                         .requestMatchers(
                                 "/api/auth/**",
@@ -89,7 +86,8 @@ public class SecurityConfig {
                         // ===== AUTHENTICATED =====
                         .requestMatchers(
                                 "/api/auth/password/**",
-                                "/api/users/me")
+                                "/api/users/me",
+                                "/api/users/me/bookings")
                         .authenticated()
                         
 
