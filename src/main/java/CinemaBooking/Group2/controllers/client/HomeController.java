@@ -6,8 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,32 +53,29 @@ public class HomeController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 	}
 	@GetMapping("/public/banner/{id}")
-	public ResponseEntity<BannerResponseDTO> getBannerById(@RequestParam("id") int id){
-		BannerResponseDTO banner = new BannerResponseDTO();
+	public ResponseEntity<ApiResponse<Banner>> getBannerById(@RequestParam("id") int id){
+		ApiResponse<Banner> res;
 		try {
 			if(id==0) {
-				banner.setMessage("Banner id shouldn't be 0");
-				banner.setIsActive(false);
-				return ResponseEntity.status(HttpStatus.NO_CONTENT).body(banner);
+				res = new ApiResponse<Banner>("Banner id shouldn't be 0", null);
+				return ResponseEntity.status(HttpStatus.NO_CONTENT).body(res);
 			}
-			BannerResponseDTO item = service.getBannerById(id);
+			Banner item = service.getBannerById(id);
 			if(item!=null) {
-				banner = item;
-				banner.setMessage("Success");
-				banner.setStatus(true);
-				return ResponseEntity.ok(banner);
+				res = new ApiResponse<Banner>("Success", item);
+				return ResponseEntity.ok(res);
 			}
 			else if(item==null) {
-				banner.setMessage("Not Found");
-				banner.setStatus(false);
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(banner);
+				//banner.setMessage("Not Found");
+				//banner.setStatus(false);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(banner);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Banner>("error", null));
 	}
 	@GetMapping("/banner/get")
 	public ResponseEntity<BannerListResponseDTO> getBannerByPosition(@RequestParam("position")BannerPosition position,@RequestParam("count")int count){
@@ -102,33 +102,90 @@ public class HomeController {
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
 	}
-	@PostMapping("/public/banner")
-	@PreAuthorize("hasAuthority('ADMIN')")
-	public ResponseEntity<PageResponse<BannerResponseDTO>> addBanner(@RequestBody() BannerRequestDTO dto,@RequestParam("Image")MultipartFile image){
+	@PostMapping("/admin/banner")
+	//@PreAuthorize("hasAuthority('ADMIN')")
+	public ResponseEntity<PageResponse<BannerResponseDTO>> addBanner(@RequestBody() BannerRequestDTO dto,@RequestParam("bannerFile")MultipartFile bannerFile){
 		PageResponse<BannerResponseDTO> res = new PageResponse<>();
 		try {
 			if(dto==null) {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 			}
 			else {
-				String url =FileUltility.uploadFileImage(image, "uploads/banner");
-				System.out.print(url);
+				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner");
 				Banner banner = new Banner();
 				banner.setTitle(dto.getTitle());
 				banner.setLinkUrl(dto.getLinkUrl());
 				banner.setImageUrl(url);
 				banner.setPosition(dto.getPosition());
 				banner.setCreatedAt(LocalDateTime.now());
-				banner.setIsActive(dto.getIsActive());
+				banner.setIsActive(true);
 				BannerResponseDTO item = service.addBanner(banner);
 				if(item!=null) {
 					res.setMessage("created");
-					res.setSuccess(true);
 					return ResponseEntity.ok(res);
 				}
 				return null;
 			}
 		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
+	@PutMapping("/admin/banner/{id}")
+	//@PreAuthorize("hasAuthority('ADMIN')")
+	public ResponseEntity<PageResponse<BannerResponseDTO>> updateBanner(
+			@RequestBody() BannerRequestDTO dto,
+			@PathVariable(name = "id")int id,@RequestParam(name="bannerFile",required = false)MultipartFile bannerFile){
+		PageResponse<BannerResponseDTO> res = new PageResponse<>();
+		try {
+			if(dto==null) {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+			}
+			Banner banner = new Banner();
+			if(bannerFile!=null) {
+				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner");
+				banner.setImageUrl(url);
+			}
+				banner.setTitle(dto.getTitle());
+				banner.setLinkUrl(dto.getLinkUrl());
+				banner.setPosition(dto.getPosition());
+				banner.setCreatedAt(LocalDateTime.now());
+				banner.setIsActive(true);
+				banner.setId(id);
+				BannerResponseDTO item = service.updateBanner(banner);
+				if(item!=null) {
+					res.setMessage("updated");
+					return ResponseEntity.ok(res);
+				}
+				return null;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
+	@DeleteMapping("/admin/banner/{id}")
+	@PreAuthorize("hasAuthority('ADMIN')")
+	public ResponseEntity<PageResponse<BannerResponseDTO>> deleteBanner(@PathVariable(name="id",required = false)int id){
+		PageResponse<BannerResponseDTO> res = new PageResponse<>();
+		try {
+			if(id==0) {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+			}
+			Banner banner = service.getBannerById(id);
+			if(banner!=null) {
+				BannerResponseDTO item=service.deleteBanner(id);
+				FileUltility.deleteFile("uploads/banner", banner.getImageUrl());
+				if(item!=null) {
+					res.setMessage("deleted");
+					return ResponseEntity.ok(res);
+			}
+			return null;
+		}
+			}
 		catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());

@@ -37,6 +37,7 @@ public class BannerRepository implements Icrud<Banner>{
 		Banner item = null;
 		try {
 			item = db.query("select * from "+StringValue.tbl_banner+" where id=?", new BannerMapper(),new Object[] {id}).get(0);
+			return item;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -56,7 +57,7 @@ public class BannerRepository implements Icrud<Banner>{
 		// TODO Auto-generated method stub
 		try {
 			int rs = db.update("insert into "+StringValue.tbl_banner+"(title,image_url,link_url,position,is_active,created_at) values(?,?,?,?,?,?)", 
-					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition(),
+					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition().name(),
 							item.getIsActive(),item.getCreatedAt()});
 			return rs;
 		}
@@ -71,7 +72,7 @@ public class BannerRepository implements Icrud<Banner>{
 	public int update(Banner item) {
 		try {
 			int rs = db.update("update "+StringValue.tbl_banner+" set title=?,image_url=?,link_url=?,position=?,is_active=?,created_at=?) where id=?", 
-					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition(),
+					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition().name(),
 							item.getIsActive(),item.getCreatedAt(),item.getId()});
 			return rs;
 		}

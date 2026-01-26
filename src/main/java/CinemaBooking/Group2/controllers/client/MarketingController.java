@@ -83,14 +83,12 @@ public class MarketingController {
 			item = service.postInfo(id);
 			if(item==null) {
 				res.setMessage("Not found");
-				res.setSuccess(false);
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
 			}
 			else{
 				List<PostResponseDTO> post = new ArrayList<>();
 				post.add(item);
 				res.setMessage("success");
-				res.setSuccess(true);
 				res.setData(post);
 			}
 			return ResponseEntity.ok(res);

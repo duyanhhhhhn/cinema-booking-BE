@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -43,6 +45,17 @@ public class FileUltility {
 		catch (IOException e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}
+		return "";
+	}
+	public static String deleteFile(String folderName,String fileName) {
+		try {
+			Path pathFile = Path.of(System.getProperty("user.dir")+"/"+folderName+"/"+fileName);
+			Files.delete(pathFile);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return "";
 	}

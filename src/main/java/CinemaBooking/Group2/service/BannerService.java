@@ -61,20 +61,22 @@ public class BannerService {
 		}
 		return null;
 	}
-	public BannerResponseDTO getBannerById(int id) {
-		BannerResponseDTO banner=null;
+	public Banner getBannerById(int id) {
+		Banner banner = new Banner();
 		try {
 			Banner item = home.getBannerById(id);
+			
 			if(item==null) {
-				banner = new BannerResponseDTO();
-				banner.setMessage("Error");
-				banner.setStatus(false);
+				//banner = new BannerResponseDTO();
+				//banner.setMessage("Error");
+				//banner.setStatus(false);
 			}
 			else {
-				banner = BannerMapper.toResponseDTO(item);
-				banner.setMessage("success");
-				banner.setStatus(true);
+				//banner = BannerMapper.toResponseDTO(item);
+				//banner.setMessage("success");
+				//banner.setStatus(true);
 			}
+			return item;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -87,6 +89,40 @@ public class BannerService {
 			int rs = home.AddBanner(banner);
 			if(rs==1) {
 				res.setMessage("created");
+			}
+			else {
+				res.setMessage("error");
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return res;
+	}
+	public BannerResponseDTO updateBanner(Banner banner) {
+		BannerResponseDTO res = new BannerResponseDTO();
+		try {
+			int rs = home.changeBanner(banner);
+			if(rs==1) {
+				res.setMessage("created");
+			}
+			else {
+				res.setMessage("error");
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return res;
+	}
+	public BannerResponseDTO deleteBanner(int id) {
+		BannerResponseDTO res = new BannerResponseDTO();
+		try {
+			int rs = home.deleteBanner(id);
+			if(rs==1) {
+				res.setMessage("delete");
 			}
 			else {
 				res.setMessage("error");
