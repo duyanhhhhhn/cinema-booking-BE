@@ -1,8 +1,10 @@
 package CinemaBooking.Group2.dtos.auth;
 
 import java.time.LocalDateTime;
-
+import org.springframework.beans.factory.annotation.Value;
 public class UserDTO {
+	@Value("${app.upload.public-prefix:/media}")
+	private String publicPrefix;
 	private int id;
     private String fullName;
     private String email;
@@ -124,8 +126,25 @@ public class UserDTO {
 	 * @return the avatarUrl
 	 */
 	public String getAvatarUrl() {
-		return avatarUrl;
+	    if (avatarUrl == null || avatarUrl.isBlank())
+	        return null;
+
+	    String prefix = publicPrefix != null ? publicPrefix : "/media";
+
+	    // đảm bảo prefix dạng "/media"
+	    if (!prefix.startsWith("/"))
+	        prefix = "/" + prefix;
+	    while (prefix.endsWith("/"))
+	        prefix = prefix.substring(0, prefix.length() - 1);
+
+	    // bỏ "/" đầu nếu có
+	    String path = avatarUrl;
+	    if (path.startsWith("/"))
+	        path = path.substring(1);
+
+	    return prefix + "/" + path;
 	}
+
 	/**
 	 * @param avatarUrl the avatarUrl to set
 	 */

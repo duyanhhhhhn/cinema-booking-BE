@@ -70,4 +70,12 @@ public class RoomController {
                 new ApiResponse<>("Room deleted", null)
         );
     }
+    
+    // ================= GET ROOM DETAIL =================
+    @GetMapping("/cinema/rooms/{id}")
+    public ResponseEntity<ApiResponse<RoomResponseDTO>> getRoomDetail(@PathVariable int id) {
+		RoomResponseDTO data = service.getRoomDetail(id);
+		return ResponseEntity.ok(new ApiResponse<>("Success", data));
+	}
+    
 }
