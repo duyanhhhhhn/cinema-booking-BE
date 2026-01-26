@@ -32,10 +32,11 @@ public class MoviePublicController {
 	
 	@Autowired
 	private ShowtimeService showtimeServices;
+	
 	@GetMapping("/movies")
 	public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovieStatus(
-	        @RequestParam(defaultValue = "1") int page,
-	        @RequestParam(defaultValue = "10") int perPage,
+			@RequestParam(defaultValue = "1") int page,
+	        @RequestParam(defaultValue = "12")  int perPage,
 	        @RequestParam(required = false) String title,
 	        @RequestParam(required = false) Movie.MovieGenre genre,
 	        @RequestParam(required = false) Movie.MovieStatus status
@@ -87,7 +88,7 @@ public class MoviePublicController {
     @GetMapping("/movies/related")
     public ResponseEntity<List<RelatedMovieItemDtos>> getRelatedMovies(
             @RequestParam String genre,
-            @RequestParam(defaultValue = "8") Integer limit
+            @RequestParam(required = false) Integer limit
     ) {
         return ResponseEntity.ok(movieServices.getRelatedMovies(genre, limit));
     }
