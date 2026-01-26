@@ -31,7 +31,7 @@ public class PostRepository implements Icrud<Post>{
 	}
 	public int getPostCount() {
 		try {
-			List<Post> item = db.query("select id from "+StringValue.tbl_post,new PostMapper());
+			List<Post> item = db.query("select * from "+StringValue.tbl_post,new PostMapper());
 			return item.size();
 		}
 		catch (Exception e) {
@@ -91,6 +91,7 @@ public class PostRepository implements Icrud<Post>{
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return item;
 	}

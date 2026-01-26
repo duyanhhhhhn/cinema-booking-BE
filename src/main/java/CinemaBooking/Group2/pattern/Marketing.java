@@ -41,15 +41,10 @@ public class Marketing {
 		}
 		return 0;
 	}
-	public List<Post> getPost(int page,int size,int id){
+	public List<Post> getPost(int page,int size){
 		List<Post> item = new ArrayList<>();
 		try {
-			if(id==0) {
-				item = postRep.PagingRelate(size, id);
-			}
-			else {
 				item = postRep.Paging(page, size);
-			}
 			return item;
 		}
 		catch (Exception e) {

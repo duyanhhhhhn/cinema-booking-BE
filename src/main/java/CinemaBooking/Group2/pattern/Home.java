@@ -26,7 +26,8 @@ public class Home {
 	}
 	public Banner getBannerById(int id) {
 		try {
-			return bannerRep.findById(id);
+			Banner item =bannerRep.findById(id);
+			return item;
 		}catch (Exception e) {
 			// TODO: handle exception
 		}

@@ -43,50 +43,73 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.cors(cors -> cors.configurationSource(corsConfigurationSource())).csrf(csrf -> csrf.disable())
+
+		http
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 						// Public routes
-						.requestMatchers("/swagger-ui/**", 
-								"/v3/api-docs/**", 
-								"/swagger-ui.html").permitAll()
-						.requestMatchers("/api/public/**", 
-								"/api/auth/register/**", 
+						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+						.requestMatchers(
+								"/api/public/**",
+								"/api/auth/register/**",
 								"/api/auth/login",
-								"/api/auth/logout", 
-								"/api/auth/refresh", 
-								"/api/auth/forgot/**", 
+								"/api/auth/logout",
+								"/api/auth/refresh",
+								"/api/auth/forgot/**",
 								"/media/**",
-								"/api/public/**", 
-								"/swagger-ui/index.html#/", 
-								"/api/posts", 
-								"/api/posts/paging",
-								"/api/posts/**", 
-								"/api/banner/**")
+								"/api/public/**",
+								"/swagger-ui/index.html#/")
 						.permitAll()
-						.requestMatchers("/api/auth/password/**").authenticated()
-						.requestMatchers("/api/users/me").authenticated()
+
 						// ===== PUBLIC =====
-						.requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+						.requestMatchers(
+								"/api/auth/**",
+								"/swagger-ui/**",
+								"/v3/api-docs/**")
+						.permitAll()
+
 						// ======= PUBLIC =======
-						.requestMatchers("/api/client/reviews/*/comment").permitAll()
+						.requestMatchers("/api/client/reviews/*/comment",
+								"/api/client/reviews/*/rating")
+						.permitAll()
+
+						// ===== PRIVATE (Client tạo comment) =====
+						.requestMatchers(HttpMethod.POST, "/api/client/reviews/create-comment").permitAll()
+
+						// ===== PUBLIC (SHOWTIME SEAT) =========
+						.requestMatchers("/api/showtimes-seat/**").permitAll()
+
+						// ==== PUBLIC showtimes =====
+						.requestMatchers("/api/showtimes/public/**").permitAll()
+
 						// ===== AUTHENTICATED =====
-						.requestMatchers("/api/auth/password/**", "/api/users/me", "/api/users/me/avatar")
+						.requestMatchers(
+								"/api/auth/password/**",
+								"/api/users/me",
+								"/api/users/me/bookings")
 						.authenticated()
+
 						// ===== ROLE BASE =====
-						.requestMatchers("/api/admin/**").hasAuthority("ADMIN").requestMatchers("/api/manager/**")
-						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/movies/**")
-						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/users/**")
-						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/staff/**")
-						.hasAnyAuthority("ADMIN", "MANAGER", "STAFF").requestMatchers("/api/cinemas","/api/cinemas/**")
-						.hasAnyAuthority("ADMIN").requestMatchers("/api/room/**").hasAnyAuthority("ADMIN").anyRequest()
-						.authenticated())
+						.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
+						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
+
+						.anyRequest().authenticated())
+
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 				.httpBasic(httpBasic -> httpBasic.disable());
+
 		return http.build();
 	}
 
 	@Bean
-	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+	public AuthenticationManager authenticationManager(
+			AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
 	}
 }

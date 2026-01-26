@@ -35,7 +35,6 @@ public class AuthController {
         registerService.sendOtp(req.getEmail());
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("Đã gửi OTP đăng ký");
         res.setData(null);
 
@@ -56,7 +55,6 @@ public class AuthController {
         registerService.verify(req, body.get("otp"));
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("Đăng ký thành công");
         res.setData(null);
 
@@ -67,14 +65,13 @@ public class AuthController {
     // ================= LOGIN =================
 
     @PostMapping("/login")
-    public ResponseEntity<PageResponse<Map<String, String>>> login(
+    public ResponseEntity<ApiResponse<Map<String, String>>> login(
             @RequestBody AuthRequestDTO req) {
 
         Map<String, String> tokens =
                 authService.login(req.getEmail(), req.getPassword());
 
-        PageResponse<Map<String, String>> res = new PageResponse<>();
-        res.setSuccess(true);
+        ApiResponse<Map<String, String>> res = new ApiResponse<>("Đăng nhập thành công", tokens);
         res.setMessage("Đăng nhập thành công");
         res.setData(tokens);
         return ResponseEntity.ok(res);
@@ -82,18 +79,17 @@ public class AuthController {
 
 
     @PostMapping("/refresh")
-    public ResponseEntity<PageResponse<Map<String, String>>> refresh(
+    public ResponseEntity<ApiResponse<Map<String, String>>> refresh(
             @RequestBody Map<String, String> req) {
 
         Map<String, String> tokens =
                 authService.refresh(req.get("refreshToken"));
 
-        PageResponse<Map<String, String>> res = new PageResponse<>();
-        res.setSuccess(true);
-        res.setMessage("Refresh token thành công");
-        res.setData(tokens);
+//        ApiResponse<Map<String, String>> res = new ApiResponse<Map<String, String>>();
+//        res.setMessage("Refresh token thành công");
+//        res.setData(tokens);
 
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(new ApiResponse<>("Refresh token thành công", tokens));
     }
 
 
@@ -104,7 +100,6 @@ public class AuthController {
         authService.logout(req.get("refreshToken"));
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("Đăng xuất thành công");
         res.setData(null);
 
@@ -121,7 +116,6 @@ public class AuthController {
         forgotService.sendOtp(body.get("email"));
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("OTP đã được gửi tới email");
         res.setData(null);
 
@@ -140,7 +134,6 @@ public class AuthController {
         );
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("Đổi mật khẩu thành công");
         res.setData(null);
 
@@ -156,7 +149,6 @@ public class AuthController {
         changeService.sendOtp();
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("OTP đổi mật khẩu đã được gửi");
         res.setData(null);
 
@@ -174,7 +166,6 @@ public class AuthController {
         );
 
         PageResponse<Void> res = new PageResponse<>();
-        res.setSuccess(true);
         res.setMessage("Đổi mật khẩu thành công");
         res.setData(null);
 

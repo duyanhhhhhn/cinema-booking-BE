@@ -17,17 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
-import CinemaBooking.Group2.dtos.PageResponse;
-import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
-import CinemaBooking.Group2.mappers.ComboMapper;
-import CinemaBooking.Group2.models.Combo;
-import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.service.ComboService;
 import CinemaBooking.Group2.service.ProductService;
-import CinemaBooking.Group2.ultis.StringValue;
-
 @RestController
 @RequestMapping("/api/concessions")
 public class ComboController {

@@ -17,14 +17,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieCreateDtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
-import CinemaBooking.Group2.dtos.movie.MovieDtos;
 import CinemaBooking.Group2.dtos.movie.MovieEditDtos;
 import CinemaBooking.Group2.dtos.movie.MovieMediaDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
+import CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos;
 import CinemaBooking.Group2.mappers.MovieMapper;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Movie.MovieGenre;
@@ -42,49 +41,14 @@ public class MovieService {
     private String publicPrefix;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
-    
-    
-    public List<MovieDtos> getAllMovieAdmin(
+
+    public List<MoviePublicDtos> getAllMovieCommingSoon(
             int page,
             int perPage,
-            String title,
+            String keyword,
             Movie.MovieGenre genre,
             Movie.MovieStatus status
-    	) {
-        try {
-            if (page < 1) page = 1;
-            if (perPage < 1) perPage = 10;
-
-            String q = (title == null) ? null : title.trim();
-            if (q != null && q.isBlank()) q = null;
-            List<Movie> movies = movieRepository.getAllMovieAdmin(page, perPage, q, genre, status);
-
-            return movies.stream().map(m -> {
-                MovieDtos dto = MovieMapper.toResponseDto(m); 
-                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
-                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
-                return dto;
-            }).collect(Collectors.toList());
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (ADMIN).", e);
-        }
-    }
-    
-    public long countAllMovieAdmin(String title, Movie.MovieGenre genre, Movie.MovieStatus status) {
-        try {
-            String q = (title == null) ? null : title.trim();
-            if (q != null && q.isBlank()) q = null;
-
-            return (long) movieRepository.countAllMovieAdmin(q, genre, status);
-
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO COUNT MOVIES (ADMIN).", e);
-        }
-    }
-
-
-    public List<MoviePublicDtos> getAllMovieCommingSoon(int page, int perPage, String keyword, Movie.MovieGenre genre) {
+    ) {	
         try {
             if (page < 1) page = 1;
             if (perPage < 1) perPage = 10;
@@ -92,10 +56,10 @@ public class MovieService {
             String q = (keyword == null) ? null : keyword.trim();
             if (q != null && q.isBlank()) q = null;
 
-            List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage, q, genre);
+            List<Movie> movies = movieRepository.getAllMovieCommingSoon(page, perPage, q, genre, status);
 
             return movies.stream().map(m -> {
-            	MoviePublicDtos dto = MovieMapper.toPublicRes(m);
+                MoviePublicDtos dto = MovieMapper.toPublicRes(m);
                 dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
                 dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
                 return dto;
@@ -103,16 +67,6 @@ public class MovieService {
 
         } catch (Exception e) {
             throw new RuntimeException("FAILED TO FETCH MOVIE LIST (COMING_SOON/NOW_SHOWING).", e);
-        }
-    }
-
-    
-    
-    public int countMovieStatus() {
-        try {
-            return movieRepository.countMovieComingSoonNowShowing();
-        } catch (Exception e) {
-            throw new RuntimeException("FAILED TO COUNT MOVIES BY STATUS.", e);
         }
     }
 
@@ -150,6 +104,41 @@ public class MovieService {
             throw new RuntimeException("FAILED TO FETCH MOVIES (COMING_SOON, NOW_SHOWING).", e);
         }
     }
+    
+    public List<MoviePublicDtos> getAllMovieAdmin(int page, int perPage, String keyword, Movie.MovieGenre genre) {
+        try {
+            if (page < 1) page = 1;
+            if (perPage < 1) perPage = 10;
+
+            String q = (keyword == null) ? null : keyword.trim();
+            if (q != null && q.isBlank()) q = null;
+
+            List<Movie> movies = movieRepository.getAllMovieAdmin(page, perPage, q, genre);
+
+            return movies.stream().map(m -> {
+                MoviePublicDtos dto = MovieMapper.toPublicRes(m);
+                dto.setPosterUrl(toPublicMediaUrl(m.getPosterUrl()));
+                dto.setBannerUrl(toPublicMediaUrl(m.getBannerUrl()));
+                return dto;
+            }).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO FETCH MOVIE LIST (ADMIN).", e);
+        }
+    }
+
+    
+    public long countMoviesAdmin(String keyword, Movie.MovieGenre genre) {
+        try {
+            String q = (keyword == null) ? null : keyword.trim();
+            if (q != null && q.isBlank()) q = null;
+
+            return movieRepository.countMoviesAdmin(q, genre);
+        } catch (Exception e) {
+            throw new RuntimeException("FAILED TO COUNT MOVIES (ADMIN).", e);
+        }
+    }
+
 
     public MovieDetailDtos createMovie(MovieCreateDtos data, MultipartFile poster, MultipartFile banner) {
         if (poster == null || poster.isEmpty()) throw new IllegalArgumentException("POSTER IS REQUIRED.");
@@ -303,14 +292,6 @@ public class MovieService {
                 && f.getOriginalFilename() != null && !f.getOriginalFilename().isBlank();
     }
 
-    private String normalizePrefix(String prefix) {
-        if (prefix == null || prefix.isBlank()) return "/media";
-        String p = prefix.trim();
-        if (!p.startsWith("/")) p = "/" + p;
-        if (p.length() > 1 && p.endsWith("/")) p = p.substring(0, p.length() - 1);
-        return p;
-    }
-
     private void safeDelete(Path path) {
         if (path == null) return;
         try {
@@ -345,6 +326,7 @@ public class MovieService {
             throw new IllegalArgumentException("FILE MUST BE AN IMAGE.");
         }
 
+        
         String original = file.getOriginalFilename();
         String ext = getExtension(original);
         if (ext.isBlank() || !ALLOWED_EXT.contains(ext)) {
@@ -429,15 +411,53 @@ public class MovieService {
         return genre;
     }
     
-    public long countMovieComingSoonNowShowing(String keyword, Movie.MovieGenre genre) {
+    public long countMovieComingSoonNowShowing(String keyword, Movie.MovieGenre genre, Movie.MovieStatus status) {
         try {
             String q = (keyword == null) ? null : keyword.trim();
             if (q != null && q.isBlank()) q = null;
 
-            return (long) movieRepository.countMoviesComingSoonNowShowing(q, genre);
+            return movieRepository.countMoviesComingSoonNowShowing(q, genre, status);
         } catch (Exception e) {
             throw new RuntimeException("FAILED TO COUNT MOVIES (COMING_SOON, NOW_SHOWING).", e);
         }
     }
+
+    
+    public List<RelatedMovieItemDtos> getRelatedMovies(String genre, Integer limit) {
+        String g = (genre == null) ? null : genre.trim();
+        if (g == null || g.isEmpty()) throw new IllegalArgumentException("genre is required");
+
+        int lim = (limit == null) ? 8 : Math.max(1, Math.min(limit, 24));
+
+        List<RelatedMovieItemDtos> list = movieRepository.getRelatedMoviesByGenre(g, lim);
+
+        for (RelatedMovieItemDtos dto : list) {
+            dto.setPosterUrl(toPublicMedia(dto.getPosterUrl()));
+        }
+
+        return list;
+    }
+
+
+    
+    private String normalizePrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) return "/media";
+        String p = prefix.trim();
+        if (!p.startsWith("/")) p = "/" + p;
+        if (p.length() > 1 && p.endsWith("/")) p = p.substring(0, p.length() - 1);
+        return p;
+    }
+    
+    
+    private String toPublicMedia(String path) {
+        if (path == null || path.isBlank()) return null;
+
+        String s = path.trim().replace("\\", "/");
+        if (s.startsWith("http://") || s.startsWith("https://")) return s;
+        if (s.startsWith("/media/")) return s;
+        if (!s.startsWith("/")) s = "/" + s;
+        return "/media" + s;
+    }
+
 
 }

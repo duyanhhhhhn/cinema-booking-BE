@@ -11,10 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.booking.BookingCalculateRequest;
 import CinemaBooking.Group2.dtos.booking.BookingCalculateResponse;
 import CinemaBooking.Group2.dtos.booking.BookingCreateRequest;
 import CinemaBooking.Group2.dtos.booking.BookingCreateResponse;
+import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.BookingConcession;
 import CinemaBooking.Group2.models.BookingSeat;
@@ -342,5 +344,30 @@ public class BookingService {
 
     private String generateTicketCode(String bookingCode, String seatCode) {
         return bookingCode + "-" + seatCode;
+    }
+
+    /**
+     * Get booking history for a specific user (no filters)
+     */
+    public PageResponse<BookingHistoryResponse> getMyBookingHistory(
+            int userId, 
+            String startDate, String endDate, 
+            Booking.PaymentStatus status, String movieTitle, 
+            int page, int perPage
+    ) {
+        if (page < 1) page = 1;
+        if (perPage < 1) perPage = 10;
+        if (startDate != null && !startDate.isBlank() && endDate != null && !endDate.isBlank()) {
+            LocalDate start = LocalDate.parse(startDate);
+            LocalDate end = LocalDate.parse(endDate);
+
+            if (start.isAfter(end)) {
+                throw new RuntimeException("Ngày bắt đầu phải trước ngày kết thúc!");
+            }
+        }
+        
+        return bookingRepository.searchBookings(
+                userId, startDate, endDate, status, movieTitle, page, perPage
+        );
     }
 }
