@@ -131,7 +131,10 @@ public class CinemaService {
 	        c.getCreatedAt()
 	    );
 	}
-
+	// Đếm tổng số rạp (bao gồm inactive)
+	public long countAllCinemasIncludingInactive() {
+	    return repo.findAll().size();
+	}
 	public String uploadCinemaImage(int cinemaId, MultipartFile file) {
 
 	    Cinema cinema = repo.findById(cinemaId);

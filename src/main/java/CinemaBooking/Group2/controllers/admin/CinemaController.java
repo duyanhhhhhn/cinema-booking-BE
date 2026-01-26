@@ -26,20 +26,34 @@ public class CinemaController {
     @Autowired
     private CinemaService cinemaService;
 
-    //================== GET ALL CINEMAS =================
-    // ADMIN XEM ĐƯỢC TẤT CẢ
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @GetMapping("/cinemas")
-    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAllCinemasForAdmin() {
+  //================== GET ALL CINEMAS (ADMIN) =================
+ // ADMIN xem được tất cả (kể cả inactive)
+ @PreAuthorize("hasAuthority('ADMIN')")
+ @GetMapping("/cinemas")
+ public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAllCinemasForAdmin(
+         @RequestParam(defaultValue = "1") int page,
+         @RequestParam(defaultValue = "10") int perPage) {
 
-		List<CinemaResponseDTO> data =
-				cinemaService.getAllPagedIncludingInactive(1, 10);
+     page = Math.max(page, 1);
+     perPage = Math.max(perPage, 1);
 
-		return ResponseEntity.ok(
-				new ApiResponse<>("Success", data)
-		);
-	}
-    
+     List<CinemaResponseDTO> data =
+             cinemaService.getAllPagedIncludingInactive(page, perPage);
+
+     long total =
+             cinemaService.countAllCinemasIncludingInactive();
+
+     Map<String, Object> meta = new HashMap<>();
+     meta.put("page", page);
+     meta.put("perPage", perPage);
+     meta.put("total", total);
+
+     return ResponseEntity.ok(
+             new ApiResponse<>("Success", data, meta)
+     );
+ }
+
+   
     // ================= PUBLIC GET =================
     // Ai cũng xem được
     @GetMapping("/public/cinemas")
