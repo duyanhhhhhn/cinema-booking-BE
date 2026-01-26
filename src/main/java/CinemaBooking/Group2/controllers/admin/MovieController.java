@@ -45,14 +45,13 @@ public class MovieController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int perPage,
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) Movie.MovieGenre genre) {
-
-        // 1. Logic tính toán
+            @RequestParam(required = false) Movie.MovieGenre genre
+    ) {
         page = Math.max(page, 1);
         perPage = Math.max(perPage, 1);
 
-        List<MoviePublicDtos> movies = movieService.getAllMovieCommingSoon(page, perPage, title, genre);
-        long total = movieService.countTotalMovies();
+        List<MoviePublicDtos> movies = movieService.getAllMovieAdmin(page, perPage, title, genre);
+        long total = movieService.countMoviesAdmin(title, genre);
 
         Map<String, Object> meta = new HashMap<>();
         meta.put("page", page);
@@ -61,6 +60,7 @@ public class MovieController {
 
         return ResponseEntity.ok(new ApiResponse<>("Success", movies, meta));
     }
+
     
     
     @PostMapping(value = "/create-movies", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

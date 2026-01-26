@@ -19,6 +19,7 @@ import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
+import CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.service.MovieService;
 import CinemaBooking.Group2.service.ShowtimeService;
@@ -36,17 +37,17 @@ public class MoviePublicController {
 	        @RequestParam(defaultValue = "1") int page,
 	        @RequestParam(defaultValue = "10") int perPage,
 	        @RequestParam(required = false) String title,
-	        @RequestParam(required = false) Movie.MovieGenre genre
+	        @RequestParam(required = false) Movie.MovieGenre genre,
+	        @RequestParam(required = false) Movie.MovieStatus status
 	) {
 	    page = Math.max(page, 1);
 	    perPage = Math.max(perPage, 1);
 
-	    // Service đã trả DTO rồi => nhận luôn DTO
 	    List<MoviePublicDtos> data =
-	            movieServices.getAllMovieCommingSoon(page, perPage, title, genre);
+	            movieServices.getAllMovieCommingSoon(page, perPage, title, genre, status);
 
 	    long total =
-	            movieServices.countMovieComingSoonNowShowing(title, genre);
+	            movieServices.countMovieComingSoonNowShowing(title, genre, status);
 
 	    Map<String, Object> meta = new HashMap<>();
 	    meta.put("page", page);
@@ -55,6 +56,7 @@ public class MoviePublicController {
 
 	    return ResponseEntity.ok(new ApiResponse<>("Success", data, meta));
 	}
+
 
 	@GetMapping("/movie-detail/{id}")
 	public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {
@@ -83,15 +85,12 @@ public class MoviePublicController {
     }
 
     @GetMapping("/movies/related")
-    public ResponseEntity<List<CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos>> getRelatedMovies(
+    public ResponseEntity<List<RelatedMovieItemDtos>> getRelatedMovies(
             @RequestParam String genre,
-            @RequestParam(required = false) Integer excludeId,
             @RequestParam(defaultValue = "8") Integer limit
     ) {
-        List<CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos> data =
-        		movieServices.getRelatedMovies(genre, excludeId, limit);
-
-        return ResponseEntity.ok(data);
+        return ResponseEntity.ok(movieServices.getRelatedMovies(genre, limit));
     }
+
 
 }
