@@ -38,15 +38,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/api/showtimes-seat/",
 
             "/swagger-ui",
-            "/v3/api-docs",
             "/swagger-ui.html",
+            "/v3/api-docs",
 
             "/media",
             "/uploads",
             "/static",
-            "/favicon.ico"
-
-    );
+            "/favicon.ico");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

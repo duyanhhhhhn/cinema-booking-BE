@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class ShowtimePublicDtos {
-    private int id;               // showtimeId
+    private int id;               
     private String startTime;    
     private BigDecimal price;    
     private String roomName;
