@@ -50,8 +50,6 @@ public class UserRepository {
 				WHERE u.email = ?
 			""";
 		try {
-			User user = jdbc.queryForObject(sql, new UserMapper(), email);
-			System.out.println(user);
 			return jdbc.queryForObject(sql, new UserMapper(), email);
 			
 		} catch (Exception e) {

@@ -91,6 +91,7 @@ public class PostRepository implements Icrud<Post>{
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return item;
 	}

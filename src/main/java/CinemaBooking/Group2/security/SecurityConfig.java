@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -13,106 +14,102 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import java.util.Arrays;
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+	@Autowired
+	private JwtAuthFilter jwtAuthFilter;
 
-    @Autowired
-    private JwtAuthFilter jwtAuthFilter;
+	@Bean
+	public BCryptPasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOriginPatterns(Arrays.asList("*"));
+		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+		config.setAllowedHeaders(Arrays.asList("*"));
+		config.setExposedHeaders(Arrays.asList("Authorization"));
+		config.setAllowCredentials(true);
+		config.setMaxAge(3600L);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
+	}
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("*"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("*"));
-        config.setExposedHeaders(Arrays.asList("Authorization"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+		http
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth
+						// Public routes
+						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+						.requestMatchers(
+								"/api/public/**",
+								"/api/auth/register/**",
+								"/api/auth/login",
+								"/api/auth/logout",
+								"/api/auth/refresh",
+								"/api/auth/forgot/**",
+								"/media/**",
+								"/api/public/**",
+								"/swagger-ui/index.html#/")
+						.permitAll()
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+						// ===== PUBLIC =====
+						.requestMatchers(
+								"/api/auth/**",
+								"/swagger-ui/**",
+								"/v3/api-docs/**")
+						.permitAll()
 
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // Public routes
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers(
-                        		"/api/public/**",
-                                "/api/auth/register/**",
-                                "/api/auth/login",
-                                "/api/auth/logout",
-                                "/api/auth/refresh",
-                                "/api/auth/forgot/**",
-                                "/media/**",
-                                "/api/public/**",
-                                "/swagger-ui/index.html#/")
-                        .permitAll()
+						// ======= PUBLIC =======
+						.requestMatchers("/api/client/reviews/*/comment",
+								"/api/client/reviews/*/rating")
+						.permitAll()
 
-                        .requestMatchers("/api/auth/password/**").authenticated()
-                        .requestMatchers("/api/users/me").authenticated()
+						// ===== PRIVATE (Client tạo comment) =====
+						.requestMatchers(HttpMethod.POST, "/api/client/reviews/create-comment").permitAll()
 
-                        // ===== PUBLIC =====
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**")
-                        .permitAll()
-                        
-                        // ======= PUBLIC =======
-                        .requestMatchers("/api/client/reviews/*/comment",
-                        				 "/api/client/reviews/*/rating").permitAll()
+						// ===== PUBLIC (SHOWTIME SEAT) =========
+						.requestMatchers("/api/showtimes-seat/**").permitAll()
 
-                        // ===== PRIVATE (Client tạo comment) =====
-                        .requestMatchers(HttpMethod.POST, "/api/client/reviews/create-comment").permitAll()
-                        
-                        // ===== PUBLIC (SHOWTIME SEAT) =========
-                        .requestMatchers("/api/showtimes-seat/**").permitAll()
-                        
-                        // ==== PUBLIC showtimes =====
-                        .requestMatchers("/api/showtimes/public/**").permitAll()
-                        
-                        // ===== AUTHENTICATED =====
-                        .requestMatchers(
-                                "/api/auth/password/**",
-                                "/api/users/me")
-                        .authenticated()
-                        
+						// ==== PUBLIC showtimes =====
+						.requestMatchers("/api/showtimes/public/**").permitAll()
 
-                        // ===== ROLE BASE =====
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
-                        .requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
-                        .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
-                        .requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
-                        .requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
-                        .requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
+						// ===== AUTHENTICATED =====
+						.requestMatchers(
+								"/api/auth/password/**",
+								"/api/users/me",
+								"/api/users/me/bookings")
+						.authenticated()
 
-                        .anyRequest().authenticated())
+						// ===== ROLE BASE =====
+						.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
+						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
 
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .httpBasic(httpBasic -> httpBasic.disable());
+						.anyRequest().authenticated())
 
-        return http.build();
-    }
+				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+				.httpBasic(httpBasic -> httpBasic.disable());
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+		return http.build();
+	}
+
+	@Bean
+	public AuthenticationManager authenticationManager(
+			AuthenticationConfiguration config) throws Exception {
+		return config.getAuthenticationManager();
+	}
 }
