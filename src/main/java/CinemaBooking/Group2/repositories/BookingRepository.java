@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.dtos.PageResponse;
+import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.BookingConcession;
 import CinemaBooking.Group2.models.BookingSeat;
@@ -186,4 +189,111 @@ public class BookingRepository {
             return null;
         }
     }
+
+    /**
+     * Find booking history by user ID (existing signature kept for compatibility)
+     */
+    public PageResponse<BookingHistoryResponse> searchBookings(
+            int userId, String startDate, String endDate, 
+            Booking.PaymentStatus status, String movieTitle, 
+            int page, int perPage
+    ) {
+        // 1. Xây dựng WHERE và tham số
+        StringBuilder whereSql = new StringBuilder("WHERE b.user_id = ? ");
+        List<Object> params = new ArrayList<>();
+        params.add(userId);
+
+        if (startDate != null && !startDate.isBlank()) {
+            whereSql.append("AND DATE(st.start_time) >= ? ");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.isBlank()) {
+            whereSql.append("AND DATE(st.start_time) <= ? ");
+            params.add(endDate);
+        }
+        if (status != null) {
+            whereSql.append("AND b.payment_status = ? ");
+            params.add(status.name());
+        }
+        if (movieTitle != null && !movieTitle.isBlank()) {
+            whereSql.append("AND m.title LIKE ? ");
+            params.add("%" + movieTitle + "%");
+        }
+
+        // 2. Query Đếm Tổng (Count)
+        String countQuery = """
+            SELECT COUNT(DISTINCT b.id) 
+            FROM booking b
+            JOIN showtime st ON b.showtime_id = st.id
+            JOIN movie m ON st.movie_id = m.id
+            JOIN room r ON st.room_id = r.id
+            JOIN cinema c ON r.cinema_id = c.id
+            """ + whereSql.toString();
+
+        long total = 0;
+        try {
+            Long result = jdbc.queryForObject(countQuery, Long.class, params.toArray());
+            total = result != null ? result : 0;
+        } catch (Exception e) {
+            total = 0;
+        }
+
+        // 3. Query Lấy Dữ Liệu (Select)
+        StringBuilder selectSql = new StringBuilder("""
+            SELECT 
+                b.id, b.booking_code AS bookingCode,
+                m.id AS movieId, m.title AS movieTitle, m.poster_url AS posterUrl,
+                c.name AS cinemaName, r.name AS roomName,
+                st.start_time AS startTime,
+                GROUP_CONCAT(DISTINCT s.seat_code ORDER BY s.seat_code SEPARATOR ', ') AS seats,
+                (
+                    SELECT GROUP_CONCAT(CONCAT(cb.name, ' x', bc.quantity) SEPARATOR ', ')
+                    FROM booking_concession bc
+                    JOIN combo cb ON bc.combo_id = cb.id
+                    WHERE bc.booking_id = b.id
+                ) AS combos,
+                b.total_price AS totalPrice,
+                b.payment_status AS status,
+                CASE 
+                    WHEN b.payment_status = 'PAID' THEN 'Đã thanh toán'
+                    WHEN b.payment_status = 'PENDING' THEN 'Chờ thanh toán'
+                    WHEN b.payment_status = 'FAILED' THEN 'Thất bại'
+                    ELSE b.payment_status
+                END AS statusLabel
+            FROM booking b
+            JOIN showtime st ON b.showtime_id = st.id
+            JOIN movie m ON st.movie_id = m.id
+            JOIN room r ON st.room_id = r.id
+            JOIN cinema c ON r.cinema_id = c.id
+            LEFT JOIN booking_seat bs ON bs.booking_id = b.id
+            LEFT JOIN seat s ON bs.seat_id = s.id
+            """);
+
+        selectSql.append(whereSql);
+        
+        selectSql.append("""
+             GROUP BY b.id, b.booking_code, m.id, m.title, m.poster_url, 
+                      c.name, r.name, st.start_time, b.total_price, b.payment_status
+             ORDER BY b.created_at DESC
+             LIMIT ? OFFSET ?
+             """);
+
+        int offset = (page - 1) * perPage;
+        params.add(perPage);
+        params.add(offset);
+
+        List<BookingHistoryResponse> items;
+        try {
+            items = jdbc.query(selectSql.toString(), 
+                     new BeanPropertyRowMapper<>(BookingHistoryResponse.class), 
+                     params.toArray());
+        } catch (Exception e) {
+            items = List.of();
+        }
+
+        // 4. Đóng gói vào PageResponse ngay tại đây
+        PageResponse.Meta meta = new PageResponse.Meta(total, perPage, page);
+        return new PageResponse<>("Success", items, meta);
+    }
+
 }
