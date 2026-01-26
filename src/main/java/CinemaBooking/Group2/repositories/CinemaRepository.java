@@ -24,6 +24,16 @@ public class CinemaRepository {
 			return null;
 		}
 	}
+	
+	public List<Cinema> findAll() {
+		String sql = "SELECT * FROM cinema";
+		try {
+			return jdbc.query(sql, new CinemaMapper());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	public Cinema findById(int id) {
 		String sql = "SELECT * FROM cinema WHERE id = ?";
@@ -41,7 +51,13 @@ public class CinemaRepository {
 				    VALUES (?, ?, ?, ?, ?, 1, NOW())
 				""";
 		try {
-			return jdbc.update(sql, c.getName(), c.getAddress(), c.getPhone(), c.getImageUrl(), c.getDescription());
+			return jdbc.update(sql,
+				    c.getName(),
+				    c.getAddress(),
+				    c.getPhone(),
+				    c.getDescription(),  
+				    c.getImageUrl()      
+				);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0;
@@ -55,7 +71,15 @@ public class CinemaRepository {
 				    WHERE id=?
 				""";
 		try {
-			return jdbc.update(sql, c.getName(), c.getAddress(), c.getPhone(), c.getDescription(),c.getImageUrl(), c.getIsActive(), id);
+			return jdbc.update(sql,
+				    c.getName(),
+				    c.getAddress(),
+				    c.getPhone(),
+				    c.getDescription(),
+				    c.getIsActive(),    
+				    c.getImageUrl(),   
+				    id
+				);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0;

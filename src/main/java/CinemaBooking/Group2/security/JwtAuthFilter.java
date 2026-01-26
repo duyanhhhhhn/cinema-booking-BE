@@ -65,7 +65,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // Không có Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -73,7 +73,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // Token không hợp lệ
         if (!jwtService.validateToken(token)) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            filterChain.doFilter(request, response);
             return;
         }
 

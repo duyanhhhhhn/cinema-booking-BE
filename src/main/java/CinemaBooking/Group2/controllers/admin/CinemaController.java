@@ -1,12 +1,16 @@
 package CinemaBooking.Group2.controllers.admin;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
@@ -16,74 +20,123 @@ import CinemaBooking.Group2.dtos.cinema.UploadImageRequestDTO;
 import CinemaBooking.Group2.service.CinemaService;
 
 @RestController
+@RequestMapping("/api")
 public class CinemaController {
 
     @Autowired
-    private CinemaService service;
+    private CinemaService cinemaService;
 
-    // ================= PUBLIC GET ================= Sử dụng để lấy danh sách rạp chiếu cho người dùng
-    // URL: /api/public/cinemas
-    @GetMapping("/api/public/cinemas")
-    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> publicGetAll() {
+    //================== GET ALL CINEMAS =================
+    // ADMIN XEM ĐƯỢC TẤT CẢ
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/cinemas")
+    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAllCinemasForAdmin() {
 
-        List<CinemaResponseDTO> data = service.getAll();
+		List<CinemaResponseDTO> data =
+				cinemaService.getAllPagedIncludingInactive(1, 10);
+
+		return ResponseEntity.ok(
+				new ApiResponse<>("Success", data)
+		);
+	}
+    
+    // ================= PUBLIC GET =================
+    // Ai cũng xem được
+    @GetMapping("/public/cinemas")
+    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getPublicCinemas(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "4") int perPage) {
+
+        page = Math.max(page, 1);
+        perPage = Math.max(perPage, 1);
+
+        List<CinemaResponseDTO> data =
+                cinemaService.getAllPaged(page, perPage);
+
+        long total =
+                cinemaService.countAllActiveCinemas();
+
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("page", page);
+        meta.put("perPage", perPage);
+        meta.put("total", total);
 
         return ResponseEntity.ok(
-            new ApiResponse<>("Success", data)
+                new ApiResponse<>("Success", data, meta)
         );
     }
 
-    // ================= ADMIN APIs =================
-    // URL: /api/cinemas
-    @PostMapping("/api/cinemas")
+    // ================= CREATE =================
+    // Chỉ ADMIN
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<CinemaResponseDTO>> create(
-            @RequestBody CinemaRequestDTO dto) {
+    @PostMapping(
+            value = "/cinemas",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<CinemaResponseDTO>> createCinema(
+            @ModelAttribute CinemaRequestDTO dto) {
 
-        CinemaResponseDTO created = service.create(dto);
+        CinemaResponseDTO created =
+                cinemaService.create(dto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Cinema created", created));
     }
-    
-    
-    @PutMapping("/api/cinemas/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<CinemaResponseDTO>> update(
-            @PathVariable int id,
-            @RequestBody CinemaRequestDTO dto) {
 
-        CinemaResponseDTO updated = service.update(id, dto);
+    // ================= UPDATE =================
+    // Chỉ ADMIN
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PutMapping(
+            value = "/cinemas/{id}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<CinemaResponseDTO>> updateCinema(
+            @PathVariable int id,
+            @ModelAttribute CinemaRequestDTO dto) {
+
+        CinemaResponseDTO updated =
+                cinemaService.update(id, dto);
 
         return ResponseEntity.ok(
                 new ApiResponse<>("Cinema updated", updated)
         );
     }
-    
-    //    =====Upload ImageUrl======
+
+    // ================= UPLOAD IMAGE =================
+    // Chỉ ADMIN
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping(
-    	    value = "/api/cinemas/{id}/upload-image",
-    	    consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-    	    produces = MediaType.APPLICATION_JSON_VALUE
-    	)
-    	@PreAuthorize("hasRole('ADMIN')")
-    	public ResponseEntity<ApiResponse<String>> uploadCinemaImage(
-    	        @PathVariable int id,
-    	        @ModelAttribute UploadImageRequestDTO dto
-    	) {
-    	    if (dto.getImage() == null || dto.getImage().isEmpty()) {
-    	        return ResponseEntity.badRequest()
-    	                .body(new ApiResponse<>("Image không được để trống", null));
-    	    }
+            value = "/cinemas/{id}/upload-image",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<String>> uploadCinemaImage(
+            @PathVariable int id,
+            @ModelAttribute UploadImageRequestDTO dto) {
 
-    	    String imageUrl = service.uploadCinemaImage(id, dto.getImage());
+        if (dto.getImage() == null || dto.getImage().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>("Image không được để trống", null));
+        }
 
-    	    return ResponseEntity.ok(
-    	            new ApiResponse<>("Upload cinema image thành công", imageUrl)
-    	    );
-    	}
+        String imageUrl =
+                cinemaService.uploadCinemaImage(id, dto.getImage());
 
+        return ResponseEntity.ok(
+                new ApiResponse<>("Upload cinema image thành công", imageUrl)
+        );
+    }
 
+    // ================= DELETE (SOFT) =================
+    // Chỉ ADMIN
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @DeleteMapping("/cinemas/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteCinema(
+            @PathVariable int id) {
+
+        cinemaService.deactivate(id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Cinema deactivated", "OK")
+        );
+    }
 }
-
-

@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -16,6 +17,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 	@Autowired
 	private JwtAuthFilter jwtAuthFilter;
@@ -75,7 +77,7 @@ public class SecurityConfig {
 						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/movies/**")
 						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/users/**")
 						.hasAnyAuthority("ADMIN", "MANAGER").requestMatchers("/api/staff/**")
-						.hasAnyAuthority("ADMIN", "MANAGER", "STAFF").requestMatchers("/api/cinemas/**")
+						.hasAnyAuthority("ADMIN", "MANAGER", "STAFF").requestMatchers("/api/cinemas","/api/cinemas/**")
 						.hasAnyAuthority("ADMIN").requestMatchers("/api/room/**").hasAnyAuthority("ADMIN").anyRequest()
 						.authenticated())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
