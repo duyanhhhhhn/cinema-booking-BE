@@ -1,4 +1,8 @@
 package CinemaBooking.Group2.controllers.client;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -53,7 +57,7 @@ public class HomeController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 	}
 	@GetMapping("/public/banner/{id}")
-	public ResponseEntity<ApiResponse<Banner>> getBannerById(@RequestParam("id") int id){
+	public ResponseEntity<ApiResponse<Banner>> getBannerById(@PathVariable("id") int id){
 		ApiResponse<Banner> res;
 		try {
 			if(id==0) {
@@ -111,7 +115,7 @@ public class HomeController {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 			}
 			else {
-				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner");
+				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner","banner");
 				Banner banner = new Banner();
 				banner.setTitle(dto.getTitle());
 				banner.setLinkUrl(dto.getLinkUrl());
@@ -145,13 +149,15 @@ public class HomeController {
 			}
 			Banner banner = new Banner();
 			if(bannerFile!=null) {
-				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner");
+				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner","banner");
 				banner.setImageUrl(url);
+			}
+			else {
+				banner.setImageUrl(dto.getImageUrl());
 			}
 				banner.setTitle(dto.getTitle());
 				banner.setLinkUrl(dto.getLinkUrl());
 				banner.setPosition(dto.getPosition());
-				banner.setCreatedAt(LocalDateTime.now());
 				banner.setIsActive(true);
 				banner.setId(id);
 				BannerResponseDTO item = service.updateBanner(banner);
