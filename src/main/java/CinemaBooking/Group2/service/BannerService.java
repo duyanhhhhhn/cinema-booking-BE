@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
 import CinemaBooking.Group2.mappers.BannerMapper;
 import CinemaBooking.Group2.models.Banner;
@@ -31,29 +30,26 @@ public class BannerService {
 		}
 		return null;
 	}
-	public BannerListResponseDTO getBanner(String url){
+	public List<BannerResponseDTO> getBanner(String url){
 		try {
 			List<Banner> item = home.getBannerByLinkURL(url);
 			if(item==null) {
 				item = new ArrayList<>();
-			}
-			BannerListResponseDTO banner = new BannerListResponseDTO();
-			banner.setData(item);
-			return banner;
+			};
+			return item.stream().map(BannerMapper::toResponseDTO).collect(Collectors.toList());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
 		return null;
 	}
-	public BannerListResponseDTO getBannerByPosition(BannerPosition position,int count){
+	public List<BannerResponseDTO> getBannerByPosition(BannerPosition position,int count){
 		try {
 			List<Banner> item = home.findBannerByPosition(position, count);
 			if(item==null) {
 				item = new ArrayList<>();
 			}
-			BannerListResponseDTO banner = new BannerListResponseDTO();
-			banner.setData(item);
+			List<BannerResponseDTO> banner = new ArrayList<>();
 			return banner;
 		}
 		catch (Exception e) {

@@ -68,7 +68,7 @@ public class PostResponseDTO {
 			return coverUrl;
 		}
 		public void setCoverUrl(String coverUrl) {
-			this.coverUrl = coverUrl;
+			this.coverUrl = "/media"+coverUrl;
 		}
 		public int getPublished() {
 			return published;

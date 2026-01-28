@@ -1,9 +1,6 @@
 package CinemaBooking.Group2.controllers.client;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
-import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerRequestDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
 import CinemaBooking.Group2.models.Banner;
@@ -82,29 +78,25 @@ public class HomeController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Banner>("error", null));
 	}
 	@GetMapping("/banner/get")
-	public ResponseEntity<BannerListResponseDTO> getBannerByPosition(@RequestParam("position")BannerPosition position,@RequestParam("count")int count){
-		BannerListResponseDTO list = new BannerListResponseDTO();
+	public ResponseEntity<ApiResponse<List<BannerResponseDTO>>> getBannerByPosition(@RequestParam("position")BannerPosition position,@RequestParam("count")int count){
+		 List<BannerResponseDTO> list = new ArrayList<>();
 		try {
 			if(position==null) {
-				list.setMessage("position shouldn't be empty!");
-				return ResponseEntity.ok(list);
+				return ResponseEntity.ok(new ApiResponse<List<BannerResponseDTO>>("position shouldn't empty", null));
 			}
 			else {
-				BannerListResponseDTO banner = service.getBannerByPosition(position, count);
-				if(banner==null) {
-					list.setMessage("Not found !");
-					return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
+				list = service.getBannerByPosition(position, count);
+				if(list==null) {
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<List<BannerResponseDTO>>("not found ", list));
 				}
-				list = banner;
-				list.setMessage("Success");
-				return ResponseEntity.ok(list);
+				return ResponseEntity.ok(new ApiResponse<List<BannerResponseDTO>>("success", list));
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<List<BannerResponseDTO>>("error",null));
 	}
 	@PostMapping("/admin/banner")
 	//@PreAuthorize("hasAuthority('ADMIN')")
