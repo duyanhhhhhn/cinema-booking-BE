@@ -47,16 +47,23 @@ public class MarketingService {
 		}
 		return 0;
 	}
-	public List<PostResponseDTO> getPostPaging(int page,int size) {
-		try {
-			List<Post> item = mk.getPost(page,size);
-			return item.stream().map(PostMapper::toResponseDTO).collect(Collectors.toList());
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-			throw new RuntimeException();
-		}
+	public List<PostResponseDTO> getPostPaging(int page, int size) {
+	    try {
+	        List<Post> items = mk.getPost(page, size);
+
+	        return items.stream()
+	                .map(post -> {
+	                    PostResponseDTO dto = PostMapper.toResponseDTO(post);
+	                    dto.setCoverUrl(toPublicMedia(post.getCoverUrl()));
+	                    return dto;
+	                })
+	                .collect(java.util.stream.Collectors.toList());
+
+	    } catch (Exception e) {
+	        throw new RuntimeException("FAILED_TO_GET_POST_PAGING", e);
+	    }
 	}
+
 	public PostResponseDTO newPost(Post post) {
 		PostResponseDTO res = new PostResponseDTO();
 		try {
@@ -159,4 +166,23 @@ public class MarketingService {
 		}
 		return dto;
 	}
+	
+    private String normalizePrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) return "/media";
+        String p = prefix.trim();
+        if (!p.startsWith("/")) p = "/" + p;
+        if (p.length() > 1 && p.endsWith("/")) p = p.substring(0, p.length() - 1);
+        return p;
+    }
+    
+    
+    private String toPublicMedia(String path) {
+        if (path == null || path.isBlank()) return null;
+
+        String s = path.trim().replace("\\", "/");
+        if (s.startsWith("http://") || s.startsWith("https://")) return s;
+        if (s.startsWith("/media/")) return s;
+        if (!s.startsWith("/")) s = "/" + s;
+        return "/media" + s;
+    }
 }
