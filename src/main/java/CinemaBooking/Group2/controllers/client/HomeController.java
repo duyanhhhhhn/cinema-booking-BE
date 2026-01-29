@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.controllers.client;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
-import CinemaBooking.Group2.dtos.home.BannerListResponseDTO;
 import CinemaBooking.Group2.dtos.home.BannerRequestDTO;
 import CinemaBooking.Group2.dtos.home.BannerResponseDTO;
 import CinemaBooking.Group2.models.Banner;
@@ -53,7 +53,7 @@ public class HomeController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 	}
 	@GetMapping("/public/banner/{id}")
-	public ResponseEntity<ApiResponse<Banner>> getBannerById(@RequestParam("id") int id){
+	public ResponseEntity<ApiResponse<Banner>> getBannerById(@PathVariable("id") int id){
 		ApiResponse<Banner> res;
 		try {
 			if(id==0) {
@@ -78,29 +78,25 @@ public class HomeController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Banner>("error", null));
 	}
 	@GetMapping("/banner/get")
-	public ResponseEntity<BannerListResponseDTO> getBannerByPosition(@RequestParam("position")BannerPosition position,@RequestParam("count")int count){
-		BannerListResponseDTO list = new BannerListResponseDTO();
+	public ResponseEntity<ApiResponse<List<BannerResponseDTO>>> getBannerByPosition(@RequestParam("position")BannerPosition position,@RequestParam("count")int count){
+		 List<BannerResponseDTO> list = new ArrayList<>();
 		try {
 			if(position==null) {
-				list.setMessage("position shouldn't be empty!");
-				return ResponseEntity.ok(list);
+				return ResponseEntity.ok(new ApiResponse<List<BannerResponseDTO>>("position shouldn't empty", null));
 			}
 			else {
-				BannerListResponseDTO banner = service.getBannerByPosition(position, count);
-				if(banner==null) {
-					list.setMessage("Not found !");
-					return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
+				list = service.getBannerByPosition(position, count);
+				if(list==null) {
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<List<BannerResponseDTO>>("not found ", list));
 				}
-				list = banner;
-				list.setMessage("Success");
-				return ResponseEntity.ok(list);
+				return ResponseEntity.ok(new ApiResponse<List<BannerResponseDTO>>("success", list));
 			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<List<BannerResponseDTO>>("error",null));
 	}
 	@PostMapping("/admin/banner")
 	//@PreAuthorize("hasAuthority('ADMIN')")
@@ -111,7 +107,7 @@ public class HomeController {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 			}
 			else {
-				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner");
+				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner","banner");
 				Banner banner = new Banner();
 				banner.setTitle(dto.getTitle());
 				banner.setLinkUrl(dto.getLinkUrl());
@@ -145,13 +141,15 @@ public class HomeController {
 			}
 			Banner banner = new Banner();
 			if(bannerFile!=null) {
-				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner");
+				String url =FileUltility.uploadFileImage(bannerFile, "uploads/banner","banner");
 				banner.setImageUrl(url);
+			}
+			else {
+				banner.setImageUrl(dto.getImageUrl());
 			}
 				banner.setTitle(dto.getTitle());
 				banner.setLinkUrl(dto.getLinkUrl());
 				banner.setPosition(dto.getPosition());
-				banner.setCreatedAt(LocalDateTime.now());
 				banner.setIsActive(true);
 				banner.setId(id);
 				BannerResponseDTO item = service.updateBanner(banner);

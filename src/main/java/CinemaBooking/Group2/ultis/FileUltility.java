@@ -7,14 +7,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Base64;
 
 import org.springframework.web.multipart.MultipartFile;
 
 public class FileUltility {
-	public static String uploadFileImage(MultipartFile file ,String folderName) {
+	public static String uploadFileImage(MultipartFile file ,String folderName,String prefix) {
 		try {
 			String folderUpload = System.getProperty("user.dir")+"/"+folderName;
+			createFolder(folderUpload);
 			String fileName = System.currentTimeMillis()+file.getOriginalFilename();
 			String strpath = String.format("%s/%s", folderUpload,fileName);	
 			byte[] data=file.getBytes();
@@ -23,7 +25,8 @@ public class FileUltility {
 			buf.write(data);
 			buf.flush();
 			buf.close();
-			return fileName;
+			String rs ="/"+prefix+"/"+fileName;
+			return rs;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -32,7 +35,7 @@ public class FileUltility {
 		return "";
 	}
 	public static String getBase64EncodedImage(String folderName,String imageName) {
-		String folderUpload=System.getProperty("user.dir")+"/"+folderName;
+		//String folderUpload=System.getProperty("user.dir")+"/"+folderName;
 		try {
 			FileInputStream fin = new FileInputStream(folderName+"/"+imageName);
 			byte[] data = fin.readAllBytes();
@@ -58,5 +61,17 @@ public class FileUltility {
 			System.out.print(e.getMessage());
 		}
 		return "";
+	}
+	public static void createFolder(String folderPath) {
+		try {
+			Path path = Paths.get(folderPath);
+			if(!Files.exists(path)) {
+				Files.createDirectories(path);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return;
 	}
 }

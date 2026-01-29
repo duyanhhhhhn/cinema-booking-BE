@@ -71,9 +71,9 @@ public class BannerRepository implements Icrud<Banner>{
 	@Override
 	public int update(Banner item) {
 		try {
-			int rs = db.update("update "+StringValue.tbl_banner+" set title=?,image_url=?,link_url=?,position=?,is_active=?,created_at=?) where id=?", 
+			int rs = db.update("update "+StringValue.tbl_banner+" set title=?,image_url=?,link_url=?,position=?,is_active=? where id=?", 
 					new Object[] {item.getTitle(),item.getImageUrl(),item.getLinkUrl(),item.getPosition().name(),
-							item.getIsActive(),item.getCreatedAt(),item.getId()});
+							item.getIsActive(),item.getId()});
 			return rs;
 		}
 		catch (Exception e) {
