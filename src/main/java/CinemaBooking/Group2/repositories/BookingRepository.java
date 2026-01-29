@@ -8,13 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
+import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
 import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.BookingConcession;
@@ -295,5 +299,113 @@ public class BookingRepository {
         PageResponse.Meta meta = new PageResponse.Meta(total, perPage, page);
         return new PageResponse<>("Success", items, meta);
     }
+    
+    public ApiResponse<BookingDetailResponse> getMyBookingByCode(int userId, String code) {
+        
+    	String sql = """
+    	        SELECT
+    	            b.id AS id,
+    	            b.booking_code AS bookingCode,
+    	            b.payment_status AS status,
+    	            b.payment_method AS paymentMethod,
+    	            b.created_at AS createdAt,
+    	            b.paid_at AS paidAt,
+    	            b.total_price AS totalPrice,
+    	            
+    	            (SELECT COUNT(*) FROM booking_seat bs WHERE bs.booking_id = b.id AND bs.is_printed = 1) > 0 AS isCheckin,
 
+    	            m.title AS movieTitle,
+    	            m.poster_url AS posterUrl,
+    	            m.short_description AS tagline,
+    	            m.format AS format,
+    	            m.duration_minutes AS durationMinutes,
+    	            c.name AS cinemaName,
+    	            c.address AS cinemaAddress,
+    	            r.name AS roomName,
+    	            st.start_time AS startTime,
+    	            st.end_time AS endTime
+    	        FROM booking b
+    	        JOIN showtime st ON st.id = b.showtime_id
+    	        JOIN movie m ON m.id = st.movie_id
+    	        JOIN room r ON r.id = st.room_id
+    	        JOIN cinema c ON c.id = r.cinema_id
+    	        WHERE b.booking_code = ? AND b.user_id = ?
+    	    """;
+
+        BookingDetailResponse dto;
+        try {
+            dto = jdbc.queryForObject(sql, new BeanPropertyRowMapper<>(BookingDetailResponse.class), code, userId);
+        } catch (EmptyResultDataAccessException e) {
+            return new ApiResponse<>("Booking not found", null);
+        }
+
+        int bookingId = dto.getId();
+
+        dto.setQrData(dto.getBookingCode());
+        String status = dto.getStatus();
+        if (status == null) status = "";
+        
+        switch (status) {
+            case "PAID": dto.setStatusLabel("Đã thanh toán"); break;
+            case "PENDING": dto.setStatusLabel("Chờ thanh toán"); break;
+            case "FAILED": dto.setStatusLabel("Thất bại"); break;
+            default: dto.setStatusLabel(status); break;
+        }
+
+        String seatSql = "SELECT s.seat_code, bs.seat_price FROM booking_seat bs JOIN seat s ON s.id = bs.seat_id WHERE bs.booking_id = ? ORDER BY s.seat_code";
+        List<java.util.Map<String, Object>> seatRows = jdbc.queryForList(seatSql, bookingId);
+        
+        StringBuilder seatCodes = new StringBuilder();
+        int seatCount = 0;
+        java.math.BigDecimal seatsTotal = java.math.BigDecimal.ZERO;
+        
+        for (java.util.Map<String, Object> r : seatRows) {
+            if (seatCount > 0) seatCodes.append(", ");
+            seatCodes.append(r.get("seat_code"));
+            seatCount++;
+            
+            Object priceObj = r.get("seat_price");
+            if (priceObj instanceof java.math.BigDecimal) {
+                seatsTotal = seatsTotal.add((java.math.BigDecimal) priceObj);
+            } else if (priceObj != null) {
+                seatsTotal = seatsTotal.add(new java.math.BigDecimal(priceObj.toString()));
+            }
+        }
+        dto.setSeatCodes(seatCodes.toString());
+
+        java.util.List<BookingDetailResponse.BillItem> items = new java.util.ArrayList<>();
+        if (seatCount > 0) {
+            items.add(new BookingDetailResponse.BillItem(
+                "Vé (" + seatCodes.toString() + ")", seatCount, seatsTotal
+            ));
+        }
+
+        // 4. Combos: Dùng bookingId
+        String comboSql = "SELECT bc.quantity, bc.price, cb.name FROM booking_concession bc LEFT JOIN combo cb ON cb.id = bc.combo_id WHERE bc.booking_id = ?";
+        List<java.util.Map<String, Object>> comboRows = jdbc.queryForList(comboSql, bookingId);
+        
+        for (java.util.Map<String, Object> r : comboRows) {
+            Object nameObj = r.get("name");
+            String name = nameObj != null ? nameObj.toString() : "Combo";
+            
+            int qty = 0;
+            Object qtyObj = r.get("quantity");
+            if (qtyObj != null) qty = Integer.parseInt(qtyObj.toString());
+            
+            java.math.BigDecimal price = java.math.BigDecimal.ZERO;
+            Object priceObj = r.get("price");
+            if (priceObj instanceof java.math.BigDecimal) {
+                price = (java.math.BigDecimal) priceObj;
+            } else if (priceObj != null) {
+                price = new java.math.BigDecimal(priceObj.toString());
+            }
+            
+            items.add(new BookingDetailResponse.BillItem(name, qty, price));
+        }
+
+        dto.setItems(items);
+        dto.setShowDate(dto.getStartTime());
+
+        return new ApiResponse<>("Success", dto);
+    }
 }

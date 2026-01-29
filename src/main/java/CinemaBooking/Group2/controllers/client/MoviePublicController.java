@@ -19,6 +19,7 @@ import CinemaBooking.Group2.dtos.movie.MovieCardtos;
 import CinemaBooking.Group2.dtos.movie.MovieDetailDtos;
 import CinemaBooking.Group2.dtos.movie.MoviePublicDtos;
 import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
+import CinemaBooking.Group2.dtos.movie.RelatedMovieItemDtos;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.service.MovieService;
 import CinemaBooking.Group2.service.ShowtimeService;
@@ -31,22 +32,23 @@ public class MoviePublicController {
 	
 	@Autowired
 	private ShowtimeService showtimeServices;
+	
 	@GetMapping("/movies")
 	public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovieStatus(
-	        @RequestParam(defaultValue = "1") int page,
-	        @RequestParam(defaultValue = "10") int perPage,
+			@RequestParam(defaultValue = "1") int page,
+	        @RequestParam(defaultValue = "12")  int perPage,
 	        @RequestParam(required = false) String title,
-	        @RequestParam(required = false) Movie.MovieGenre genre
+	        @RequestParam(required = false) Movie.MovieGenre genre,
+	        @RequestParam(required = false) Movie.MovieStatus status
 	) {
 	    page = Math.max(page, 1);
 	    perPage = Math.max(perPage, 1);
 
-	    // Service đã trả DTO rồi => nhận luôn DTO
 	    List<MoviePublicDtos> data =
-	            movieServices.getAllMovieCommingSoon(page, perPage, title, genre);
+	            movieServices.getAllMovieCommingSoon(page, perPage, title, genre, status);
 
 	    long total =
-	            movieServices.countMovieComingSoonNowShowing(title, genre);
+	            movieServices.countMovieComingSoonNowShowing(title, genre, status);
 
 	    Map<String, Object> meta = new HashMap<>();
 	    meta.put("page", page);
@@ -55,6 +57,7 @@ public class MoviePublicController {
 
 	    return ResponseEntity.ok(new ApiResponse<>("Success", data, meta));
 	}
+
 
 	@GetMapping("/movie-detail/{id}")
 	public ResponseEntity<ApiResponse<MovieDetailDtos>> getMovieDetailById(@PathVariable int id) {
@@ -81,5 +84,14 @@ public class MoviePublicController {
         List<MovieWithShowtimesDtos> data = showtimeServices.getCinemasWithShowtimesByMovieId(movieId);
         return ResponseEntity.ok(data);
     }
+
+    @GetMapping("/movies/related")
+    public ResponseEntity<List<RelatedMovieItemDtos>> getRelatedMovies(
+            @RequestParam String genre,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(movieServices.getRelatedMovies(genre, limit));
+    }
+
 
 }

@@ -21,6 +21,7 @@ public class UserMapper implements RowMapper<User> {
 		user.setPhone(rs.getString("phone"));
 		user.setIsActive(rs.getInt("is_active"));
 		Timestamp ts = rs.getTimestamp("created_at");
+		user.setAvatarUrl(rs.getString("avatar_url"));
 		if (ts != null) {
 		    user.setCreatedAt(ts.toLocalDateTime());
 		}

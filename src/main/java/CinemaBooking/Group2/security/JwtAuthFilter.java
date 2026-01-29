@@ -1,6 +1,7 @@
 package CinemaBooking.Group2.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.GrantedAuthority;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
@@ -38,15 +41,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/api/showtimes-seat/",
 
             "/swagger-ui",
-            "/v3/api-docs",
             "/swagger-ui.html",
+            "/v3/api-docs",
 
             "/media",
             "/uploads",
             "/static",
-            "/favicon.ico"
-
-    );
+            "/favicon.ico");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -68,7 +69,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // Không có Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -76,7 +77,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // Token không hợp lệ
         if (!jwtService.validateToken(token)) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -88,11 +89,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             Integer cinemaId = jwtService.getCinemaId(token);
 
             AuthUserPrincipal principal = new AuthUserPrincipal(email, role, cinemaId);
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            if (role != null && !role.isBlank()) {
+                authorities.add(new SimpleGrantedAuthority(role));
+            }
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     principal,
                     null,
-                    List.of(() -> role));
+                    authorities);
 
             authentication.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request));

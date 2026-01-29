@@ -1,106 +1,142 @@
-//package CinemaBooking.Group2.controllers.admin;
-//
-//import java.util.List;
-//
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.security.access.prepost.PreAuthorize;
-//import org.springframework.web.bind.annotation.GetMapping;
-//import org.springframework.web.bind.annotation.PathVariable;
-//import org.springframework.web.bind.annotation.PostMapping;
-//import org.springframework.web.bind.annotation.PutMapping;
-//import org.springframework.web.bind.annotation.RequestBody;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RestController;
-//
-//import CinemaBooking.Group2.dtos.cinema.CinemaRequestDTO;
-//import CinemaBooking.Group2.dtos.cinema.CinemaResponseDTO;
-//import CinemaBooking.Group2.service.CinemaService;
-//
-//@RestController
-//@RequestMapping("/api/cinemas")
-//public class CinemaController {
-//
-//    @Autowired
-//    private CinemaService service;
-//
-//    @GetMapping
-//    public List<CinemaResponseDTO> getAll() {
-//        return service.getAll();
-//    }
-//
-//    @PostMapping
-//    @PreAuthorize("hasAuthority('ADMIN')")
-//
-//    public void create(@RequestBody CinemaRequestDTO dto) {
-//        service.create(dto);
-//    }
-//
-//    @PutMapping("/{id}")
-//    @PreAuthorize("hasAuthority('ADMIN')")
-//
-//    public void update(@PathVariable int id,
-//                       @RequestBody CinemaRequestDTO dto) {
-//        service.update(id, dto);
-//    }
-//}
-
 package CinemaBooking.Group2.controllers.admin;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.cinema.CinemaRequestDTO;
 import CinemaBooking.Group2.dtos.cinema.CinemaResponseDTO;
+import CinemaBooking.Group2.dtos.cinema.UploadImageRequestDTO;
 import CinemaBooking.Group2.service.CinemaService;
 
 @RestController
-@RequestMapping("/api/cinemas")
+@RequestMapping("/api")
 public class CinemaController {
 
     @Autowired
-    private CinemaService service;
+    private CinemaService cinemaService;
 
-    // ================= GET ALL =================
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAll() {
+    //================== GET ALL CINEMAS =================
+    // ADMIN XEM ĐƯỢC TẤT CẢ
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/cinemas")
+    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAllCinemasForAdmin() {
 
-        List<CinemaResponseDTO> data = service.getAll();
+		List<CinemaResponseDTO> data =
+				cinemaService.getAllPagedIncludingInactive(1, 10);
+
+		return ResponseEntity.ok(
+				new ApiResponse<>("Success", data)
+		);
+	}
+    
+    // ================= PUBLIC GET =================
+    // Ai cũng xem được
+    @GetMapping("/public/cinemas")
+    public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getPublicCinemas(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "4") int perPage) {
+
+        page = Math.max(page, 1);
+        perPage = Math.max(perPage, 1);
+
+        List<CinemaResponseDTO> data =
+                cinemaService.getAllPaged(page, perPage);
+
+        long total =
+                cinemaService.countAllActiveCinemas();
+
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("page", page);
+        meta.put("perPage", perPage);
+        meta.put("total", total);
 
         return ResponseEntity.ok(
-                new ApiResponse<>("Success", data)
+                new ApiResponse<>("Success", data, meta)
         );
     }
 
     // ================= CREATE =================
-    @PostMapping
+    // Chỉ ADMIN
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<CinemaResponseDTO>> create(
-            @RequestBody CinemaRequestDTO dto) {
+    @PostMapping(
+            value = "/cinemas",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<CinemaResponseDTO>> createCinema(
+            @ModelAttribute CinemaRequestDTO dto) {
 
-        CinemaResponseDTO created = service.create(dto);
+        CinemaResponseDTO created =
+                cinemaService.create(dto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Cinema created", created));
     }
 
     // ================= UPDATE =================
-    @PutMapping("/{id}")
+    // Chỉ ADMIN
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<CinemaResponseDTO>> update(
+    @PutMapping(
+            value = "/cinemas/{id}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<CinemaResponseDTO>> updateCinema(
             @PathVariable int id,
-            @RequestBody CinemaRequestDTO dto) {
+            @ModelAttribute CinemaRequestDTO dto) {
 
-        CinemaResponseDTO updated = service.update(id, dto);
+        CinemaResponseDTO updated =
+                cinemaService.update(id, dto);
 
         return ResponseEntity.ok(
                 new ApiResponse<>("Cinema updated", updated)
         );
     }
-}
 
+    // ================= UPLOAD IMAGE =================
+    // Chỉ ADMIN
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping(
+            value = "/cinemas/{id}/upload-image",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<String>> uploadCinemaImage(
+            @PathVariable int id,
+            @ModelAttribute UploadImageRequestDTO dto) {
+
+        if (dto.getImage() == null || dto.getImage().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>("Image không được để trống", null));
+        }
+
+        String imageUrl =
+                cinemaService.uploadCinemaImage(id, dto.getImage());
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Upload cinema image thành công", imageUrl)
+        );
+    }
+
+    // ================= DELETE (SOFT) =================
+    // Chỉ ADMIN
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @DeleteMapping("/cinemas/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteCinema(
+            @PathVariable int id) {
+
+        cinemaService.deactivate(id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Cinema deactivated", "OK")
+        );
+    }
+}

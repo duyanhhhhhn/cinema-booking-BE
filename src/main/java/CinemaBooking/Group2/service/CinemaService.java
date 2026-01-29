@@ -1,9 +1,19 @@
 package CinemaBooking.Group2.service;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import CinemaBooking.Group2.dtos.cinema.CinemaRequestDTO;
 import CinemaBooking.Group2.dtos.cinema.CinemaResponseDTO;
@@ -13,82 +23,245 @@ import CinemaBooking.Group2.repositories.CinemaRepository;
 @Service
 public class CinemaService {
 
-    @Autowired
-    private CinemaRepository repo;
+	@Value("${app.upload.dir:${user.dir}/uploads}")
+	private String uploadDir;
 
-    // ================= GET ALL =================
-    public List<CinemaResponseDTO> getAll() {
-        return repo.findAllActive()
-                   .stream()
-                   .map(this::toResponse)
-                   .toList();
-    }
+	@Value("${app.upload.public-prefix:/media}")
+	private String publicPrefix;
 
-    // ================= GET BY ID =================
-    public CinemaResponseDTO getById(int id) {
-        Cinema c = repo.findById(id);
-        if (c == null) {
-            throw new RuntimeException("Cinema not found");
-            // Sau này thay bằng custom exception
-        }
-        return toResponse(c);
-    }
+	private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+	@Autowired
+	private CinemaRepository repo;
 
-    // ================= CREATE =================
-    public CinemaResponseDTO create(CinemaRequestDTO dto) {
+	// ================= GET ALL =================
+	public List<CinemaResponseDTO> getAll() {
+		return repo.findAllActive().stream().map(this::toResponse).toList();
+	}
 
-        Cinema c = new Cinema();
-        c.setName(dto.getName());
-        c.setAddress(dto.getAddress());
-        c.setPhone(dto.getPhone());
-        c.setDescription(dto.getDescription());
-        c.setIsActive(1); // mặc định active
+	// ================= GET BY ID =================
+	public CinemaResponseDTO getById(int id) {
+		Cinema c = repo.findById(id);
+		if (c == null) {
+			throw new RuntimeException("Cinema not found");
+			// Sau này thay bằng custom exception
+		}
+		return toResponse(c);
+	}
 
-        repo.insert(c);
+	// ================= CREATE =================
+	public CinemaResponseDTO create(CinemaRequestDTO dto) {
+	    Cinema c = new Cinema();
+	    c.setName(dto.getName());
+	    c.setAddress(dto.getAddress());
+	    c.setPhone(dto.getPhone());
+	    c.setDescription(dto.getDescription());
+	    c.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : 1);
 
-        // Giả sử repo.insert set lại ID
-        return toResponse(c);
-    }
+	    // Xử lý upload ảnh nếu có
+	    if (dto.getImageUrl() != null && !dto.getImageUrl().isEmpty()) { // <-- MultipartFile
+	        String path = uploadCinemaImageFile(dto.getImageUrl());
+	        c.setImageUrl(path); // lưu path vào entity
+	    }
 
-    // ================= UPDATE =================
-    public CinemaResponseDTO update(int id, CinemaRequestDTO dto) {
+	    repo.insert(c);
+	    return toResponse(c);
+	}
 
-        Cinema existing = repo.findById(id);
-        if (existing == null) {
-            throw new RuntimeException("Cinema not found");
-        }
+	// ================= UPDATE =================
+	public CinemaResponseDTO update(int id, CinemaRequestDTO dto) {
+	    Cinema existing = repo.findById(id);
+	    if (existing == null) throw new RuntimeException("Cinema not found");
 
-        existing.setName(dto.getName());
-        existing.setAddress(dto.getAddress());
-        existing.setPhone(dto.getPhone());
-        existing.setDescription(dto.getDescription());
-        existing.setIsActive(dto.getIsActive());
+	    existing.setName(dto.getName());
+	    existing.setAddress(dto.getAddress());
+	    existing.setPhone(dto.getPhone());
+	    existing.setDescription(dto.getDescription());
+	    existing.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : existing.getIsActive());
 
-        repo.update(id, existing);
+	    // Nếu có ảnh mới, upload và set lại path
+	    if (dto.getImageUrl() != null && !dto.getImageUrl().isEmpty()) {
+	        String oldPath = existing.getImageUrl();
+	        String newPath = uploadCinemaImageFile(dto.getImageUrl());
+	        existing.setImageUrl(newPath);
 
-        return toResponse(existing);
-    }
+	        // Xóa ảnh cũ nếu tồn tại
+	        if (oldPath != null && !oldPath.isBlank() && !oldPath.equals(newPath)) {
+	            try { Files.deleteIfExists(resolveUploadPath(oldPath)); } catch (Exception ignore) {}
+	        }
+	    }
 
-    // ================= DEACTIVATE (SOFT DELETE) =================
-    public void deactivate(int id) {
+	    repo.update(id, existing);
+	    return toResponse(existing);
+	}
 
-        Cinema existing = repo.findById(id);
-        if (existing == null) {
-            throw new RuntimeException("Cinema not found");
-        }
 
-        repo.deactivate(id);
-    }
+	// Hàm xử lý upload file (giống uploadImageCinema nhưng dùng MultipartFile trực tiếp)
+	private String uploadCinemaImageFile(MultipartFile file) {
+	    try {
+	        Path saved = saveCinemaImageToFolder(file);
+	        return toRelativePath(saved);
+	    } catch (Exception e) {
+	        throw new RuntimeException("Upload image thất bại", e);
+	    }
+	}
 
-    // ================= MAPPER =================
-    private CinemaResponseDTO toResponse(Cinema c) {
-        return new CinemaResponseDTO(
-                c.getId(),
-                c.getName(),
-                c.getAddress(),
-                c.getPhone(),
-                c.getDescription(),
-                c.getIsActive()
-        );
-    }
+
+
+	// ================= DEACTIVATE (SOFT DELETE) =================
+	public void deactivate(int id) {
+
+		Cinema existing = repo.findById(id);
+		if (existing == null) {
+			throw new RuntimeException("Cinema not found");
+		}
+
+		repo.deactivate(id);
+	}
+
+	// ================= MAPPER =================
+	private CinemaResponseDTO toResponse(Cinema c) {
+	    return new CinemaResponseDTO(
+	        c.getId(),
+	        c.getName(),
+	        c.getAddress(),
+	        c.getPhone(),
+	        c.getDescription(),
+	        c.getIsActive(),
+	        toPublicMediaUrl(c.getImageUrl()),
+	        c.getCreatedAt()
+	    );
+	}
+
+	public String uploadCinemaImage(int cinemaId, MultipartFile file) {
+
+	    Cinema cinema = repo.findById(cinemaId);
+	    if (cinema == null)
+	        throw new RuntimeException("Cinema không tồn tại");
+
+	    String oldRelPath = cinema.getImageUrl(); // PHẢI là relative path
+	    Path newImagePath = null;
+
+	    try {
+	        newImagePath = saveCinemaImageToFolder(file);
+	        String newRelPath = toRelativePath(newImagePath);
+
+	        repo.uploadImage(cinemaId, newRelPath);
+
+	        //  chỉ xoá nếu ảnh cũ tồn tại & KHÁC ảnh mới
+	        if (oldRelPath != null 
+	            && !oldRelPath.isBlank() 
+	            && !oldRelPath.equals(newRelPath)) {
+
+	            Files.deleteIfExists(resolveUploadPath(oldRelPath));
+	        }
+
+	        return toPublicMediaUrl(newRelPath);
+
+	    } catch (Exception e) {
+	        if (newImagePath != null) {
+	            try { Files.deleteIfExists(newImagePath); } catch (Exception ignore) {}
+	        }
+	        throw new RuntimeException("Upload cinema image thất bại", e);
+	    }
+	}
+
+
+
+	private Path uploadRoot() {
+	    return Paths.get(uploadDir).toAbsolutePath().normalize();
+	}
+
+	private Path saveCinemaImageToFolder(MultipartFile file) throws Exception {
+		String contentType = file.getContentType();
+		if (contentType == null || !contentType.startsWith("image/"))
+			throw new RuntimeException("File phải là ảnh");
+
+		String ext = getExtension(file.getOriginalFilename());
+		if (!ALLOWED_EXT.contains(ext))
+			throw new RuntimeException("Định dạng ảnh không hợp lệ");
+
+		Path root = uploadRoot();
+		Path dir = root.resolve("cinema").normalize();
+		Files.createDirectories(dir);
+
+		String filename = UUID.randomUUID() + "." + ext;
+		Path target = dir.resolve(filename);
+
+		try (InputStream in = file.getInputStream()) {
+			Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		return target;
+	}
+
+	private String toRelativePath(Path absolutePath) {
+		Path root = uploadRoot();
+		return root.relativize(absolutePath.toAbsolutePath().normalize()).toString().replace("\\", "/");
+	}
+
+	private Path resolveUploadPath(String relative) {
+		if (relative == null || relative.isBlank())
+			return null;
+		return uploadRoot().resolve(relative).normalize();
+	}
+
+	private String toPublicMediaUrl(String relativePath) {
+		if (relativePath == null)
+			return "";
+		String prefix = publicPrefix == null ? "media" : publicPrefix;
+		if (prefix.startsWith("/"))
+			prefix = prefix.substring(1);
+		if (relativePath.startsWith("/"))
+			relativePath = relativePath.substring(1);
+		return prefix + "/" + relativePath;
+	}
+
+	private String getExtension(String filename) {
+		if (filename == null)
+			return "";
+		int dot = filename.lastIndexOf('.');
+		if (dot < 0)
+			return "";
+		return filename.substring(dot + 1).toLowerCase(Locale.ROOT);
+	}
+	
+	// Trả danh sách theo page & perPage
+	public List<CinemaResponseDTO> getAllPaged(int page, int perPage) {
+	    List<CinemaResponseDTO> all = repo.findAllActive()
+	                                      .stream()
+	                                      .map(this::toResponse)
+	                                      .toList();
+
+	    int fromIndex = (page - 1) * perPage;
+	    int toIndex = Math.min(fromIndex + perPage, all.size());
+
+	    if (fromIndex >= all.size()) {
+	        return List.of();
+	    }
+
+	    return all.subList(fromIndex, toIndex);
+	}
+	
+	//Trả danh sách tất cả rạp theo page & perPage, bao gồm cả inactive
+	public List<CinemaResponseDTO> getAllPagedIncludingInactive(int page, int perPage) {
+	    List<CinemaResponseDTO> all = repo.findAll()
+	                                      .stream()
+	                                      .map(this::toResponse)
+	                                      .toList();
+
+	    int fromIndex = (page - 1) * perPage;
+	    int toIndex = Math.min(fromIndex + perPage, all.size());
+
+	    if (fromIndex >= all.size()) {
+	        return List.of();
+	    }
+
+	    return all.subList(fromIndex, toIndex);
+	}
+
+	// Đếm tổng số rạp active
+	public long countAllActiveCinemas() {
+	    return repo.findAllActive().size();
+	}
+
 }
