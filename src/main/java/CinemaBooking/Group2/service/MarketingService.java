@@ -57,6 +57,7 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
+
 	public PostResponseDTO newPost(Post post) {
 		PostResponseDTO res = new PostResponseDTO();
 		try {
@@ -159,4 +160,5 @@ public class MarketingService {
 		}
 		return dto;
 	}
+
 }
