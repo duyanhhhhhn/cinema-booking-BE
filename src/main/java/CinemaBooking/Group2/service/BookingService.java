@@ -10,12 +10,16 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.booking.BookingCalculateRequest;
 import CinemaBooking.Group2.dtos.booking.BookingCalculateResponse;
 import CinemaBooking.Group2.dtos.booking.BookingCreateRequest;
 import CinemaBooking.Group2.dtos.booking.BookingCreateResponse;
+import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
 import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.BookingConcession;
@@ -254,7 +258,7 @@ public class BookingService {
         calculateRequest.setSeatIds(request.getSeatIds());
         
         // Convert combos from CreateRequest to CalculateRequest
-        if (request.getCombos() != null && !request.getCombos().isEmpty()) {
+        if (request.getCombos() != null && request.getCombos().isEmpty() == false) {
             List<BookingCalculateRequest.ComboItem> calculateCombos = new ArrayList<>();
             for (BookingCreateRequest.ComboItem createCombo : request.getCombos()) {
                 BookingCalculateRequest.ComboItem calcCombo = new BookingCalculateRequest.ComboItem();
@@ -369,5 +373,14 @@ public class BookingService {
         return bookingRepository.searchBookings(
                 userId, startDate, endDate, status, movieTitle, page, perPage
         );
+    }
+    public BookingDetailResponse  getMyBookingByCode(int userId, String code) {
+        
+        var resp = bookingRepository.getMyBookingByCode(userId, code);
+      if (resp == null || resp.getData() == null) {
+          String msg = (resp != null && resp.getMessage() != null) ? resp.getMessage() : "Booking not found";
+          throw new ResponseStatusException(HttpStatus.NOT_FOUND, msg);
+      }
+        return resp.getData();
     }
 }

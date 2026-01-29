@@ -18,6 +18,7 @@ import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.dtos.auth.UserDTO;
+import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
 import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.dtos.client.UpdateAvatarRequestDTO;
 import CinemaBooking.Group2.dtos.client.UpdateProfileRequestDTO;
@@ -142,4 +143,24 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/me/bookings/{code}")
+    public ResponseEntity<ApiResponse<BookingDetailResponse>> getMyBookingByCode(
+            @PathVariable String code
+    ) {
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !(auth.getPrincipal() instanceof AuthUserPrincipal principal)) {
+            throw new RuntimeException("Bạn chưa đăng nhập!");
+        }
+
+        User user = userService.findByEmail(principal.email());
+        if (user == null) {
+            throw new RuntimeException("Không tìm thấy người dùng!");
+        }
+
+        BookingDetailResponse booking = bookingService.getMyBookingByCode(user.getId(), code);
+
+        return ResponseEntity.ok(new ApiResponse<>("Success", booking));
+    }
 }

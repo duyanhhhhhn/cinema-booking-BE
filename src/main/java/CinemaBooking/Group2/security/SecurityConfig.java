@@ -86,8 +86,8 @@ public class SecurityConfig {
 						// ===== AUTHENTICATED =====
 						.requestMatchers(
 								"/api/auth/password/**",
-								"/api/users/me",
-								"/api/users/me/bookings")
+								"/api/users/me/**"
+								)
 						.authenticated()
 
 						// ===== ROLE BASE =====
