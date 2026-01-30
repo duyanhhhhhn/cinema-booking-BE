@@ -21,7 +21,9 @@ import CinemaBooking.Group2.dtos.seat.ReleaseSeatRequestDTO;
 import CinemaBooking.Group2.dtos.seat.ReleaseSeatResponseDTO;
 import CinemaBooking.Group2.dtos.seat.SeatStatusDTO;
 import CinemaBooking.Group2.models.User;
+import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.SeatBookingFacade;
+import CinemaBooking.Group2.service.UserService;
 
 
 @RestController
@@ -30,6 +32,8 @@ public class SeatController {
 
     @Autowired
     private SeatBookingFacade seatBookingFacade;
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/showtimes/{id}/seats")
     public ResponseEntity<List<SeatStatusDTO>> getShowtimeSeats(@PathVariable("id") int showtimeId) {
@@ -90,19 +94,20 @@ public class SeatController {
     }
 
   
-    private Integer getCurrentUserId() {
+   private Integer getCurrentUserId() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() 
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof User) {
-                    return ((User) principal).getId();
-                }
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+
+            if (auth == null || !(auth.getPrincipal() instanceof AuthUserPrincipal principal)) {
+                return null;
             }
+
+            User user = userService.findByEmail(principal.email()); 
+              return user != null ? user.getId() : null;
+
         } catch (Exception e) {
-            // Return null if any error occurs
+            e.printStackTrace(); // In lỗi để debug nếu cần
+            return null;
         }
-        return null;
     }
 }
