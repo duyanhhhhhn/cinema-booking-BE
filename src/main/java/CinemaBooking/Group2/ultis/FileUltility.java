@@ -25,7 +25,7 @@ public class FileUltility {
 			buf.write(data);
 			buf.flush();
 			buf.close();
-			String rs ="/"+prefix+"/"+fileName;
+			String rs =prefix+"/"+fileName;
 			return rs;
 		}
 		catch (Exception e) {

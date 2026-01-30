@@ -52,7 +52,7 @@ public class BannerResponseDTO {
 	}
 
 	public void setImageUrl(String imageUrl) {
-		this.imageUrl = "/media"+imageUrl;
+		this.imageUrl = "/media/"+imageUrl;
 	}
 
 	public String getLinkUrl() {
