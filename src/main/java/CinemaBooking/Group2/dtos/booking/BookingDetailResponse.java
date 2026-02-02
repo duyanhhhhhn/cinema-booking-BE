@@ -56,9 +56,45 @@ public class BookingDetailResponse {
 
     // Danh sách các mục đã mua (Vé + Bắp nước) để hiển thị dòng "1x Combo...", "2x Coca..."
     private List<BillItem> items; 
+    
+    // Danh sách vé chi tiết cho từng ghế
+    private List<TicketInfo> tickets;
 
     // Constructor rỗng
     public BookingDetailResponse() {}
+
+    // ==========================================
+    // INNER CLASS CHO DANH SÁCH VÉ (Ticket Info)
+    // ==========================================
+    public static class TicketInfo {
+        private String seatName;      // "A10" - Ghế
+        private String ticketType;    // "COUPLE", "VIP", "STANDARD" - Loại ghế
+        private BigDecimal price;     // 100000 - Giá vé
+        private String ticketCode;    // "TK-A10-UID1" - Mã định danh vé
+        private boolean isPrinted;    // true/false - Đã in vé chưa (đã checkin)
+
+        public TicketInfo() {}
+
+        public TicketInfo(String seatName, String ticketType, BigDecimal price, String ticketCode, boolean isPrinted) {
+            this.seatName = seatName;
+            this.ticketType = ticketType;
+            this.price = price;
+            this.ticketCode = ticketCode;
+            this.isPrinted = isPrinted;
+        }
+
+        // Getters & Setters
+        public String getSeatName() { return seatName; }
+        public void setSeatName(String seatName) { this.seatName = seatName; }
+        public String getTicketType() { return ticketType; }
+        public void setTicketType(String ticketType) { this.ticketType = ticketType; }
+        public BigDecimal getPrice() { return price; }
+        public void setPrice(BigDecimal price) { this.price = price; }
+        public String getTicketCode() { return ticketCode; }
+        public void setTicketCode(String ticketCode) { this.ticketCode = ticketCode; }
+        public boolean isPrinted() { return isPrinted; }
+        public void setPrinted(boolean isPrinted) { this.isPrinted = isPrinted; }
+    }
 
     // ==========================================
     // INNER CLASS CHO DANH SÁCH MÓN (Bill Item)
@@ -158,5 +194,8 @@ public class BookingDetailResponse {
 
     public List<BillItem> getItems() { return items; }
     public void setItems(List<BillItem> items) { this.items = items; }
+
+    public List<TicketInfo> getTickets() { return tickets; }
+    public void setTickets(List<TicketInfo> tickets) { this.tickets = tickets; }
 
 }

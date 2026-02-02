@@ -383,4 +383,13 @@ public class BookingService {
       }
         return resp.getData();
     }
+    
+    public BookingDetailResponse getBookingByCodeAdmin(String code) {
+        var resp = bookingRepository.getBookingByCodeAdmin(code);
+        if (resp == null || resp.getData() == null) {
+            String msg = (resp != null && resp.getMessage() != null) ? resp.getMessage() : "Booking not found";
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, msg);
+        }
+        return resp.getData();
+    }
 }

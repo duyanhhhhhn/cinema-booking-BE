@@ -352,26 +352,55 @@ public class BookingRepository {
             default: dto.setStatusLabel(status); break;
         }
 
-        String seatSql = "SELECT s.seat_code, bs.seat_price FROM booking_seat bs JOIN seat s ON s.id = bs.seat_id WHERE bs.booking_id = ? ORDER BY s.seat_code";
-        List<java.util.Map<String, Object>> seatRows = jdbc.queryForList(seatSql, bookingId);
+        // Query tickets với thông tin chi tiết từng vé
+        String ticketSql = """
+            SELECT s.seat_code, s.seat_type, bs.seat_price, bs.ticket_code, bs.is_printed 
+            FROM booking_seat bs 
+            JOIN seat s ON s.id = bs.seat_id 
+            WHERE bs.booking_id = ? 
+            ORDER BY s.seat_code
+        """;
+        List<java.util.Map<String, Object>> ticketRows = jdbc.queryForList(ticketSql, bookingId);
         
         StringBuilder seatCodes = new StringBuilder();
         int seatCount = 0;
         java.math.BigDecimal seatsTotal = java.math.BigDecimal.ZERO;
+        java.util.List<BookingDetailResponse.TicketInfo> tickets = new java.util.ArrayList<>();
         
-        for (java.util.Map<String, Object> r : seatRows) {
+        for (java.util.Map<String, Object> r : ticketRows) {
             if (seatCount > 0) seatCodes.append(", ");
-            seatCodes.append(r.get("seat_code"));
+            String seatCode = r.get("seat_code") != null ? r.get("seat_code").toString() : "";
+            seatCodes.append(seatCode);
             seatCount++;
             
+            // Lấy giá vé
+            java.math.BigDecimal seatPrice = java.math.BigDecimal.ZERO;
             Object priceObj = r.get("seat_price");
             if (priceObj instanceof java.math.BigDecimal) {
-                seatsTotal = seatsTotal.add((java.math.BigDecimal) priceObj);
+                seatPrice = (java.math.BigDecimal) priceObj;
             } else if (priceObj != null) {
-                seatsTotal = seatsTotal.add(new java.math.BigDecimal(priceObj.toString()));
+                seatPrice = new java.math.BigDecimal(priceObj.toString());
             }
+            seatsTotal = seatsTotal.add(seatPrice);
+            
+            // Tạo TicketInfo
+            String seatType = r.get("seat_type") != null ? r.get("seat_type").toString() : "STANDARD";
+            String ticketCode = r.get("ticket_code") != null ? r.get("ticket_code").toString() : "";
+            boolean isPrinted = false;
+            Object isPrintedObj = r.get("is_printed");
+            if (isPrintedObj != null) {
+                if (isPrintedObj instanceof Boolean) {
+                    isPrinted = (Boolean) isPrintedObj;
+                } else if (isPrintedObj instanceof Number) {
+                    isPrinted = ((Number) isPrintedObj).intValue() == 1;
+                }
+            }
+            
+            tickets.add(new BookingDetailResponse.TicketInfo(seatCode, seatType, seatPrice, ticketCode, isPrinted));
         }
+        
         dto.setSeatCodes(seatCodes.toString());
+        dto.setTickets(tickets);
 
         java.util.List<BookingDetailResponse.BillItem> items = new java.util.ArrayList<>();
         if (seatCount > 0) {
@@ -381,6 +410,145 @@ public class BookingRepository {
         }
 
         // 4. Combos: Dùng bookingId
+        String comboSql = "SELECT bc.quantity, bc.price, cb.name FROM booking_concession bc LEFT JOIN combo cb ON cb.id = bc.combo_id WHERE bc.booking_id = ?";
+        List<java.util.Map<String, Object>> comboRows = jdbc.queryForList(comboSql, bookingId);
+        
+        for (java.util.Map<String, Object> r : comboRows) {
+            Object nameObj = r.get("name");
+            String name = nameObj != null ? nameObj.toString() : "Combo";
+            
+            int qty = 0;
+            Object qtyObj = r.get("quantity");
+            if (qtyObj != null) qty = Integer.parseInt(qtyObj.toString());
+            
+            java.math.BigDecimal price = java.math.BigDecimal.ZERO;
+            Object priceObj = r.get("price");
+            if (priceObj instanceof java.math.BigDecimal) {
+                price = (java.math.BigDecimal) priceObj;
+            } else if (priceObj != null) {
+                price = new java.math.BigDecimal(priceObj.toString());
+            }
+            
+            items.add(new BookingDetailResponse.BillItem(name, qty, price));
+        }
+
+        dto.setItems(items);
+        dto.setShowDate(dto.getStartTime());
+
+        return new ApiResponse<>("Success", dto);
+    }
+    
+    public ApiResponse<BookingDetailResponse> getBookingByCodeAdmin(String code) {
+        
+        String sql = """
+                SELECT
+                    b.id AS id,
+                    b.booking_code AS bookingCode,
+                    b.payment_status AS status,
+                    b.payment_method AS paymentMethod,
+                    b.created_at AS createdAt,
+                    b.paid_at AS paidAt,
+                    b.total_price AS totalPrice,
+                    b.user_id AS userId,
+                    
+                    (SELECT COUNT(*) FROM booking_seat bs WHERE bs.booking_id = b.id AND bs.is_printed = 1) > 0 AS isCheckin,
+
+                    m.title AS movieTitle,
+                    m.poster_url AS posterUrl,
+                    m.short_description AS tagline,
+                    m.format AS format,
+                    m.duration_minutes AS durationMinutes,
+                    c.name AS cinemaName,
+                    c.address AS cinemaAddress,
+                    r.name AS roomName,
+                    st.start_time AS startTime,
+                    st.end_time AS endTime
+                FROM booking b
+                JOIN showtime st ON st.id = b.showtime_id
+                JOIN movie m ON m.id = st.movie_id
+                JOIN room r ON r.id = st.room_id
+                JOIN cinema c ON c.id = r.cinema_id
+                WHERE b.booking_code = ?
+            """;
+
+        BookingDetailResponse dto;
+        try {
+            dto = jdbc.queryForObject(sql, new BeanPropertyRowMapper<>(BookingDetailResponse.class), code);
+        } catch (EmptyResultDataAccessException e) {
+            return new ApiResponse<>("Booking not found", null);
+        }
+
+        int bookingId = dto.getId();
+
+        dto.setQrData(dto.getBookingCode());
+        String status = dto.getStatus();
+        if (status == null) status = "";
+        
+        switch (status) {
+            case "PAID": dto.setStatusLabel("Đã thanh toán"); break;
+            case "PENDING": dto.setStatusLabel("Chờ thanh toán"); break;
+            case "FAILED": dto.setStatusLabel("Thất bại"); break;
+            default: dto.setStatusLabel(status); break;
+        }
+
+        // Query tickets với thông tin chi tiết từng vé
+        String ticketSql = """
+            SELECT s.seat_code, s.seat_type, bs.seat_price, bs.ticket_code, bs.is_printed 
+            FROM booking_seat bs 
+            JOIN seat s ON s.id = bs.seat_id 
+            WHERE bs.booking_id = ? 
+            ORDER BY s.seat_code
+        """;
+        List<java.util.Map<String, Object>> ticketRows = jdbc.queryForList(ticketSql, bookingId);
+        
+        StringBuilder seatCodes = new StringBuilder();
+        int seatCount = 0;
+        java.math.BigDecimal seatsTotal = java.math.BigDecimal.ZERO;
+        java.util.List<BookingDetailResponse.TicketInfo> tickets = new java.util.ArrayList<>();
+        
+        for (java.util.Map<String, Object> r : ticketRows) {
+            if (seatCount > 0) seatCodes.append(", ");
+            String seatCode = r.get("seat_code") != null ? r.get("seat_code").toString() : "";
+            seatCodes.append(seatCode);
+            seatCount++;
+            
+            // Lấy giá vé
+            java.math.BigDecimal seatPrice = java.math.BigDecimal.ZERO;
+            Object priceObj = r.get("seat_price");
+            if (priceObj instanceof java.math.BigDecimal) {
+                seatPrice = (java.math.BigDecimal) priceObj;
+            } else if (priceObj != null) {
+                seatPrice = new java.math.BigDecimal(priceObj.toString());
+            }
+            seatsTotal = seatsTotal.add(seatPrice);
+            
+            // Tạo TicketInfo
+            String seatType = r.get("seat_type") != null ? r.get("seat_type").toString() : "STANDARD";
+            String ticketCode = r.get("ticket_code") != null ? r.get("ticket_code").toString() : "";
+            boolean isPrinted = false;
+            Object isPrintedObj = r.get("is_printed");
+            if (isPrintedObj != null) {
+                if (isPrintedObj instanceof Boolean) {
+                    isPrinted = (Boolean) isPrintedObj;
+                } else if (isPrintedObj instanceof Number) {
+                    isPrinted = ((Number) isPrintedObj).intValue() == 1;
+                }
+            }
+            
+            tickets.add(new BookingDetailResponse.TicketInfo(seatCode, seatType, seatPrice, ticketCode, isPrinted));
+        }
+        
+        dto.setSeatCodes(seatCodes.toString());
+        dto.setTickets(tickets);
+
+        java.util.List<BookingDetailResponse.BillItem> items = new java.util.ArrayList<>();
+        if (seatCount > 0) {
+            items.add(new BookingDetailResponse.BillItem(
+                "Vé (" + seatCodes.toString() + ")", seatCount, seatsTotal
+            ));
+        }
+
+        // Combos
         String comboSql = "SELECT bc.quantity, bc.price, cb.name FROM booking_concession bc LEFT JOIN combo cb ON cb.id = bc.combo_id WHERE bc.booking_id = ?";
         List<java.util.Map<String, Object>> comboRows = jdbc.queryForList(comboSql, bookingId);
         
