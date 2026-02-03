@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -64,12 +65,20 @@ public class UserController {
     }
 
     // ================= LOCK USER =================
-    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/{id}/lock")
     public ResponseEntity<ApiResponse<Void>> lockUser(@PathVariable int id) {
         userService.lockUser(id);
         return ResponseEntity.ok(new ApiResponse<>("Đã khóa tài khoản", null));
     }
 
+    // ================= UNLOCK USER =================
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/{id}/unlock")
+    public ResponseEntity<ApiResponse<Void>> unlockUser(@PathVariable int id) {
+        userService.unlockUser(id);
+        return ResponseEntity.ok(new ApiResponse<>("Đã mở khóa tài khoản", null));
+    }
     // ================= GET USER DETAIL =================
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserResponseDTO>> getUserDetail(@PathVariable int id) {
@@ -86,11 +95,11 @@ public class UserController {
 
         User user = userService.findByEmail(principal.email());
         System.out.println(user.getAvatarUrl());
-        if (user == null)
+        if (user == null) 
             throw new RuntimeException("Không tìm thấy người dùng!");
 
         UserDTO dto = new UserDTO(user.getId(), user.getFullName(), user.getEmail(), user.getPhone(),
-                user.getAvatarUrl(), user.getRoleName(), user.getCreatedAt(), user.getCinemaId());
+                user.getAvatarUrl(), user.getRoleName(), user.getCreatedAt(), user.getCinemaId(),user.getIsActive());
         return ResponseEntity.ok(new ApiResponse<>("Success", dto));
     }
 
@@ -141,5 +150,58 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+    
+    // ================= GET STAFFS =================
+    @GetMapping("/staffs")
+    public ResponseEntity<PageResponse<UserDTO>> getStaffs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int perPage,
+            @RequestParam(required = false) String search
+    ) {
+        PageResponse<UserDTO> response = userService.getStaffs(page, perPage, search);
+        return ResponseEntity.ok(response);
+    }
+    
+ // ================= GET CUSTOMERS =================
+    @GetMapping("/customers")
+    public ResponseEntity<PageResponse<UserDTO>> getCustomers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int perPage,
+            @RequestParam(required = false) String search
+    ) {
+        PageResponse<UserDTO> response = userService.getCustomers(page, perPage, search);
+        return ResponseEntity.ok(response);
+    }
+ // ================= CREATE MANAGER/STAFF =================
+    @PostMapping("/manage")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> createManageUser(@RequestBody CreateUserRequestDTO req) {
+        userService.createManageUser(req);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Tạo user thành công", null));
+    }
 
+    // ================= UPDATE MANAGER/STAFF =================
+    @PutMapping("/manage/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> updateManageUser(@PathVariable int id, @RequestBody UpdateUserRequestDTO req) {
+        userService.updateManageUser(id, req);
+        return ResponseEntity.ok(new ApiResponse<>("Cập nhật user thành công", null));
+    }
+
+    // ================= LOCK MANAGER/STAFF =================
+    @PutMapping("/manage/{id}/lock")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> lockManageUser(@PathVariable int id) {
+        userService.lockManageUser(id);
+        return ResponseEntity.ok(new ApiResponse<>("Đã khóa tài khoản", null));
+    }
+
+    // ================= UNLOCK MANAGER/STAFF =================
+    @PutMapping("/manage/{id}/unlock")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> unlockManageUser(@PathVariable int id) {
+        userService.unlockManageUser(id);
+        return ResponseEntity.ok(new ApiResponse<>("Đã mở khóa tài khoản", null));
+    }
+    
 }

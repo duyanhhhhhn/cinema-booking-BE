@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import CinemaBooking.Group2.dtos.room.RoomRequestDTO;
 import CinemaBooking.Group2.dtos.room.RoomResponseDTO;
 import CinemaBooking.Group2.models.Room;
@@ -15,6 +17,8 @@ public class RoomService {
 
     @Autowired
     private RoomRepository repo;
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ================= GET BY CINEMA =================
     public List<RoomResponseDTO> getByCinema(int cinemaId) {
@@ -44,7 +48,11 @@ public class RoomService {
         r.setName(dto.getName());
         r.setType(dto.getType());
         r.setTotalSeats(dto.getTotalSeats());
-        r.setSeatLayout(dto.getSeatLayout());
+        if (dto.getSeatLayout() == null) {
+            r.setSeatLayout("[]");
+        } else {
+            r.setSeatLayout(dto.getSeatLayout());
+        }
 
         repo.insert(r);
 
@@ -69,6 +77,31 @@ public class RoomService {
 
         return toResponse(existing);
     }
+    
+    //================== UPDATE SEAT LAYOUT =================
+    public RoomResponseDTO updateSeatLayout(int id, Object seatLayout) {
+
+        Room room = repo.findById(id);
+
+        if (room == null) {
+            throw new RuntimeException("Room not found");
+        }
+
+        try {
+
+            String json = objectMapper.writeValueAsString(seatLayout);
+
+            room.setSeatLayout(json);
+
+            repo.updateSeatLayout(id, json);
+
+            return toResponse(room);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Update seat layout failed");
+        }
+    }
 
     // ================= DELETE =================
     public void delete(int id) {
@@ -85,6 +118,7 @@ public class RoomService {
     private RoomResponseDTO toResponse(Room r) {
         return new RoomResponseDTO(
                 r.getId(),
+                r.getCinemaId(),
                 r.getName(),
                 r.getType(),
                 r.getTotalSeats(),
