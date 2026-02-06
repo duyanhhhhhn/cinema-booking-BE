@@ -576,4 +576,93 @@ public class BookingRepository {
 
         return new ApiResponse<>("Success", dto);
     }
+
+    /**
+     * Lấy danh sách vé của booking theo booking code (dùng cho in vé)
+     */
+    public List<java.util.Map<String, Object>> getTicketsForPrint(String bookingCode, List<String> ticketCodes) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT bs.id, bs.ticket_code, bs.seat_price, bs.is_printed,
+                   s.seat_code, s.seat_type
+            FROM booking_seat bs
+            JOIN booking b ON bs.booking_id = b.id
+            JOIN seat s ON bs.seat_id = s.id
+            WHERE b.booking_code = ?
+        """);
+        
+        List<Object> params = new ArrayList<>();
+        params.add(bookingCode);
+        
+        if (ticketCodes != null && !ticketCodes.isEmpty()) {
+            sql.append(" AND bs.ticket_code IN (");
+            for (int i = 0; i < ticketCodes.size(); i++) {
+                sql.append(i == 0 ? "?" : ", ?");
+                params.add(ticketCodes.get(i));
+            }
+            sql.append(")");
+        }
+        
+        sql.append(" ORDER BY s.seat_code");
+        
+        try {
+            return jdbc.queryForList(sql.toString(), params.toArray());
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái in vé
+     */
+    public int updateTicketPrintStatus(List<Integer> bookingSeatIds, int staffId, String printStamp) {
+        if (bookingSeatIds == null || bookingSeatIds.isEmpty()) {
+            return 0;
+        }
+        
+        StringBuilder sql = new StringBuilder("""
+            UPDATE booking_seat 
+            SET is_printed = 1, printed_by = ?, printed_at = NOW(), printed_stamp = ?
+            WHERE id IN (
+        """);
+        
+        List<Object> params = new ArrayList<>();
+        params.add(staffId);
+        params.add(printStamp);
+        
+        for (int i = 0; i < bookingSeatIds.size(); i++) {
+            sql.append(i == 0 ? "?" : ", ?");
+            params.add(bookingSeatIds.get(i));
+        }
+        sql.append(") AND (is_printed = 0 OR is_printed IS NULL)");
+        
+        return jdbc.update(sql.toString(), params.toArray());
+    }
+
+    /**
+     * Lấy thông tin booking cho in vé (bao gồm thông tin phim, rạp, suất chiếu)
+     */
+    public java.util.Map<String, Object> getBookingInfoForPrint(String bookingCode) {
+        String sql = """
+            SELECT 
+                b.id AS bookingId,
+                b.booking_code AS bookingCode,
+                b.payment_status AS paymentStatus,
+                m.title AS movieTitle,
+                c.name AS cinemaName,
+                r.name AS roomName,
+                st.start_time AS startTime
+            FROM booking b
+            JOIN showtime st ON st.id = b.showtime_id
+            JOIN movie m ON m.id = st.movie_id
+            JOIN room r ON r.id = st.room_id
+            JOIN cinema c ON c.id = r.cinema_id
+            WHERE b.booking_code = ?
+        """;
+        
+        try {
+            return jdbc.queryForMap(sql, bookingCode);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
 }

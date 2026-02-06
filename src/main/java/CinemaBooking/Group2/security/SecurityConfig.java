@@ -99,6 +99,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
 						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
+						.requestMatchers("/api/tickets/**").hasAnyAuthority("ADMIN", "STAFF")
 
 						.anyRequest().authenticated())
 
