@@ -296,16 +296,43 @@ public class ShowtimeRepository {
 	public String getCinemaNameByShowtime(int showtimeId) {
 
 		String sql = """
-				    SELECT c.name
-				    FROM showtime s
-				    JOIN room r ON s.room_id = r.id
-				    JOIN cinema c ON r.cinema_id = c.id
-				    WHERE s.id = ?
-				""";
+			    SELECT c.name
+			    FROM showtime s
+			    JOIN room r ON s.room_id = r.id
+			    JOIN cinema c ON r.cinema_id = c.id
+			    WHERE s.id = ?
+			""";
 		try {
 			return jdbc.queryForObject(sql, String.class, showtimeId);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to fetch cinema name for showtime", e);
 		}
 	}
+
+	/**
+	 * New: fetch movie/showtime/room/cinema details for a showtime id
+	 * Returns a Map with keys: movie_title, poster_url, genre, duration_minutes, room_name, address, start_time
+	 */
+	public Map<String, Object> getShowtimeDetails(int showtimeId) {
+		String sql = """
+		    SELECT m.title AS movie_title,
+		           COALESCE(m.poster_url, m.banner_url) AS poster_url,
+		           m.genre AS genre,
+		           m.duration_minutes AS duration_minutes,
+		           r.name AS room_name,
+		           c.address AS address,
+		           s.start_time AS start_time
+		    FROM showtime s
+		    JOIN movie m ON m.id = s.movie_id
+		    JOIN room r ON r.id = s.room_id
+		    JOIN cinema c ON c.id = r.cinema_id
+		    WHERE s.id = ?
+		""";
+		try {
+			return jdbc.queryForMap(sql, showtimeId);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to fetch showtime details for id: " + showtimeId, e);
+		}
+	}
+
 }

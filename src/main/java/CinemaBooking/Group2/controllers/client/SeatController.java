@@ -35,6 +35,7 @@ public class SeatController {
     private SeatBookingFacade seatBookingFacade;
     @Autowired
     private UserService userService;
+    @Autowired
     private ShowtimeService service;
 
     @GetMapping("/showtimes/{id}/seats")

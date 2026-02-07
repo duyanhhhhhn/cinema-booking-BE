@@ -2,6 +2,7 @@ package CinemaBooking.Group2.service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ public class ShowtimeService {
 	private final SeatRepository seatRepo;
 	
 		public ShowtimeService(ShowtimeRepository stRepo,
-			SeatRepository seatRepo) {
+		SeatRepository seatRepo) {
 		this.stRepo = stRepo;
 		this.seatRepo = seatRepo;
 	}
@@ -105,12 +106,68 @@ public class ShowtimeService {
     //  SET CINEMA NAME
     res.setCinemaName(cinemaName);
 
+    // --- SET ADDITIONAL MOVIE / SHOWTIME DATA ---
+    try {
+        Map<String, Object> details = stRepo.getShowtimeDetails(showtimeId);
+
+        if (details != null) {
+            res.setMovieTitle((String) details.get("movie_title"));
+
+            // Prefix "/media/" before poster url (handle null and avoid duplicate prefix)
+            Object posterObj = details.get("poster_url");
+            if (posterObj != null) {
+                String poster = posterObj.toString();
+                if (!poster.startsWith("/media/")) {
+                    // remove leading slash to avoid double slashes
+                    if (poster.startsWith("/")) {
+                        poster = poster.substring(1);
+                    }
+                    poster = "/media/" + poster;
+                }
+                res.setMoviePosterUrl(poster);
+            } else {
+                res.setMoviePosterUrl(null);
+            }
+
+            res.setGenre((String) details.get("genre"));
+
+            Object durObj = details.get("duration_minutes");
+            if (durObj != null) {
+                if (durObj instanceof Number) {
+                    res.setDuration(((Number) durObj).intValue());
+                } else {
+                    try {
+                        res.setDuration(Integer.parseInt(durObj.toString()));
+                    } catch (NumberFormatException ex) {
+                        // ignore -> leave default 0
+                    }
+                }
+            }
+
+            res.setRoomName((String) details.get("room_name"));
+            res.setFullAddress((String) details.get("address"));
+
+            Object stObj = details.get("start_time");
+            if (stObj != null) {
+                if (stObj instanceof java.sql.Timestamp) {
+                    res.setStartTime(((java.sql.Timestamp) stObj).toLocalDateTime());
+                } else if (stObj instanceof LocalDateTime) {
+                    res.setStartTime((LocalDateTime) stObj);
+                }
+            }
+        }
+    } catch (Exception ex) {
+        // If details fetch fails, continue returning seat map but log? For now, rethrow to surface error
+        throw new RuntimeException("Failed to fetch showtime details for id: " + showtimeId, ex);
+    }
+
     res.setRows(
             buildSeatRows(seats, booked)
     );
 
     return res;
 }
+
 
 
     /**
