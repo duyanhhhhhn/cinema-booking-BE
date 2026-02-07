@@ -159,6 +159,7 @@ public class UserController {
             @RequestParam(required = false) String search
     ) {
         PageResponse<UserDTO> response = userService.getStaffs(page, perPage, search);
+        System.out.println(response);
         return ResponseEntity.ok(response);
     }
     

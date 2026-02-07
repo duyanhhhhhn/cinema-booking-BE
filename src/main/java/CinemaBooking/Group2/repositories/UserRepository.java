@@ -246,25 +246,30 @@ public class UserRepository {
     }
 
     // ===================== PAGINATION =====================
-    public List<UserDTO> findPagedUsers(List<Integer> roleIds, Integer cinemaId, String search, int offset, int limit) {
+    public List<UserDTO> findPagedUsers(
+            List<Integer> roleIds,
+            Integer cinemaId,
+            String search,
+            int offset,
+            int limit
+    ) {
 
         try {
-            String sql = """
-                    SELECT u.id,
-                           u.full_name,
-                           u.email,
-                           u.phone,
-                           u.avatar_url,
-                           r.name AS role,
-                           u.created_at,
-                           u.cinema_id,
-                           u.is_active
-                    FROM user u
-                    JOIN role r ON u.role_id = r.id
-                    WHERE u.role_id IN (%s)
-                """;
 
-            String inSql = roleIds.stream().map(r -> "?").reduce((a, b) -> a + "," + b).orElse("");
+            String sql = """
+                SELECT
+                    u.*,
+                    r.name AS role_name
+                FROM user u
+                JOIN role r ON u.role_id = r.id
+                WHERE u.role_id IN (%s)
+            """;
+
+            String inSql = roleIds.stream()
+                    .map(r -> "?")
+                    .reduce((a, b) -> a + "," + b)
+                    .orElse("");
+
             sql = String.format(sql, inSql);
 
             List<Object> params = new ArrayList<>(roleIds);
@@ -289,23 +294,25 @@ public class UserRepository {
             params.add(offset);
 
             return jdbc.query(sql, params.toArray(), (rs, i) ->
-                    new UserDTO(
-                            rs.getInt("id"),
-                            rs.getString("full_name"),
-                            rs.getString("email"),
-                            rs.getString("phone"),
-                            rs.getString("avatar_url"),
-                            rs.getString("role"),
-                            rs.getTimestamp("created_at").toLocalDateTime(),
-                            rs.getObject("cinema_id", Integer.class),                            
-                            rs.getInt("is_active")
-                    )
+                new UserDTO(
+                    rs.getInt("id"),
+                    rs.getString("full_name"),
+                    rs.getString("email"),
+                    rs.getString("phone"),
+                    rs.getString("avatar_url"),
+                    rs.getString("role_name"),   
+                    rs.getTimestamp("created_at").toLocalDateTime(),
+                    rs.getObject("cinema_id", Integer.class),
+                    rs.getString("position"),
+                    rs.getInt("is_active")
+                )
             );
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách user: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi lấy danh sách user: " + e.getMessage(), e);
         }
     }
+
 
     public int countUsers(List<Integer> roleIds, Integer cinemaId, String search) {
         String sql = """

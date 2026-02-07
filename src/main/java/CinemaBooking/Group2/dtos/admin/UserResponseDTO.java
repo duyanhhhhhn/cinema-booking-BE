@@ -9,11 +9,24 @@ public class UserResponseDTO {
     private Integer cinemaId;
     private String position;
     private int isActive;
+    private String avatarUrl;
 	/**
 	 * @return the id
 	 */
 	public int getId() {
 		return id;
+	}
+	/**
+	 * @return the avatarUrl
+	 */
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+	/**
+	 * @param avatarUrl the avatarUrl to set
+	 */
+	public void setAvatarUrl(String avatarUrl) {
+		this.avatarUrl = avatarUrl;
 	}
 	/**
 	 * @param id the id to set
@@ -114,9 +127,10 @@ public class UserResponseDTO {
 	 * @param cinemaId
 	 * @param position
 	 * @param isActive
+	 * @param avatarUrl
 	 */
 	public UserResponseDTO(int id, String fullName, String email, String phone, int roleId, Integer cinemaId,
-			String position, int isActive) {
+			String position, int isActive, String avatarUrl) {
 		super();
 		this.id = id;
 		this.fullName = fullName;
@@ -126,6 +140,7 @@ public class UserResponseDTO {
 		this.cinemaId = cinemaId;
 		this.position = position;
 		this.isActive = isActive;
+		this.avatarUrl = avatarUrl;
 	}
 	/**
 	 * 
@@ -134,6 +149,5 @@ public class UserResponseDTO {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-    
-    
+	
 }

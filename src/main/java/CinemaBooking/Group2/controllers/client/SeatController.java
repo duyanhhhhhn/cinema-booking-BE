@@ -20,8 +20,10 @@ import CinemaBooking.Group2.dtos.seat.HoldSeatResponseDTO;
 import CinemaBooking.Group2.dtos.seat.ReleaseSeatRequestDTO;
 import CinemaBooking.Group2.dtos.seat.ReleaseSeatResponseDTO;
 import CinemaBooking.Group2.dtos.seat.SeatStatusDTO;
+import CinemaBooking.Group2.dtos.showtime.ShowtimeSeatResponseDTO;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.SeatBookingFacade;
+import CinemaBooking.Group2.service.ShowtimeService;
 
 
 @RestController
@@ -30,18 +32,17 @@ public class SeatController {
 
     @Autowired
     private SeatBookingFacade seatBookingFacade;
+    @Autowired
+    private ShowtimeService service;
 
     @GetMapping("/showtimes/{id}/seats")
-    public ResponseEntity<List<SeatStatusDTO>> getShowtimeSeats(@PathVariable("id") int showtimeId) {
-        try {
-            // Get current user ID if authenticated
-            Integer currentUserId = getCurrentUserId();
-            
-            List<SeatStatusDTO> seats = seatBookingFacade.getShowtimeSeats(showtimeId, currentUserId);
-            return ResponseEntity.ok(seats);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<?> getSeats(
+            @PathVariable int id){
+
+        ShowtimeSeatResponseDTO data =
+            service.getSeatMap(id);
+
+        return ResponseEntity.ok(data);
     }
 
     

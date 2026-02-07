@@ -5,153 +5,202 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class UserDTO {
 
-    @Value("${app.upload.public-prefix:/media}")
-    private String publicPrefix;
+	@Value("${app.upload.public-prefix:/media}")
+	private String publicPrefix;
 
-    private int id;
-    private String fullName;
-    private String email;
-    private String phone;
-    private String avatarUrl;
-    private String role;
-    private LocalDateTime createdAt;
-    private Integer cinemaId;
-    private int isActive;
+	private int id;
+	private String fullName;
+	private String email;
+	private String phone;
+	private String avatarUrl;
+	private String role;
+	private String position;
+	private LocalDateTime createdAt;
 
-    // ================= CONSTRUCTORS =================
+	/**
+	 * @return the position
+	 */
+	public String getPosition() {
+		return position;
+	}
 
-    /** Default constructor */
-    public UserDTO() {
-    }
+	/**
+	 * @param position the position to set
+	 */
+	public void setPosition(String position) {
+		this.position = position;
+	}
 
-    /** Constructor without createdAt and isActive */
-    public UserDTO(int id, String fullName, String email, String phone, String avatarUrl, String role, Integer cinemaId) {
-        this.id = id;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
-        this.avatarUrl = avatarUrl;
-        this.role = role;
-        this.cinemaId = cinemaId;
-    }
+	private Integer cinemaId;
+	private int isActive;
 
-    /** Full constructor with publicPrefix */
-    public UserDTO(String publicPrefix, int id, String fullName, String email, String phone,
-                   String avatarUrl, String role, LocalDateTime createdAt, Integer cinemaId, int isActive) {
-        this.publicPrefix = publicPrefix;
-        this.id = id;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
-        this.avatarUrl = avatarUrl;
-        this.role = role;
-        this.createdAt = createdAt;
-        this.cinemaId = cinemaId;
-        this.isActive = isActive;
-    }
+	// ================= CONSTRUCTORS =================
 
-    /** Full constructor without publicPrefix (fix lỗi bạn đang gặp) */
-    public UserDTO(int id, String fullName, String email, String phone,
-                   String avatarUrl, String role, LocalDateTime createdAt, Integer cinemaId, int isActive) {
-        this.id = id;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
-        this.avatarUrl = avatarUrl;
-        this.role = role;
-        this.createdAt = createdAt;
-        this.cinemaId = cinemaId;
-        this.isActive = isActive;
-    }
+	/** Default constructor */
+	public UserDTO() {
+	}
 
-    // ================= GETTERS & SETTERS =================
+	/** Constructor without createdAt and isActive */
+	public UserDTO(int id, String fullName, String email, String phone, String avatarUrl, String role,
+			Integer cinemaId) {
+		this.id = id;
+		this.fullName = fullName;
+		this.email = email;
+		this.phone = phone;
+		this.avatarUrl = avatarUrl;
+		this.role = role;
+		this.cinemaId = cinemaId;
+	}
 
-    public String getPublicPrefix() {
-        return publicPrefix;
-    }
+	/**
+	 * @param publicPrefix
+	 * @param id
+	 * @param fullName
+	 * @param email
+	 * @param phone
+	 * @param avatarUrl
+	 * @param role
+	 * @param createdAt
+	 * @param cinemaId
+	 * @param position
+	 * @param isActive
+	 */
+	public UserDTO(String publicPrefix, int id, String fullName, String email, String phone, String avatarUrl,
+			String role, LocalDateTime createdAt, Integer cinemaId, String position, int isActive) {
+		super();
+		this.publicPrefix = publicPrefix;
+		this.id = id;
+		this.fullName = fullName;
+		this.email = email;
+		this.phone = phone;
+		this.avatarUrl = avatarUrl;
+		this.role = role;
+		this.createdAt = createdAt;
+		this.cinemaId = cinemaId;
+		this.position = position;
+		this.isActive = isActive;
+	}
 
-    public void setPublicPrefix(String publicPrefix) {
-        this.publicPrefix = publicPrefix;
-    }
+	/** Full constructor without publicPrefix (fix lỗi bạn đang gặp) */
+	public UserDTO(int id, String fullName, String email, String phone, String avatarUrl, String role,
+			LocalDateTime createdAt, Integer cinemaId, int isActive) {
+		this.id = id;
+		this.fullName = fullName;
+		this.email = email;
+		this.phone = phone;
+		this.avatarUrl = avatarUrl;
+		this.role = role;
+		this.createdAt = createdAt;
+		this.cinemaId = cinemaId;
+		this.isActive = isActive;
+	}
 
-    public int getId() {
-        return id;
-    }
+	// ================= GETTERS & SETTERS =================
 
-    public void setId(int id) {
-        this.id = id;
-    }
+	public String getPublicPrefix() {
+		return publicPrefix;
+	}
 
-    public String getFullName() {
-        return fullName;
-    }
+	public void setPublicPrefix(String publicPrefix) {
+		this.publicPrefix = publicPrefix;
+	}
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+	public int getId() {
+		return id;
+	}
 
-    public String getEmail() {
-        return email;
-    }
+	public void setId(int id) {
+		this.id = id;
+	}
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+	public String getFullName() {
+		return fullName;
+	}
 
-    public String getPhone() {
-        return phone;
-    }
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+	public String getEmail() {
+		return email;
+	}
 
-    public String getAvatarUrl() {
-        if (avatarUrl == null || avatarUrl.isBlank()) return null;
+	public void setEmail(String email) {
+		this.email = email;
+	}
 
-        String prefix = publicPrefix != null ? publicPrefix : "/media";
-        if (!prefix.startsWith("/")) prefix = "/" + prefix;
-        while (prefix.endsWith("/")) prefix = prefix.substring(0, prefix.length() - 1);
+	public String getPhone() {
+		return phone;
+	}
 
-        String path = avatarUrl;
-        if (path.startsWith("/")) path = path.substring(1);
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
 
-        return prefix + "/" + path;
-    }
+	public String getAvatarUrl() {
+		if (avatarUrl == null || avatarUrl.isBlank())
+			return null;
 
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
+		String prefix = publicPrefix != null ? publicPrefix : "/media";
+		if (!prefix.startsWith("/"))
+			prefix = "/" + prefix;
+		while (prefix.endsWith("/"))
+			prefix = prefix.substring(0, prefix.length() - 1);
 
-    public String getRole() {
-        return role;
-    }
+		String path = avatarUrl;
+		if (path.startsWith("/"))
+			path = path.substring(1);
 
-    public void setRole(String role) {
-        this.role = role;
-    }
+		return prefix + "/" + path;
+	}
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+	public void setAvatarUrl(String avatarUrl) {
+		this.avatarUrl = avatarUrl;
+	}
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+	public String getRole() {
+		return role;
+	}
 
-    public Integer getCinemaId() {
-        return cinemaId;
-    }
+	public void setRole(String role) {
+		this.role = role;
+	}
 
-    public void setCinemaId(Integer cinemaId) {
-        this.cinemaId = cinemaId;
-    }
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
 
-    public int getIsActive() {
-        return isActive;
-    }
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 
-    public void setIsActive(int isActive) {
-        this.isActive = isActive;
-    }
+	public Integer getCinemaId() {
+		return cinemaId;
+	}
+
+	public void setCinemaId(Integer cinemaId) {
+		this.cinemaId = cinemaId;
+	}
+
+	public int getIsActive() {
+		return isActive;
+	}
+
+	public void setIsActive(int isActive) {
+		this.isActive = isActive;
+	}
+
+	public UserDTO(int id, String fullName, String email, String phone, String avatarUrl, String role,
+			LocalDateTime createdAt, Integer cinemaId, String position, int isActive) {
+		this.id = id;
+		this.fullName = fullName;
+		this.email = email;
+		this.phone = phone;
+		this.avatarUrl = avatarUrl;
+		this.role = role;
+		this.createdAt = createdAt;
+		this.cinemaId = cinemaId;
+		this.position = position;
+		this.isActive = isActive;
+	}
 }
