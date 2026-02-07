@@ -20,11 +20,12 @@ import CinemaBooking.Group2.dtos.seat.HoldSeatResponseDTO;
 import CinemaBooking.Group2.dtos.seat.ReleaseSeatRequestDTO;
 import CinemaBooking.Group2.dtos.seat.ReleaseSeatResponseDTO;
 import CinemaBooking.Group2.dtos.seat.SeatStatusDTO;
+import CinemaBooking.Group2.dtos.showtime.ShowtimeSeatResponseDTO;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.SeatBookingFacade;
 import CinemaBooking.Group2.service.UserService;
-
+import CinemaBooking.Group2.service.ShowtimeService;
 
 @RestController
 @RequestMapping("/api")
@@ -34,21 +35,17 @@ public class SeatController {
     private SeatBookingFacade seatBookingFacade;
     @Autowired
     private UserService userService;
+    private ShowtimeService service;
 
     @GetMapping("/showtimes/{id}/seats")
-    public ResponseEntity<List<SeatStatusDTO>> getShowtimeSeats(@PathVariable("id") int showtimeId) {
-        try {
-            // Get current user ID if authenticated
-            Integer currentUserId = getCurrentUserId();
-            
-            List<SeatStatusDTO> seats = seatBookingFacade.getShowtimeSeats(showtimeId, currentUserId);
-            return ResponseEntity.ok(seats);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<?> getSeats(
+            @PathVariable int id) {
+
+        ShowtimeSeatResponseDTO data = service.getSeatMap(id);
+
+        return ResponseEntity.ok(data);
     }
 
-    
     @PostMapping("/booking/hold-seat")
     public ResponseEntity<HoldSeatResponseDTO> holdSeats(
             @Validated @RequestBody HoldSeatRequestDTO request) {
@@ -60,7 +57,7 @@ public class SeatController {
             }
 
             HoldSeatResponseDTO response = seatBookingFacade.holdSeats(request, userId);
-            
+
             if (response.isSuccess()) {
                 return ResponseEntity.ok(response);
             } else {
@@ -72,7 +69,6 @@ public class SeatController {
         }
     }
 
-    
     @PostMapping("/booking/release-seat")
     public ResponseEntity<ReleaseSeatResponseDTO> releaseSeats(
             @Validated @RequestBody ReleaseSeatRequestDTO request) {
@@ -85,7 +81,7 @@ public class SeatController {
             }
 
             ReleaseSeatResponseDTO response = seatBookingFacade.releaseSeats(request, userId);
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             ReleaseSeatResponseDTO response = new ReleaseSeatResponseDTO(false, "An error occurred: " + e.getMessage());
@@ -93,8 +89,7 @@ public class SeatController {
         }
     }
 
-  
-   private Integer getCurrentUserId() {
+    private Integer getCurrentUserId() {
         try {
             var auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -102,8 +97,8 @@ public class SeatController {
                 return null;
             }
 
-            User user = userService.findByEmail(principal.email()); 
-              return user != null ? user.getId() : null;
+            User user = userService.findByEmail(principal.email());
+            return user != null ? user.getId() : null;
 
         } catch (Exception e) {
             e.printStackTrace(); // In lỗi để debug nếu cần

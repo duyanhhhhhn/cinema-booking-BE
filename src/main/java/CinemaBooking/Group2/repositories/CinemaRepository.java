@@ -96,6 +96,16 @@ public class CinemaRepository {
 		}
 	}
 	
+	public int activate(int id) {
+		String sql = "UPDATE cinema SET is_active = 1 WHERE id = ?";
+		try {
+			return jdbc.update(sql, id);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return 0;
+		}
+	}
+	
 	public void uploadImage (int id, String imageUrl) {
 		String sql = "UPDATE cinema SET image_url = ? WHERE id = ?";
 		try {

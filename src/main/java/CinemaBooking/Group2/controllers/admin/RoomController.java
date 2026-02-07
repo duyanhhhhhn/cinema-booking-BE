@@ -57,7 +57,22 @@ public class RoomController {
                 new ApiResponse<>("Room updated", updated)
         );
     }
+    
+ // ================= UPDATE SEAT-MAP ================
+    @PutMapping("/rooms/{id}/seat-layout")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<RoomResponseDTO>> updateSeatMap(
+            @PathVariable int id,
+            @RequestBody Object seatLayout
+    ) {
 
+        RoomResponseDTO updated = service.updateSeatLayout(id, seatLayout);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Seat map updated", updated)
+        );
+    }
+    
     // ================= DELETE ROOM =================
     @DeleteMapping("/rooms/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")

@@ -61,7 +61,21 @@ public class RoomRepository {
 			return 0;
 		}
 	}
-
+	
+	public int updateSeatLayout(int id, String seatLayout) {
+		String sql = """
+				    UPDATE room
+				    SET seat_layout=?
+				    WHERE id=?
+				""";
+		try {
+			return jdbc.update(sql, seatLayout, id);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return 0;
+		}
+	}
+	
 	public int delete(int id) {
 		String sql = "DELETE FROM room WHERE id = ?";
 		try {

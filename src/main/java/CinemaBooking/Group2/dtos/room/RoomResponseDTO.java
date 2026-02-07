@@ -2,6 +2,7 @@ package CinemaBooking.Group2.dtos.room;
 
 public class RoomResponseDTO {
 	private int id;
+    private int cinemaId;
     private String name;
     private String type;
     private int totalSeats;
@@ -17,6 +18,18 @@ public class RoomResponseDTO {
 	 */
 	public void setId(int id) {
 		this.id = id;
+	}
+	/**
+	 * @return the cinemaId
+	 */
+	public int getCinemaId() {
+		return cinemaId;
+	}
+	/**
+	 * @param cinemaId the cinemaId to set
+	 */
+	public void setCinemaId(int cinemaId) {
+		this.cinemaId = cinemaId;
 	}
 	/**
 	 * @return the name
@@ -68,14 +81,16 @@ public class RoomResponseDTO {
 	}
 	/**
 	 * @param id
+	 * @param cinemaId
 	 * @param name
 	 * @param type
 	 * @param totalSeats
 	 * @param seatLayout
 	 */
-	public RoomResponseDTO(int id, String name, String type, int totalSeats, String seatLayout) {
+	public RoomResponseDTO(int id, int cinemaId, String name, String type, int totalSeats, String seatLayout) {
 		super();
 		this.id = id;
+		this.cinemaId = cinemaId;
 		this.name = name;
 		this.type = type;
 		this.totalSeats = totalSeats;
@@ -89,6 +104,5 @@ public class RoomResponseDTO {
 		// TODO Auto-generated constructor stub
 	}
     
-	
     
 }
