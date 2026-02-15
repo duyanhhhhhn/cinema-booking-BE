@@ -25,8 +25,13 @@ import CinemaBooking.Group2.models.BookingConcession;
 import CinemaBooking.Group2.models.BookingSeat;
 import CinemaBooking.Group2.models.PriceAdjustment;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Repository
 public class BookingRepository {
+
+    private static final Logger logger = LoggerFactory.getLogger(BookingRepository.class);
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -114,7 +119,9 @@ public class BookingRepository {
         try {
             return jdbc.query(sql, new BeanPropertyRowMapper<>(PriceAdjustment.class));
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch price adjustments", e);
+            // Log original exception and return empty list so calculation can continue
+            logger.error("Failed to fetch price adjustments", e);
+            return List.of();
         }
     }
 
@@ -349,6 +356,7 @@ public class BookingRepository {
             case "PAID": dto.setStatusLabel("Đã thanh toán"); break;
             case "PENDING": dto.setStatusLabel("Chờ thanh toán"); break;
             case "FAILED": dto.setStatusLabel("Thất bại"); break;
+            case "CANCELLED": dto.setStatusLabel("Đã hủy"); break;
             default: dto.setStatusLabel(status); break;
         }
 
@@ -664,5 +672,61 @@ public class BookingRepository {
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
+    }
+
+    /**
+     * Tự động hủy các booking PENDING quá hạn (quá X phút chưa thanh toán)
+     * Trả về số lượng booking đã bị hủy
+     */
+    public int cancelExpiredPendingBookings(int timeoutMinutes) {
+        // 1. Tìm các booking PENDING quá hạn
+        String findExpiredSql = """
+            SELECT id, booking_code 
+            FROM booking 
+            WHERE payment_status = 'PENDING' 
+            AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        """;
+        
+        List<java.util.Map<String, Object>> expiredBookings;
+        try {
+            expiredBookings = jdbc.queryForList(findExpiredSql, timeoutMinutes);
+        } catch (Exception e) {
+            logger.error("Error finding expired bookings: {}", e.getMessage(), e);
+            return 0;
+        }
+        
+        if (expiredBookings.isEmpty()) {
+            return 0;
+        }
+        
+        int canceledCount = 0;
+        
+        // 2. Xóa từng booking (cascade delete sẽ xóa booking_seat và booking_concession)
+        for (java.util.Map<String, Object> booking : expiredBookings) {
+            try {
+                int bookingId = ((Number) booking.get("id")).intValue();
+                String bookingCode = (String) booking.get("booking_code");
+                
+                // Xóa booking_seat trước (release ghế)
+                String deleteSeats = "DELETE FROM booking_seat WHERE booking_id = ?";
+                jdbc.update(deleteSeats, bookingId);
+                
+                // Xóa booking_concession
+                String deleteConcessions = "DELETE FROM booking_concession WHERE booking_id = ?";
+                jdbc.update(deleteConcessions, bookingId);
+                
+                // Cập nhật trạng thái booking thành CANCELLED thay vì xóa
+                String updateBooking = "UPDATE booking SET payment_status = 'CANCELLED' WHERE id = ?";
+                jdbc.update(updateBooking, bookingId);
+                
+                logger.info("Cancelled expired booking: {} (ID: {})", bookingCode, bookingId);
+                canceledCount++;
+                
+            } catch (Exception e) {
+                logger.error("Error canceling booking {}: {}", booking.get("booking_code"), e.getMessage());
+            }
+        }
+        
+        return canceledCount;
     }
 }

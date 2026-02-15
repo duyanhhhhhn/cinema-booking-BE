@@ -7,7 +7,7 @@ public class Booking {
 
 	private int id;
     private String bookingCode;
-    private int userId;
+    private Integer userId;
     private int createdByStaffId;
     private int showtimeId;
     private int voucherId;
@@ -29,7 +29,8 @@ public class Booking {
     public enum PaymentStatus {
         PENDING,
         PAID,
-        FAILED
+        FAILED,
+        CANCELLED
     }
 
 	public int getId() {
@@ -48,11 +49,11 @@ public class Booking {
 		this.bookingCode = bookingCode;
 	}
 
-	public int getUserId() {
+	public Integer getUserId() {
 		return userId;
 	}
 
-	public void setUserId(int userId) {
+	public void setUserId(Integer userId) {
 		this.userId = userId;
 	}
 
@@ -142,7 +143,7 @@ public class Booking {
 	 * @param createdAt
 	 * @param paidAt
 	 */
-	public Booking(int id, String bookingCode, int userId, int createdByStaffId, int showtimeId, int voucherId,
+	public Booking(int id, String bookingCode, Integer userId, int createdByStaffId, int showtimeId, int voucherId,
 			BigDecimal discountAmount, BigDecimal totalPrice, PaymentStatus paymentStatus, PaymentMethod paymentMethod,
 			LocalDateTime createdAt, LocalDateTime paidAt) {
 		super();

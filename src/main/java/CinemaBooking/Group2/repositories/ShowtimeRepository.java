@@ -321,7 +321,8 @@ public class ShowtimeRepository {
 		           m.duration_minutes AS duration_minutes,
 		           r.name AS room_name,
 		           c.address AS address,
-		           s.start_time AS start_time
+		           s.start_time AS start_time,
+		           s.base_price AS base_price
 		    FROM showtime s
 		    JOIN movie m ON m.id = s.movie_id
 		    JOIN room r ON r.id = s.room_id

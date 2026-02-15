@@ -21,6 +21,8 @@ import CinemaBooking.Group2.dtos.booking.BookingCreateRequest;
 import CinemaBooking.Group2.dtos.booking.BookingCreateResponse;
 import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
 import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
+import CinemaBooking.Group2.dtos.booking.WalkInBookingRequest;
+import CinemaBooking.Group2.dtos.booking.WalkInBookingResponse;
 import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.BookingConcession;
 import CinemaBooking.Group2.models.BookingSeat;
@@ -31,13 +33,21 @@ import CinemaBooking.Group2.models.Showtime;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
 import CinemaBooking.Group2.repositories.BookingRepository;
+import CinemaBooking.Group2.repositories.CinemaRepository;
 import CinemaBooking.Group2.repositories.ComboRepository;
+import CinemaBooking.Group2.repositories.MovieRepository;
+import CinemaBooking.Group2.repositories.RoomRepository;
 import CinemaBooking.Group2.repositories.SeatRepository;
 import CinemaBooking.Group2.repositories.ShowtimeRepository;
 import CinemaBooking.Group2.repositories.VoucherRepository;
+import CinemaBooking.Group2.service.PaymentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class BookingService {
+
+    private static final Logger logger = LoggerFactory.getLogger(BookingService.class);
 
     @Autowired
     private BookingRepository bookingRepository;
@@ -54,6 +64,19 @@ public class BookingService {
     @Autowired
     private VoucherRepository voucherRepository;
 
+    // Added repositories to fetch Movie/Room/Cinema details instead of relying on showtime.getMovie()/getRoom()
+    @Autowired
+    private MovieRepository movieRepository;
+
+    @Autowired
+    private RoomRepository roomRepository;
+
+    @Autowired
+    private CinemaRepository cinemaRepository;
+
+    @Autowired
+    private PaymentService paymentService;
+
     public BookingCalculateResponse calculateBooking(BookingCalculateRequest request) {
         Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
         if (showtime == null) {
@@ -63,9 +86,10 @@ public class BookingService {
         BookingCalculateResponse response = new BookingCalculateResponse();
         BookingCalculateResponse.PriceBreakdown breakdown = new BookingCalculateResponse.PriceBreakdown();
         
-        // 1. Tính giá vé cơ bản và phụ thu ghế VIP
-        BigDecimal basePrice = BigDecimal.ZERO;
-        BigDecimal seatExtraPrice = BigDecimal.ZERO;
+        // 1. Tính giá vé và phụ thu ghế VIP
+        BigDecimal totalSeatsPrice = BigDecimal.ZERO; // Tổng giá tất cả ghế (bao gồm cả base và extra)
+        BigDecimal basePrice = BigDecimal.ZERO;        // Tổng giá vé cơ bản
+        BigDecimal seatExtraPrice = BigDecimal.ZERO;   // Tổng phụ thu ghế VIP
         List<BookingCalculateResponse.PriceBreakdown.SeatDetail> seatDetails = new ArrayList<>();
         
         for (Integer seatId : request.getSeatIds()) {
@@ -81,19 +105,22 @@ public class BookingService {
             
             BigDecimal seatBasePrice = showtime.getBasePrice();
             BigDecimal extraPrice = seat.getExtraPrice() != null ? seat.getExtraPrice() : BigDecimal.ZERO;
+            BigDecimal seatTotalPrice = seatBasePrice.add(extraPrice);
             
+            // Cộng dồn vào tổng
             basePrice = basePrice.add(seatBasePrice);
             seatExtraPrice = seatExtraPrice.add(extraPrice);
+            totalSeatsPrice = totalSeatsPrice.add(seatTotalPrice);
             
             // Add to breakdown
             BookingCalculateResponse.PriceBreakdown.SeatDetail seatDetail = 
-            new BookingCalculateResponse.PriceBreakdown.SeatDetail();
+                new BookingCalculateResponse.PriceBreakdown.SeatDetail();
             seatDetail.setSeatId(seatId);
             seatDetail.setSeatCode(seat.getSeatCode());
             seatDetail.setSeatType(seat.getSeatType().name());
             seatDetail.setBasePrice(seatBasePrice);
             seatDetail.setExtraPrice(extraPrice);
-            seatDetail.setTotalPrice(seatBasePrice.add(extraPrice));
+            seatDetail.setTotalPrice(seatTotalPrice);
             seatDetails.add(seatDetail);
         }
         
@@ -128,7 +155,7 @@ public class BookingService {
         
         breakdown.setCombos(comboDetails);
         
-        // 3. Tính phụ thu lễ (nếu có)
+        // 3. Tính phụ thu lễ (nếu có) - áp dụng trên tổng giá ghế + combo
         BigDecimal holidaySurcharge = BigDecimal.ZERO;
         List<PriceAdjustment> activeAdjustments = bookingRepository.findActivePriceAdjustments();
         
@@ -139,7 +166,7 @@ public class BookingService {
         for (PriceAdjustment adjustment : activeAdjustments) {
             String applyOnDays = adjustment.getApplyOnDays();
             if (applyOnDays != null && applyOnDays.contains(dayName)) {
-                BigDecimal subtotalBeforeHoliday = basePrice.add(seatExtraPrice).add(comboPrice);
+                BigDecimal subtotalBeforeHoliday = totalSeatsPrice.add(comboPrice);
                 
                 if (adjustment.getAdjustmentType() == PriceAdjustment.AdjustmentType.PERCENT) {
                     holidaySurcharge = subtotalBeforeHoliday
@@ -162,9 +189,8 @@ public class BookingService {
             }
         }
         
-        // 4. Tính subtotal
-        BigDecimal subtotal = basePrice
-            .add(seatExtraPrice)
+        // 4. Tính subtotal - sử dụng totalSeatsPrice thay vì basePrice + seatExtraPrice để tránh sai lệch
+        BigDecimal subtotal = totalSeatsPrice
             .add(comboPrice)
             .add(holidaySurcharge);
         
@@ -218,7 +244,7 @@ public class BookingService {
             totalPrice = BigDecimal.ZERO;
         }
         
-        // Set response
+        // Set response - đảm bảo tính nhất quán
         response.setBasePrice(basePrice);
         response.setSeatExtraPrice(seatExtraPrice);
         response.setComboPrice(comboPrice);
@@ -343,8 +369,28 @@ public class BookingService {
         response.setCreatedAt(booking.getCreatedAt());
         response.setMessage("Booking created successfully with PENDING status");
 
-        return response;
-    }
+        // If payment method is an online provider, generate payment URL and include in response
+        try {
+            if (booking.getPaymentMethod() != null && booking.getPaymentMethod() != Booking.PaymentMethod.CASH) {
+                String provider = booking.getPaymentMethod().name();
+                logger.info("Generating payment URL for booking {} with provider {}", bookingId, provider);
+                 // Use the in-memory booking to generate payment URL to avoid re-loading possibly incomplete DB record
+                 String url = paymentService.createPaymentUrlForBooking(booking, provider);
+                 if (url == null || url.isBlank()) {
+                     throw new RuntimeException("Payment provider returned empty URL");
+                 }
+                 response.setPaymentUrl(url);
+             }
+         } catch (Exception ex) {
+             // Don't fail booking creation if payment URL generation fails; include message
+             response.setPaymentUrl(null);
+             response.setMessage(response.getMessage() + "; Failed to create payment URL: " + ex.getMessage());
+             // Log the error so back-end logs show why payment URL was null
+             logger.error("Failed to create payment URL for booking {}: {}", bookingId, ex.getMessage(), ex);
+         }
+
+         return response;
+     }
 
     private String generateTicketCode(String bookingCode, String seatCode) {
         return bookingCode + "-" + seatCode;
@@ -391,5 +437,184 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, msg);
         }
         return resp.getData();
+    }
+    
+    /**
+     * Tạo booking cho khách hàng vãng lai (walk-in) - chỉ hỗ trợ CASH và MOMO
+     * Phương thức này dành cho nhân viên tại quầy tạo booking cho khách hàng không có tài khoản
+     */
+    @Transactional
+    public WalkInBookingResponse createWalkInBooking(WalkInBookingRequest request) {
+        // Validate payment method - chỉ cho phép CASH hoặc MOMO
+        if (!request.getPaymentMethod().equals("CASH") && !request.getPaymentMethod().equals("MOMO")) {
+            throw new RuntimeException("Walk-in customers can only use CASH or MOMO payment methods");
+        }
+        
+        // Validate showtime
+        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        if (showtime == null) {
+            throw new RuntimeException("Showtime not found");
+        }
+
+        // Validate seats availability
+        for (Integer seatId : request.getSeatIds()) {
+            if (bookingRepository.isSeatBooked(seatId, request.getShowtimeId())) {
+                Seat seat = seatRepository.findById(seatId);
+                throw new RuntimeException("Seat already booked: " + 
+                    (seat != null ? seat.getSeatCode() : seatId));
+            }
+        }
+
+        // Calculate total price using existing calculate logic
+        BookingCalculateRequest calculateRequest = new BookingCalculateRequest();
+        calculateRequest.setShowtimeId(request.getShowtimeId());
+        calculateRequest.setSeatIds(request.getSeatIds());
+        
+        // Convert combos if provided
+        if (request.getCombos() != null && !request.getCombos().isEmpty()) {
+            List<BookingCalculateRequest.ComboItem> calculateCombos = new ArrayList<>();
+            for (WalkInBookingRequest.ComboItem walkInCombo : request.getCombos()) {
+                BookingCalculateRequest.ComboItem calcCombo = new BookingCalculateRequest.ComboItem();
+                calcCombo.setComboId(walkInCombo.getComboId());
+                calcCombo.setQuantity(walkInCombo.getQuantity());
+                calculateCombos.add(calcCombo);
+            }
+            calculateRequest.setCombos(calculateCombos);
+        }
+        
+        calculateRequest.setVoucherCode(request.getVoucherCode());
+        
+        BookingCalculateResponse calculation = calculateBooking(calculateRequest);
+
+        // Create booking for walk-in customer (no userId - set to null or special value)
+        Booking booking = new Booking();
+        booking.setBookingCode(bookingRepository.generateBookingCode());
+        booking.setUserId(null); // Walk-in customers don't have user accounts
+        booking.setCreatedByStaffId(request.getStaffId()); // Track which staff created the booking
+        booking.setShowtimeId(request.getShowtimeId());
+        booking.setTotalPrice(calculation.getTotalPrice());
+        booking.setDiscountAmount(calculation.getDiscountAmount());
+        
+        // Set payment method and status based on payment type
+        booking.setPaymentMethod(Booking.PaymentMethod.valueOf(request.getPaymentMethod()));
+        
+        if (request.getPaymentMethod().equals("CASH")) {
+            // For cash payments, mark as PAID immediately since payment is received at counter
+            booking.setPaymentStatus(Booking.PaymentStatus.PAID);
+            booking.setPaidAt(java.time.LocalDateTime.now());
+        } else {
+            // For MoMo, start with PENDING status
+            booking.setPaymentStatus(Booking.PaymentStatus.PENDING);
+        }
+        
+        // Set voucher if used
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isEmpty()) {
+            Voucher voucher = voucherRepository.findByCode(request.getVoucherCode());
+            if (voucher != null) {
+                booking.setVoucherId(voucher.getId());
+            }
+        }
+        
+        // Save booking
+        int bookingId = bookingRepository.createBooking(booking);
+        booking.setId(bookingId);
+
+        // Save booking seats
+        List<WalkInBookingResponse.SeatInfo> seatInfos = new ArrayList<>();
+        for (BookingCalculateResponse.PriceBreakdown.SeatDetail seatDetail : 
+             calculation.getBreakdown().getSeats()) {
+            BookingSeat bookingSeat = new BookingSeat();
+            bookingSeat.setBookingId(bookingId);
+            bookingSeat.setSeatId(seatDetail.getSeatId());
+            bookingSeat.setSeatPrice(seatDetail.getTotalPrice());
+            bookingSeat.setTicketCode(generateTicketCode(booking.getBookingCode(), seatDetail.getSeatCode()));
+            bookingRepository.createBookingSeat(bookingSeat);
+            
+            // Add to response
+            seatInfos.add(new WalkInBookingResponse.SeatInfo(
+                seatDetail.getSeatId(),
+                seatDetail.getSeatCode(),
+                seatDetail.getSeatType(),
+                seatDetail.getTotalPrice()
+            ));
+        }
+
+        // Save booking concessions (combos) if any
+        List<WalkInBookingResponse.ComboInfo> comboInfos = new ArrayList<>();
+        if (request.getCombos() != null && !request.getCombos().isEmpty()) {
+            for (WalkInBookingRequest.ComboItem comboItem : request.getCombos()) {
+                Combo combo = comboRepository.findById(comboItem.getComboId());
+                if (combo != null) {
+                    BookingConcession concession = new BookingConcession();
+                    concession.setBookingId(bookingId);
+                    concession.setComboId(combo.getId());
+                    concession.setQuantity(comboItem.getQuantity());
+                    concession.setPrice(combo.getPrice().multiply(new BigDecimal(comboItem.getQuantity())));
+                    bookingRepository.createBookingConcession(concession);
+                    
+                    // Add to response
+                    comboInfos.add(new WalkInBookingResponse.ComboInfo(
+                        combo.getId(),
+                        combo.getName(),
+                        comboItem.getQuantity(),
+                        combo.getPrice()
+                    ));
+                }
+            }
+        }
+
+        // Build response without customer information
+        WalkInBookingResponse response = new WalkInBookingResponse();
+        response.setBookingId(bookingId);
+        response.setBookingCode(booking.getBookingCode());
+        response.setShowtimeId(booking.getShowtimeId());
+        
+        // Get showtime details for response
+        // Showtime model only stores movieId and roomId. Fetch details via repositories.
+        String movieTitle = "Unknown Movie";
+        try {
+            var movie = movieRepository.getMovieDetailById(showtime.getMovieId());
+            if (movie != null && movie.getTitle() != null) movieTitle = movie.getTitle();
+        } catch (Exception ex) {
+            // ignore and use fallback
+        }
+        response.setMovieTitle(movieTitle);
+        
+        String roomName = "Unknown Room";
+        String cinemaName = "Unknown Cinema";
+        try {
+            var room = roomRepository.findById(showtime.getRoomId());
+            if (room != null) {
+                if (room.getName() != null) roomName = room.getName();
+                try {
+                    var cinema = cinemaRepository.findById(room.getCinemaId());
+                    if (cinema != null && cinema.getName() != null) cinemaName = cinema.getName();
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+        response.setCinemaName(cinemaName);
+        response.setRoomName(roomName);
+        response.setShowtime(showtime.getStartTime());
+        
+        response.setSeats(seatInfos);
+        response.setCombos(comboInfos);
+        response.setVoucherCode(request.getVoucherCode());
+        response.setDiscountAmount(booking.getDiscountAmount());
+        response.setTotalPrice(booking.getTotalPrice());
+        response.setPaymentMethod(request.getPaymentMethod());
+        response.setPaymentStatus(booking.getPaymentStatus().name());
+        response.setCreatedAt(booking.getCreatedAt());
+        response.setCreatedByStaffId(request.getStaffId());
+        // Note: Staff name would need to be fetched from UserService/StaffService if needed
+        response.setCreatedByStaffName("Staff ID: " + request.getStaffId());
+
+        logger.info("Walk-in booking created successfully: {} by staff: {}", 
+            booking.getBookingCode(), request.getStaffId());
+
+        return response;
     }
 }

@@ -57,6 +57,7 @@ public class SecurityConfig {
 								"/api/auth/logout",
 								"/api/auth/refresh",
 								"/api/auth/forgot/**",
+								"/api/payment/**",
 								"/media/**",
 								"/api/public/**",
 								"/swagger-ui/index.html#/")
@@ -87,7 +88,11 @@ public class SecurityConfig {
 						.requestMatchers(
 								"/api/auth/password/**",
 								"/api/users/me/**",
-								"/api/booking/**"
+								"/api/booking/**",
+								"/api/bookings/**",
+								"/api/debug/**"
+							
+								
 								)
 						.authenticated()
 
