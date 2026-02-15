@@ -33,8 +33,8 @@ public class ComboRepository implements Icrud<Combo>{
 		List<Combo> list = new ArrayList<>();
 		try {
 			int value=(page-1)*size;
-			list = db.query("select * from"+StringValue.tbl_combo+
-					" limit ? offset ? where is_active=1", new ComboMapper(),new Object[] {size,value});
+			list = db.query("select * from "+StringValue.tbl_combo+
+					" where is_active=1 limit ? offset ? ", new ComboMapper(),new Object[] {size,value});
 			return list;
 		}
 		catch (Exception e) {

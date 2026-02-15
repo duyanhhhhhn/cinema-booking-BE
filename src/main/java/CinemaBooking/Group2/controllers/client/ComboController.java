@@ -17,12 +17,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
+import CinemaBooking.Group2.dtos.concession.CnPResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.service.ComboService;
 import CinemaBooking.Group2.service.ProductService;
 @RestController
-@RequestMapping("/api/concessions")
+@RequestMapping("/api")
 public class ComboController {
 
 	@Autowired
@@ -31,23 +32,23 @@ public class ComboController {
 	private ProductService pro;
 	@GetMapping("/public/combo")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<ComboResponseDTO>>> getCombo(
+	public ResponseEntity<ApiResponse<List<CnPResponseDTO>>> getCombo(
 			@RequestParam("page")int page,@RequestParam("size")int size) {
-		ApiResponse<List<ComboResponseDTO>> response;
+		ApiResponse<List<CnPResponseDTO>> response;
 		// String message = "Error";
 		try {
 			float totalItem = service.getCombo().size();
 			Map<String, Object> meta = new HashMap<>();
-			List<ComboResponseDTO> item = new ArrayList<>();
+			List<CnPResponseDTO> item = new ArrayList<>();
 			item = service.getCombo(page,size);
 			if (item == null) {
-				response = new ApiResponse<List<ComboResponseDTO>>("Not found", null);
+				response = new ApiResponse<List<CnPResponseDTO>>("Not found", null);
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 			} else {
 				meta.put("perPage", size);
 				meta.put("page",page);
 				meta.put("total", totalItem);
-				response = new ApiResponse<List<ComboResponseDTO>>("Success",item,meta);
+				response = new ApiResponse<List<CnPResponseDTO>>("Success",item,meta);
 				return ResponseEntity.ok(response);
 			}
 		} catch (Exception e) {

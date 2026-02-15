@@ -1,15 +1,19 @@
 package CinemaBooking.Group2.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import CinemaBooking.Group2.dtos.concession.CnPResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.ComboItem;
+import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.Enum.ResponseStatus;
 import CinemaBooking.Group2.pattern.Concessions;
@@ -30,11 +34,34 @@ public class ComboService {
 			throw new RuntimeException(e);
 		}
 	}
-	public List<ComboResponseDTO> getCombo(int page,int size ){
+	public List<CnPResponseDTO> getCombo(int page,int size ){
 		try {
 			List<Combo> item =  con.pagingCombo(page, size);
-			return item.stream().map(ComboMapper::toResponseDTO)
-					.collect(Collectors.toList());
+			List<Product> item1= con.getProduct(page, size);
+			List<CnPResponseDTO> list = new ArrayList<>();
+			for (Combo combo : item) {
+				CnPResponseDTO com =  new CnPResponseDTO();
+				com.setId(combo.getId());
+				com.setDescription(combo.getDescription());
+				com.setImageUrl(combo.getImageUrl());
+				com.setName(combo.getName());
+				com.setPrice(combo.getPrice());
+				com.setIsActive(combo.getIsActive());
+				com.setStock(calculateComboStock(combo.getId()));
+				list.add(com);
+			}
+			for(Product pro : item1) {
+				CnPResponseDTO com =  new CnPResponseDTO();
+				com.setId(pro.getId());
+				com.setDescription(pro.getDescription());
+				com.setImageUrl(pro.getImageUrl());
+				com.setName(pro.getName());
+				com.setPrice(pro.getPrice());
+				com.setIsActive(pro.getIsActive());
+				com.setStock(pro.getStock());
+				list.add(com);
+			}
+			return list;
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -50,6 +77,24 @@ public class ComboService {
 			throw new RuntimeException(e);
 			// TODO: handle exception
 		}
+	}
+	public int calculateComboStock(int id ) {
+		try {
+			List<ComboItem> list = con.getComboItem(id);
+			int stock = Integer.MAX_VALUE;
+			for(ComboItem item : list){
+				int pro_stock = con.productInfo(item.getProductId()).getStock();
+				int item_stock = item.getQuantity();
+				int possible = pro_stock / item_stock;
+				stock = Math.min(stock,possible);
+			}
+			return stock;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return 0;
 	}
 	public ComboCRUDResponseDTO AddCombo(Combo combo) {
 		ComboCRUDResponseDTO res= new ComboCRUDResponseDTO();
