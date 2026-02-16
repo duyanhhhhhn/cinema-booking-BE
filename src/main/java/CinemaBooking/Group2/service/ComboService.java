@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.concession.CnPResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
+import CinemaBooking.Group2.dtos.concession.ComboItemResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
+import CinemaBooking.Group2.mappers.ComboItemMapper;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
@@ -23,6 +25,7 @@ import CinemaBooking.Group2.repositories.UserRepository;
 public class ComboService {
 	@Autowired private UserRepository rep;
 	@Autowired private Concessions con;
+	@Autowired private ComboItemMapper mapper;
 	public List<ComboResponseDTO> getCombo(){
 		try {
 			List<Combo> item =  con.getCombo();
@@ -48,6 +51,17 @@ public class ComboService {
 				com.setPrice(combo.getPrice());
 				com.setIsActive(combo.getIsActive());
 				com.setStock(calculateComboStock(combo.getId()));
+				com.setType("COMBO");
+				List<ComboItem> cbitem = new ArrayList<>();
+				cbitem = con.getComboItem(combo.getId());
+				if(cbitem!=null) {
+					List<ComboItemResponseDTO>  res = new ArrayList<>();
+					for(ComboItem cbi : cbitem) {
+						
+						res.add(mapper.toResponseDTO(cbi));
+					}
+					com.setItemList(res);
+				}
 				list.add(com);
 			}
 			for(Product pro : item1) {
@@ -59,6 +73,7 @@ public class ComboService {
 				com.setPrice(pro.getPrice());
 				com.setIsActive(pro.getIsActive());
 				com.setStock(pro.getStock());
+				com.setType("SINGLE");
 				list.add(com);
 			}
 			return list;

@@ -2,6 +2,8 @@ package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
 
 public class CnPResponseDTO {
 	private int id;
@@ -13,6 +15,13 @@ public class CnPResponseDTO {
     private int isActive;
     private LocalDateTime createdAt;
     private String type;
+    private List<ComboItemResponseDTO> itemList;
+	public List<ComboItemResponseDTO> getItemList() {
+		return itemList;
+	}
+	public void setItemList(List<ComboItemResponseDTO> itemList) {
+		this.itemList = itemList;
+	}
 	public int getId() {
 		return id;
 	}

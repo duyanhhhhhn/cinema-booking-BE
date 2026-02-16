@@ -1,15 +1,13 @@
 package CinemaBooking.Group2.repositories;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.mappers.ComboItemMapper;
 import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.ultis.StringValue;
 
@@ -20,22 +18,10 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public ComboItemRepository() {
 		// TODO Auto-generated constructor stub
 	}
-	public class ComboItemRowMapper implements RowMapper<ComboItem> {
-		@Override
-		public ComboItem mapRow(ResultSet rs, int rowNum) throws SQLException {
-			// TODO Auto-generated method stub
-			ComboItem item = new ComboItem();
-			item.setId(rs.getInt("id"));
-			item.setComboId(rs.getInt("combo_id"));
-			item.setProductId(rs.getInt("product_id"));
-			item.setQuantity(rs.getInt("quantity"));
-			return item;
-		}
-	}
 	public List<ComboItem> getAll() {
 		List<ComboItem> list = new ArrayList<>();
 		try {
-			list = db.query("select * from "+StringValue.tbl_comboItem, new ComboItemRowMapper());
+			list = db.query("select * from "+StringValue.tbl_comboItem, new ComboItemMapper());
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -46,7 +32,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 		ComboItem item = new ComboItem();
 		try {
 			item = db.query("select * from "+StringValue.tbl_comboItem +" where id=?", 
-					new ComboItemRowMapper(),new Object[] {id}).get(0);
+					new ComboItemMapper(),new Object[] {id}).get(0);
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -57,7 +43,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 		List<ComboItem> item = new ArrayList<>();
 		try {
 			item = db.query("select * from "+StringValue.tbl_comboItem +" where combo_id=?", 
-					new ComboItemRowMapper(),new Object[] {order_id});
+					new ComboItemMapper(),new Object[] {order_id});
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -120,7 +106,7 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 	public boolean checkExist(int id) {
 		try {
 			ComboItem item=null;
-			item = db.query("select * from "+StringValue.tbl_comboItem +" where id=?", new ComboItemRowMapper(),new Object[] {id}).get(0);
+			item = db.query("select * from "+StringValue.tbl_comboItem +" where id=?", new ComboItemMapper(),new Object[] {id}).get(0);
 			if(item!=null) {
 				return true;
 			}
