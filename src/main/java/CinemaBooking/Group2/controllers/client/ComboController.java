@@ -33,11 +33,16 @@ public class ComboController {
 	@GetMapping("/public/combo")
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<CnPResponseDTO>>> getCombo(
-			@RequestParam("page")int page,@RequestParam("size")int size) {
+			@RequestParam(value = "page", required = false) Integer page,
+		    @RequestParam(value = "size", required = false) Integer size) {
 		ApiResponse<List<CnPResponseDTO>> response;
+		if(page == null || size == null) {
+			page = 1;
+			size = 10;
+		}
 		// String message = "Error";
 		try {
-			float totalItem = service.getCombo().size();
+			int totalItem = service.countActiveItems();
 			Map<String, Object> meta = new HashMap<>();
 			List<CnPResponseDTO> item = new ArrayList<>();
 			item = service.getCombo(page,size);

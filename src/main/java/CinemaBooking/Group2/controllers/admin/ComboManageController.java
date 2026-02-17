@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 public class ComboManageController {
 	@Autowired
 	ComboService service;
-	@GetMapping("/api/public/combo")
+	@GetMapping("/public/combo")
 	@CrossOrigin
 	public ResponseEntity<ComboListResponseDTO> getCombo() {
 		ComboListResponseDTO list = new ComboListResponseDTO();
