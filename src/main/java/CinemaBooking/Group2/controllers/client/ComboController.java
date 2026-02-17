@@ -34,7 +34,8 @@ public class ComboController {
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<CnPResponseDTO>>> getCombo(
 			@RequestParam(value = "page", required = false) Integer page,
-		    @RequestParam(value = "size", required = false) Integer size) {
+		    @RequestParam(value = "size", required = false) Integer size,
+		    @RequestParam(value = "filterType", required = false) String filterType) {
 		ApiResponse<List<CnPResponseDTO>> response;
 		if(page == null || size == null) {
 			page = 1;
@@ -45,7 +46,7 @@ public class ComboController {
 			int totalItem = service.countActiveItems();
 			Map<String, Object> meta = new HashMap<>();
 			List<CnPResponseDTO> item = new ArrayList<>();
-			item = service.getCombo(page,size);
+			item = service.getCombo(page, size, filterType);
 			if (item == null) {
 				response = new ApiResponse<List<CnPResponseDTO>>("Not found", null);
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);

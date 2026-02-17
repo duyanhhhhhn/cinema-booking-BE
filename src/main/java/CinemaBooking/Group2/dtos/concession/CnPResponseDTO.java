@@ -2,7 +2,11 @@ package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CnPResponseDTO {
 	private int id;
     private String name;
@@ -10,9 +14,17 @@ public class CnPResponseDTO {
     private BigDecimal price;
     private String imageUrl;
     private int stock;
-    private int isActive;
+    private Integer isActive; // Changed to Integer to allow null for client view
     private LocalDateTime createdAt;
     private String type;
+    private List<ComboItemResponseDTO> itemList;
+	
+	public List<ComboItemResponseDTO> getItemList() {
+		return itemList;
+	}
+	public void setItemList(List<ComboItemResponseDTO> itemList) {
+		this.itemList = itemList;
+	}
 	public int getId() {
 		return id;
 	}
@@ -49,10 +61,10 @@ public class CnPResponseDTO {
 	public void setStock(int stock) {
 		this.stock = stock;
 	}
-	public int getIsActive() {
+	public Integer getIsActive() {
 		return isActive;
 	}
-	public void setIsActive(int isActive) {
+	public void setIsActive(Integer isActive) {
 		this.isActive = isActive;
 	}
 	public LocalDateTime getCreatedAt() {
@@ -68,7 +80,7 @@ public class CnPResponseDTO {
 		this.type = type;
 	}
 	public CnPResponseDTO(int id, String name, String description, BigDecimal price, String imageUrl, int stock,
-			int isActive, LocalDateTime createdAt, String type) {
+			Integer isActive, LocalDateTime createdAt, String type) {
 		super();
 		this.id = id;
 		this.name = name;
