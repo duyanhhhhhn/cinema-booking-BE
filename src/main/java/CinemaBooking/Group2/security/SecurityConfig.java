@@ -50,6 +50,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						// Public routes
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/showtimes/*/seats").permitAll()
 						.requestMatchers(
 								"/api/public/**",
 								"/api/auth/register/**",
