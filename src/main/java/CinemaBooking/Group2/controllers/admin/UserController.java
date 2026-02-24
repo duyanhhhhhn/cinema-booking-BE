@@ -94,12 +94,11 @@ public class UserController {
             throw new RuntimeException("Bạn chưa đăng nhập!");
 
         User user = userService.findByEmail(principal.email());
-        System.out.println(user.getAvatarUrl());
         if (user == null) 
-            throw new RuntimeException("Không tìm thấy người dùng!");
-
+            throw new RuntimeException("Không tìm thấy người dùng!");    
         UserDTO dto = new UserDTO(user.getId(), user.getFullName(), user.getEmail(), user.getPhone(),
                 user.getAvatarUrl(), user.getRoleName(), user.getCreatedAt(), user.getCinemaId(),user.getIsActive());
+        
         return ResponseEntity.ok(new ApiResponse<>("Success", dto));
     }
 
@@ -173,19 +172,27 @@ public class UserController {
         PageResponse<UserDTO> response = userService.getCustomers(page, perPage, search);
         return ResponseEntity.ok(response);
     }
- // ================= CREATE MANAGER/STAFF =================
-    @PostMapping("/manage")
+ // ===== CREATE MANAGER/STAFF =====
+    @PostMapping(value = "/manage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
-    public ResponseEntity<ApiResponse<Void>> createManageUser(@RequestBody CreateUserRequestDTO req) {
-        userService.createManageUser(req);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Tạo user thành công", null));
+    public ResponseEntity<ApiResponse<Void>> createManageUser(
+            @RequestPart("data") CreateUserRequestDTO req,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+
+        userService.createManageUser(req, avatar);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Tạo user thành công", null));
     }
 
-    // ================= UPDATE MANAGER/STAFF =================
-    @PutMapping("/manage/{id}")
+    // ===== UPDATE MANAGER/STAFF =====
+    @PutMapping(value = "/manage/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
-    public ResponseEntity<ApiResponse<Void>> updateManageUser(@PathVariable int id, @RequestBody UpdateUserRequestDTO req) {
-        userService.updateManageUser(id, req);
+    public ResponseEntity<ApiResponse<Void>> updateManageUser(
+            @PathVariable int id,
+            @RequestPart("data") UpdateUserRequestDTO req,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+
+        userService.updateManageUser(id, req, avatar);
         return ResponseEntity.ok(new ApiResponse<>("Cập nhật user thành công", null));
     }
 

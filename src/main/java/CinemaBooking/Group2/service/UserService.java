@@ -300,12 +300,18 @@ public class UserService {
 	    if ("STAFF".equals(p.role()))
 	        throw new RuntimeException("Không có quyền");
 
-	    List<Integer> roles = List.of(2, 3);
-
+	    List<Integer> roles;
 	    Integer cinemaId = null;
 
-	    if ("MANAGER".equals(p.role())) {
+	    if ("ADMIN".equals(p.role())) {
+	        // ADMIN thấy MANAGER + STAFF
+	        roles = List.of(2, 3);
+	    } else if ("MANAGER".equals(p.role())) {
+	        // MANAGER chỉ thấy STAFF trong cinema của mình
+	        roles = List.of(3);
 	        cinemaId = p.cinemaId();
+	    } else {
+	        throw new RuntimeException("Role không hợp lệ");
 	    }
 
 	    int offset = getOffset(page, perPage);
@@ -354,34 +360,51 @@ public class UserService {
     }
 
  // ================= CREATE MANAGER/STAFF =================
-    public void createManageUser(CreateUserRequestDTO req) {
-        AuthUserPrincipal principal = (AuthUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public void createManageUser(CreateUserRequestDTO req, MultipartFile avatar) {
+
+        AuthUserPrincipal principal =
+            (AuthUserPrincipal) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
 
         String role = principal.role();
         Integer cinemaId = principal.cinemaId();
 
-        // Quyền hạn tạo
         if ("STAFF".equals(role))
             throw new RuntimeException("STAFF không được tạo user");
-        
+
         if ("ADMIN".equals(role)) {
+
             if (req.getRoleId() != 2 && req.getRoleId() != 3)
                 throw new RuntimeException("ADMIN chỉ được tạo MANAGER hoặc STAFF");
+
+            // ADMIN được chọn cinema
+            if (req.getCinemaId() == null)
+                throw new RuntimeException("Phải chọn rạp");
+
         } else if ("MANAGER".equals(role)) {
+
             if (req.getRoleId() != 3)
                 throw new RuntimeException("MANAGER chỉ được tạo STAFF");
-            if (!cinemaId.equals(req.getCinemaId()))
-                throw new RuntimeException("MANAGER chỉ được tạo user trong rạp của mình");
+
+            // 🔥 Không check nữa
+            // 🔥 Override luôn
+            req.setCinemaId(cinemaId);
         }
 
         if (userRepo.existsByEmail(req.getEmail()))
             throw new RuntimeException("Email đã tồn tại");
 
+        if (avatar != null && !avatar.isEmpty()) {
+            String avatarUrl = uploadAvatar(avatar);
+            req.setAvatarUrl(avatarUrl);
+        }
+
         userRepo.createStaff(req, encoder.encode(req.getPassword()));
     }
 
     // ================= UPDATE MANAGER/STAFF =================
-    public void updateManageUser(int id, UpdateUserRequestDTO req) {
+    public void updateManageUser(int id, UpdateUserRequestDTO req,MultipartFile avatar) {
         AuthUserPrincipal principal = (AuthUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         User target = userRepo.findById(id);
@@ -397,6 +420,10 @@ public class UserService {
         // Chỉ ADMIN có thể chỉnh MANAGER
         if ("MANAGER".equals(principal.role()) && target.getRoleId() == 2)
             throw new RuntimeException("MANAGER không được chỉnh MANAGER");
+        if (avatar != null && !avatar.isEmpty()) {
+            String avatarUrl = uploadAvatar(avatar);
+            req.setAvatarUrl(avatarUrl);
+        }
 
         userRepo.updateUser(id, req);
     }
