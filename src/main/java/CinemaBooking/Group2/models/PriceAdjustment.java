@@ -17,7 +17,7 @@ public class PriceAdjustment {
     private String applyOnDays; // 
     private LocalDate startDate;
     private LocalDate endDate;
-    private int active;
+    private int isActive;
 	public int getId() {
 		return id;
 	}
@@ -60,11 +60,11 @@ public class PriceAdjustment {
 	public void setEndDate(LocalDate endDate) {
 		this.endDate = endDate;
 	}
-	public int getActive() {
-		return active;
+	public int getIsActive() {
+		return isActive;
 	}
-	public void setActive(int active) {
-		this.active = active;
+	public void setIsActive(int isActive) {
+		this.isActive = isActive;
 	}
 	/**
 	 * @param id
@@ -74,10 +74,10 @@ public class PriceAdjustment {
 	 * @param applyOnDays
 	 * @param startDate
 	 * @param endDate
-	 * @param active
+	 * @param isActive
 	 */
 	public PriceAdjustment(int id, String name, AdjustmentType adjustmentType, BigDecimal value, String applyOnDays,
-			LocalDate startDate, LocalDate endDate, int active) {
+			LocalDate startDate, LocalDate endDate, int isActive) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -86,7 +86,7 @@ public class PriceAdjustment {
 		this.applyOnDays = applyOnDays;
 		this.startDate = startDate;
 		this.endDate = endDate;
-		this.active = active;
+		this.isActive = isActive;
 	}
 	/**
 	 * 
