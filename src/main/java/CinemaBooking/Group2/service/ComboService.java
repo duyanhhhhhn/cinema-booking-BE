@@ -228,6 +228,14 @@ public class ComboService {
 		}
 		return res;
 	}
+	public void AddComboItem (ComboItem item) {
+		try {
+			con.addComboItem(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
 
 	public String EditCombo(Combo combo) {
 		String s = "Error";

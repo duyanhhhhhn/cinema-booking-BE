@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,13 +30,14 @@ import CinemaBooking.Group2.ultis.StringValue;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
+@RequestMapping("/api")
 public class MarketingController {
 	@Autowired
 	MarketingService service;
-	@GetMapping("/api/public/posts")
+	@GetMapping("/public/posts")
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam(value="page", required = false, defaultValue = "1")int page 
-			,@RequestParam(value="perPage", required = false, defaultValue = "6")int size){
+			,@RequestParam(value="perPage", required = false, defaultValue = "3")int size){
 		List<PostResponseDTO> item;
 		try {
 			item = service.getPostPaging(page,size);
@@ -53,7 +55,7 @@ public class MarketingController {
 		
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
 	}
-	@PostMapping("/api/posts")
+	@PostMapping("/posts")
 	@CrossOrigin
 	public ResponseEntity<PostResponseDTO> newPost(@RequestBody Post item){
 		PostResponseDTO rs = new PostResponseDTO();
@@ -74,7 +76,7 @@ public class MarketingController {
 	}
 	
 	
-	@GetMapping("/api/public/posts/{id}")
+	@GetMapping("/public/posts/{id}")
 	@CrossOrigin
 	public ResponseEntity<PageResponse<PostResponseDTO>> postInfo(@PathVariable("id")int id){
 		PageResponse<PostResponseDTO> res= new PageResponse<>();
@@ -99,10 +101,10 @@ public class MarketingController {
 		item.setMessage("Error");
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 	}
-	@GetMapping("/api/vouchers/paging")
+	@GetMapping("/public/vouchers")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucherPaging(@RequestParam("page")int page,
-			@RequestParam("size") int size){
+	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucherPaging(@RequestParam(name="page",defaultValue = "1")int page,
+			@RequestParam(name="perPage",defaultValue = "10") int size){
 		//ApiResponse<List<VoucherResponseDTO>> response;
 		List<VoucherResponseDTO> item=null;
 		try {

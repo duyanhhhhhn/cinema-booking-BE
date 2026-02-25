@@ -150,7 +150,6 @@ public class MarketingService {
 			if(rs==BigDecimal.valueOf(0)) {
 				return null;
 			}
-			dto.setDiscountPrice(rs);
 			dto.setMessage("Success");
 			dto.setIsSuccess(true);
 			return dto;

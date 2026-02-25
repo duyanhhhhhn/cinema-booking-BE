@@ -17,7 +17,6 @@ public class VoucherMapper implements RowMapper<Voucher>{
 		VoucherResponseDTO res = new VoucherResponseDTO();
 		res.setCode(item.getCode());
 		res.setDescription(item.getDescription());
-		res.setCreatedAt(item.getCreatedAt());
 		res.setDiscountType(item.getDiscountType());
 		res.setDiscountValue(item.getDiscountValue());
 		res.setStartAt(item.getStartAt());

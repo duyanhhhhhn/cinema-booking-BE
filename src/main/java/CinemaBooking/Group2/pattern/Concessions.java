@@ -155,4 +155,15 @@ public class Concessions {
 	public int deleteProduct(int id) {
 		return 0;
 	}
+	//
+	public int addComboItem(ComboItem item) {
+		try {
+			int rs= itemRep.create(item);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
 }

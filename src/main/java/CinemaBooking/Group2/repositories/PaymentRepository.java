@@ -1,6 +1,7 @@
 package CinemaBooking.Group2.repositories;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,15 +97,17 @@ public class PaymentRepository implements Icrud<Payment>{
 	public BigDecimal getRevenueByDay(LocalDate date) {
 		BigDecimal rs = new BigDecimal(0);
 		try {
-			List<Payment> list = db.query("select * from "+StringValue.tbl_payment+" where paid_at=?", 
-					new PaymentMapper(),new Object[] {date});
+			List<Payment> list = db.query("select * from "+StringValue.tbl_payment+" where paid_at >= ? AND paid_at < ?", 
+					new PaymentMapper(),date.atStartOfDay(),
+							  date.plusDays(1).atStartOfDay());
 			for(int i=0;i<list.size();i++) {
 				rs=rs.add(list.get(i).getAmount());
-			}
+			}	
 			return rs;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return BigDecimal.valueOf(0);
 	}

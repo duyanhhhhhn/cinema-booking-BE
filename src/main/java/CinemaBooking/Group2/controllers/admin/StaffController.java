@@ -1,16 +1,23 @@
 package CinemaBooking.Group2.controllers.admin;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.Meta;
+import CinemaBooking.Group2.dtos.PageResponse;
+import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.workShiftResponseDTO;
 import CinemaBooking.Group2.models.StaffSchedule;
@@ -18,7 +25,7 @@ import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 import CinemaBooking.Group2.service.StaffScheduleService;
 
 @RestController
-@RequestMapping("/admin/api/staff")
+@RequestMapping("/api/staff")
 public class StaffController {
 	@Autowired
 	private StaffScheduleService service;
@@ -49,10 +56,10 @@ public class StaffController {
 		return m;
 	}
 	@CrossOrigin
-	@GetMapping("api/staff/schedules")
-	public List<staffScheduleResponseDTO> getSchedules(){
+	@GetMapping("/schedules")
+	public List<staffScheduleResponseDTO> getSchedules(@RequestParam(name="page",defaultValue = "1") int page,@RequestParam(name="pageSize",defaultValue = "6") int size){
 		try {
-			return service.getSchedule();
+			return service.getSchedule(page,size);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -60,10 +67,10 @@ public class StaffController {
 		return null;
 	}
 	@CrossOrigin
-	@GetMapping("api/staff/shifts")
-	public List<workShiftResponseDTO> getShift(){
+	@GetMapping("/schedules/week")
+	public List<ScheduleResponseDTO> getThisWeekSchedules(){
 		try {
-			return service.getShift();
+			return service.getThisWeekSchedule(LocalDate.now());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -71,7 +78,33 @@ public class StaffController {
 		return null;
 	}
 	@CrossOrigin
-	@GetMapping("/api/staff/schedule/my")
+	@PutMapping("/schedules/{id}")
+	public List<staffScheduleResponseDTO> editSchedules(@PathVariable("id")int id,@RequestParam("data") StaffSchedule data){
+		try {
+			
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	@CrossOrigin
+	@GetMapping("/shifts")
+	public PageResponse<workShiftResponseDTO> getShift(){
+		try {
+			List<workShiftResponseDTO> list = service.getShift();
+			PageResponse<workShiftResponseDTO> response = new PageResponse<workShiftResponseDTO>();
+			if(list!=null) {
+				response.setData(list);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	@CrossOrigin
+	@GetMapping("/schedule/my")
 	public List<staffScheduleResponseDTO> getMySchedules(@RequestParam("id")int id){
 		try {
 			return service.getScheduleByStaffId(id);

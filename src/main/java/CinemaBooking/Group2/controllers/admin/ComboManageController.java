@@ -22,6 +22,7 @@ import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -76,7 +77,7 @@ public class ComboManageController {
 	@CrossOrigin
 	@PostMapping("/api/combo/add")
 	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestParam("name") String name,@RequestParam("description") String description,
-			@RequestParam("price")BigDecimal price,@RequestParam("image_url")String image) {
+			@RequestParam("price")BigDecimal price,@RequestParam("bannerFile")String image,@RequestParam("comboItem")List<ComboItem> comboitem) {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			Combo item = new Combo();
@@ -84,6 +85,11 @@ public class ComboManageController {
 			item.setDescription(description);
 			item.setPrice(price);
 			item.setImageUrl(image);
+			if(comboitem!=null) {
+				for(ComboItem items :comboitem) {
+					service.AddComboItem(items);
+				}
+			}
 			res = service.AddCombo(item);
 			return ResponseEntity.status(HttpStatus.CREATED).body(res);
 		}

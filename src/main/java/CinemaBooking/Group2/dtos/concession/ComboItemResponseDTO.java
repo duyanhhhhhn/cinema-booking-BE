@@ -1,32 +1,32 @@
 package CinemaBooking.Group2.dtos.concession;
 
 public class ComboItemResponseDTO {
-	private int productId;
-	private String productName;
+	private int id;
+	private String name;
 	private int quantity;
 	
 	public ComboItemResponseDTO() {}
 	
 	public ComboItemResponseDTO(int productId, String productName, int quantity) {
-		this.productId = productId;
-		this.productName = productName;
+		this.id = productId;
+		this.name = productName;
 		this.quantity = quantity;
 	}
 
 	public int getProductId() {
-		return productId;
+		return id;
 	}
 
 	public void setProductId(int productId) {
-		this.productId = productId;
+		this.id = productId;
 	}
 
 	public String getProductName() {
-		return productName;
+		return name;
 	}
 
 	public void setProductName(String productName) {
-		this.productName = productName;
+		this.name = productName;
 	}
 
 	public int getQuantity() {
