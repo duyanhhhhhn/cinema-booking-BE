@@ -112,7 +112,7 @@ public class BookingRepository {
     public List<PriceAdjustment> findActivePriceAdjustments() {
         String sql = """
             SELECT * FROM price_adjustment 
-            WHERE active = 1 
+            WHERE is_active = 1 
             AND (start_date IS NULL OR start_date <= CURDATE())
             AND (end_date IS NULL OR end_date >= CURDATE())
         """;
