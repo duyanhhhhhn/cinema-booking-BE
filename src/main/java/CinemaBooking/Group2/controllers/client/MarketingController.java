@@ -25,6 +25,7 @@ import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.User;
+import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.service.MarketingService;
 import CinemaBooking.Group2.ultis.StringValue;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -100,6 +101,25 @@ public class MarketingController {
 		}
 		item.setMessage("Error");
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+	}
+	@GetMapping("/public/vouchers/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<VoucherResponseDTO>> voucherInfo(@PathVariable("id")int id){
+		ApiResponse<VoucherResponseDTO> res;
+		try {
+			if(id!=0) {
+				VoucherResponseDTO dto = service.voucherInfo(id);
+				if(dto!=null) {
+					res = new ApiResponse<VoucherResponseDTO>("success", dto);
+					return ResponseEntity.ok(res);
+				}
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
 	}
 	@GetMapping("/public/vouchers")
 	@CrossOrigin

@@ -111,6 +111,19 @@ public class MarketingService {
 		}
 		return null;
 	}
+	public VoucherResponseDTO voucherInfo(int id ) {
+		try {
+			if(id ==0) {
+				return null;
+			}
+			Voucher item = mk.voucherInfo(id);
+			return VoucherMapper.toResponseDTO(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public VoucherResponseDTO addVoucher(Voucher item) {
 		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
