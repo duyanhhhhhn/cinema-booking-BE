@@ -155,9 +155,10 @@ public class UserController {
     public ResponseEntity<PageResponse<UserDTO>> getStaffs(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int perPage,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer cinemaId
     ) {
-        PageResponse<UserDTO> response = userService.getStaffs(page, perPage, search);
+        PageResponse<UserDTO> response = userService.getStaffs(page, perPage, search, cinemaId);
         System.out.println(response);
         return ResponseEntity.ok(response);
     }

@@ -50,14 +50,14 @@ public class UserRepository {
         String sql = """
                 INSERT INTO user (
                     role_id, cinema_id, position,
-                    full_name, email, password, phone, is_active
+                    full_name, email, password, phone, avatar_url, is_active
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
             """;
 
         try {
             return jdbc.update(sql, u.getRoleId(), u.getCinemaId(), u.getPosition(),
-                    u.getFullName(), u.getEmail(), hashedPassword, u.getPhone());
+                    u.getFullName(), u.getEmail(), hashedPassword, u.getPhone(), u.getAvatarUrl());
         } catch (Exception e) {
             return 0;
         }
