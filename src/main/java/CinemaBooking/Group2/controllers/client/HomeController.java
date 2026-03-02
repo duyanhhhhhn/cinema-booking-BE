@@ -129,7 +129,7 @@ public class HomeController {
 		}
 		return null;
 	}
-	@PutMapping("/banner/{id}")
+	@PutMapping("/admin/banner/{id}")
 	//@PreAuthorize("hasAuthority('ADMIN')")
 	public ResponseEntity<PageResponse<BannerResponseDTO>> updateBanner(
 			@RequestBody() BannerRequestDTO dto,
