@@ -100,12 +100,12 @@ public class SecurityConfig {
 						// ===== ROLE BASE =====
 						.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
 						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
-						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
-						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						.requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
-						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
-						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
-						.requestMatchers("/api/tickets/**").hasAnyAuthority("ADMIN", "STAFF")
+						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/tickets/**").hasAnyAuthority("ADMIN", "STAFF", "MANAGER")
 
 						.anyRequest().authenticated())
 

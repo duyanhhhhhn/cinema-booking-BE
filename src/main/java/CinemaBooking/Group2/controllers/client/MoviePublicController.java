@@ -79,9 +79,10 @@ public class MoviePublicController {
 
     @GetMapping("/{movieId}/cinemas-showtimes")
     public ResponseEntity<List<MovieWithShowtimesDtos>> getCinemasWithShowtimesByMovieId(
-            @PathVariable int movieId
+            @PathVariable int movieId,
+            @RequestParam(required = false) Integer cinemaId
     ) {
-        List<MovieWithShowtimesDtos> data = showtimeServices.getCinemasWithShowtimesByMovieId(movieId);
+        List<MovieWithShowtimesDtos> data = showtimeServices.getCinemasWithShowtimesByMovieId(movieId, cinemaId);
         return ResponseEntity.ok(data);
     }
 
