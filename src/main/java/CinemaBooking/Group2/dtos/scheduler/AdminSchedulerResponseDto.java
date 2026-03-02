@@ -1,0 +1,22 @@
+package CinemaBooking.Group2.dtos.scheduler;
+
+
+import java.util.List;
+
+public class AdminSchedulerResponseDto {
+    private List<AdminSchedulerResourceDto> resources;
+    private List<AdminSchedulerEventDto> events;
+
+    public AdminSchedulerResponseDto() {}
+
+    public AdminSchedulerResponseDto(List<AdminSchedulerResourceDto> resources, List<AdminSchedulerEventDto> events) {
+        this.resources = resources;
+        this.events = events;
+    }
+
+    public List<AdminSchedulerResourceDto> getResources() { return resources; }
+    public void setResources(List<AdminSchedulerResourceDto> resources) { this.resources = resources; }
+
+    public List<AdminSchedulerEventDto> getEvents() { return events; }
+    public void setEvents(List<AdminSchedulerEventDto> events) { this.events = events; }
+}
