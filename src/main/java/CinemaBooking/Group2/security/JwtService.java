@@ -35,10 +35,18 @@ public class JwtService {
 
     // ======== GENERATE ========
 
+    private String normalizeRole(String role) {
+        if (role == null) return null;
+        String r = role.trim().toUpperCase();
+        if (r.startsWith("ROLE_")) r = r.substring(5);
+        return r;
+    }
+
     public String generateAccessToken(User user) {
+        String role = normalizeRole(user.getRoleName());
         return Jwts.builder()
                 .subject(user.getEmail())
-                .claim("role", user.getRoleName())
+                .claim("role", role)
                 .claim("cinemaId", user.getCinemaId())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessExpiration))
@@ -94,4 +102,3 @@ public class JwtService {
         return parseClaims(token).getExpiration().before(new Date());
     }
 }
-

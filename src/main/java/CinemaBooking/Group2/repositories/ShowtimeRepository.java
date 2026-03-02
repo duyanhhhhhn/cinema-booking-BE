@@ -210,128 +210,187 @@ public class ShowtimeRepository {
 		}
 	}
 
-	public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
-		String sql = "SELECT " + "  c.id AS cinema_id, " + "  c.name AS cinema_name, " + "  c.address AS address, "
-				+ "  m.poster_url AS poster_url, " + "  m.duration_minutes AS duration_minutes, "
-				+ "  s.id AS showtime_id, " + "  s.start_time AS start_time, " + "  s.end_time AS end_time, "
-				+ "  r.type AS room_type " + "FROM showtime s " + "JOIN room r ON r.id = s.room_id "
-				+ "JOIN cinema c ON c.id = r.cinema_id " + "JOIN movie m ON m.id = s.movie_id "
-				+ "WHERE s.movie_id = ? " + "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) "
-				+ "  AND s.start_time >= NOW() " + "  AND s.end_time > s.start_time "
-				+ "  AND (m.duration_minutes IS NULL OR "
-				+ "       TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time) >= m.duration_minutes) "
-				+ "  AND (c.is_active = 1 OR c.is_active IS NULL) " + "ORDER BY c.id ASC, s.start_time ASC";
+	public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId, Integer cinemaId) {
+        // Base SQL selects cinemas and their upcoming showtimes for a movie
+        String baseSql = "SELECT " +
+                "  c.id AS cinema_id, " +
+                "  c.name AS cinema_name, " +
+                "  c.address AS address, " +
+                "  m.poster_url AS poster_url, " +
+                "  m.duration_minutes AS duration_minutes, " +
+                "  s.id AS showtime_id, " +
+                "  s.start_time AS start_time, " +
+                "  s.end_time AS end_time, " +
+                "  r.type AS room_type " +
+                "FROM showtime s " +
+                "JOIN room r ON r.id = s.room_id " +
+                "JOIN cinema c ON c.id = r.cinema_id " +
+                "JOIN movie m ON m.id = s.movie_id " +
+                "WHERE s.movie_id = ? " +
+                "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
+                "  AND s.start_time >= NOW() " +
+                "  AND s.end_time > s.start_time " +
+                "  AND (m.duration_minutes IS NULL OR " +
+                "       TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time) >= m.duration_minutes) " +
+                "  AND (c.is_active = 1 OR c.is_active IS NULL) ";
 
-		java.time.ZoneId VN_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
-		java.time.format.DateTimeFormatter ISO_OFFSET = java.time.format.DateTimeFormatter
-				.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+        boolean hasCinemaFilter = (cinemaId != null && cinemaId > 0);
+        if (hasCinemaFilter) {
+            baseSql += "  AND c.id = ? ";
+        }
 
-		java.util.Map<Integer, MovieWithShowtimesDtos> grouped = new java.util.LinkedHashMap<>();
+        baseSql += " ORDER BY c.id ASC, s.start_time ASC";
+
+        java.time.ZoneId VN_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        java.time.format.DateTimeFormatter ISO_OFFSET = java.time.format.DateTimeFormatter
+                .ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+
+        java.util.Map<Integer, MovieWithShowtimesDtos> grouped = new java.util.LinkedHashMap<>();
+
+        try (java.sql.Connection con = dataSource.getConnection();
+                java.sql.PreparedStatement ps = con.prepareStatement(baseSql)) {
+
+            int idx = 1;
+            ps.setInt(idx++, movieId);
+
+            if (hasCinemaFilter) {
+                ps.setInt(idx++, cinemaId);
+            }
+
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+                while (rs.next()) {
+                    java.sql.Timestamp st = rs.getTimestamp("start_time");
+                    java.sql.Timestamp et = rs.getTimestamp("end_time");
+
+                    if (st == null || et == null) {
+                        continue;
+                    }
+
+                    java.time.LocalDateTime startTime = st.toLocalDateTime();
+                    java.time.LocalDateTime endTime = et.toLocalDateTime();
+
+                    if (startTime.isBefore(now))
+                        continue;
+                    if (!endTime.isAfter(startTime))
+                        continue;
+
+                    int cId = rs.getInt("cinema_id");
+                    MovieWithShowtimesDtos dto = grouped.get(cId);
+
+                    if (dto == null) {
+                        dto = new MovieWithShowtimesDtos();
+                        dto.setCinemaId(cId);
+                        dto.setCinemaName(rs.getString("cinema_name"));
+                        dto.setAddress(rs.getString("address"));
+                        dto.setPosterUrl(rs.getString("poster_url"));
+
+                        Object durObj = rs.getObject("duration_minutes");
+                        Integer durationMinutes = (durObj == null) ? null : ((Number) durObj).intValue();
+                        dto.setDurationMinutes(durationMinutes);
+
+                        grouped.put(cId, dto);
+                    }
+
+                    Integer dur = dto.getDurationMinutes();
+                    if (dur != null) {
+                        long diffMin = java.time.Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < dur)
+                            continue;
+                    }
+
+                    String roomType = rs.getString("room_type");
+                    String type = (roomType == null || roomType.isBlank()) ? "2D" : roomType.trim();
+
+                    CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos stDto = new CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos();
+                    stDto.setId(rs.getInt("showtime_id"));
+
+                    String startIso = startTime.atZone(VN_ZONE).format(ISO_OFFSET);
+                    stDto.setStartTime(startIso);
+
+                    stDto.setType(type);
+
+                    dto.getShowtimes().add(stDto);
+                }
+            }
+
+            return new java.util.ArrayList<>(grouped.values());
+
+        } catch (java.sql.SQLException e) {
+            throw new RuntimeException("FAILED TO FETCH CINEMAS & SHOWTIMES BY MOVIE ID: " + movieId, e);
+        }
+    }
+
+	// New method: fetch cinema name for a given showtime id
+	public String getCinemaNameByShowtime(int showtimeId) {
+		String sql = "SELECT c.name AS cinema_name " +
+				 "FROM showtime s " +
+				 "JOIN room r ON r.id = s.room_id " +
+				 "JOIN cinema c ON c.id = r.cinema_id " +
+				 "WHERE s.id = ? LIMIT 1";
 
 		try (java.sql.Connection con = dataSource.getConnection();
-				java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+			 java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
 
-			ps.setInt(1, movieId);
+			ps.setInt(1, showtimeId);
 
 			try (java.sql.ResultSet rs = ps.executeQuery()) {
-				java.time.LocalDateTime now = java.time.LocalDateTime.now();
-
-				while (rs.next()) {
-					java.time.LocalDateTime startTime = rs.getTimestamp("start_time").toLocalDateTime();
-					java.time.LocalDateTime endTime = rs.getTimestamp("end_time").toLocalDateTime();
-
-					if (startTime.isBefore(now))
-						continue;
-					if (!endTime.isAfter(startTime))
-						continue;
-
-					int cinemaId = rs.getInt("cinema_id");
-					MovieWithShowtimesDtos dto = grouped.get(cinemaId);
-
-					if (dto == null) {
-						dto = new MovieWithShowtimesDtos();
-						dto.setCinemaId(cinemaId);
-						dto.setCinemaName(rs.getString("cinema_name"));
-						dto.setAddress(rs.getString("address"));
-						dto.setPosterUrl(rs.getString("poster_url"));
-
-						Object durObj = rs.getObject("duration_minutes");
-						Integer durationMinutes = (durObj == null) ? null : ((Number) durObj).intValue();
-						dto.setDurationMinutes(durationMinutes);
-
-						grouped.put(cinemaId, dto);
-					}
-
-					Integer dur = dto.getDurationMinutes();
-					if (dur != null) {
-						long diffMin = java.time.Duration.between(startTime, endTime).toMinutes();
-						if (diffMin < dur)
-							continue;
-					}
-
-					String roomType = rs.getString("room_type");
-					String type = (roomType == null || roomType.isBlank()) ? "2D" : roomType.trim();
-
-					CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos st = new CinemaBooking.Group2.dtos.showtime.ShowtimeItemDtos();
-
-					st.setId(rs.getInt("showtime_id"));
-
-					String startIso = startTime.atZone(VN_ZONE).format(ISO_OFFSET);
-					st.setStartTime(startIso);
-
-					st.setType(type);
-
-					dto.getShowtimes().add(st);
+				if (rs.next()) {
+					return rs.getString("cinema_name");
 				}
 			}
 
-			return new java.util.ArrayList<>(grouped.values());
+			return null;
 
 		} catch (java.sql.SQLException e) {
-			throw new RuntimeException("FAILED TO FETCH CINEMAS & SHOWTIMES BY MOVIE ID: " + movieId, e);
+			throw new RuntimeException("Failed to fetch cinema name for showtime: " + showtimeId, e);
 		}
 	}
 
-	
-	public String getCinemaNameByShowtime(int showtimeId) {
-
-		String sql = """
-			    SELECT c.name
-			    FROM showtime s
-			    JOIN room r ON s.room_id = r.id
-			    JOIN cinema c ON r.cinema_id = c.id
-			    WHERE s.id = ?
-			""";
-		try {
-			return jdbc.queryForObject(sql, String.class, showtimeId);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to fetch cinema name for showtime", e);
-		}
-	}
-
-	/**
-	 * New: fetch movie/showtime/room/cinema details for a showtime id
-	 * Returns a Map with keys: movie_title, poster_url, genre, duration_minutes, room_name, address, start_time
-	 */
+	// New method: fetch showtime details used by ShowtimeService
 	public Map<String, Object> getShowtimeDetails(int showtimeId) {
-		String sql = """
-		    SELECT m.title AS movie_title,
-		           COALESCE(m.poster_url, m.banner_url) AS poster_url,
-		           m.genre AS genre,
-		           m.duration_minutes AS duration_minutes,
-		           r.name AS room_name,
-		           c.address AS address,
-		           s.start_time AS start_time,
-		           s.base_price AS base_price
-		    FROM showtime s
-		    JOIN movie m ON m.id = s.movie_id
-		    JOIN room r ON r.id = s.room_id
-		    JOIN cinema c ON c.id = r.cinema_id
-		    WHERE s.id = ?
-		""";
-		try {
-			return jdbc.queryForMap(sql, showtimeId);
-		} catch (Exception e) {
+		String sql = "SELECT " +
+				 "  s.base_price AS base_price, " +
+				 "  m.title AS movie_title, " +
+				 "  COALESCE(m.poster_url, m.banner_url) AS poster_url, " +
+				 "  m.genre AS genre, " +
+				 "  m.duration_minutes AS duration_minutes, " +
+				 "  r.name AS room_name, " +
+				 "  c.address AS address, " +
+				 "  s.start_time AS start_time " +
+				 "FROM showtime s " +
+				 "JOIN room r ON r.id = s.room_id " +
+				 "JOIN cinema c ON c.id = r.cinema_id " +
+				 "JOIN movie m ON m.id = s.movie_id " +
+				 "WHERE s.id = ? LIMIT 1";
+
+		try (java.sql.Connection con = dataSource.getConnection();
+			 java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+
+			ps.setInt(1, showtimeId);
+
+			try (java.sql.ResultSet rs = ps.executeQuery()) {
+				if (!rs.next()) return null;
+
+				Map<String, Object> map = new LinkedHashMap<>();
+
+				map.put("base_price", rs.getBigDecimal("base_price"));
+				map.put("movie_title", rs.getString("movie_title"));
+				map.put("poster_url", rs.getString("poster_url"));
+				map.put("genre", rs.getString("genre"));
+
+				Object durObj = rs.getObject("duration_minutes");
+				map.put("duration_minutes", durObj);
+
+				map.put("room_name", rs.getString("room_name"));
+				map.put("address", rs.getString("address"));
+				map.put("start_time", rs.getTimestamp("start_time"));
+
+				return map;
+			}
+
+		} catch (java.sql.SQLException e) {
 			throw new RuntimeException("Failed to fetch showtime details for id: " + showtimeId, e);
 		}
 	}

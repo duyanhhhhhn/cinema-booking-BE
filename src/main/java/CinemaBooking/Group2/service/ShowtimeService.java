@@ -64,10 +64,15 @@ public class ShowtimeService {
     }
     
     public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
+        // delegate to new overload without cinema filter
+        return getCinemasWithShowtimesByMovieId(movieId, null);
+    }
+
+    public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId, Integer cinemaId) {
         if (movieId <= 0) {
             throw new IllegalArgumentException("movieId must be > 0");
         }
-        return stRepo.getCinemasWithShowtimesByMovieId(movieId);
+        return stRepo.getCinemasWithShowtimesByMovieId(movieId, cinemaId);
     }
     
 
