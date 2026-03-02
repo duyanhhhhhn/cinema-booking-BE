@@ -1,6 +1,5 @@
 package CinemaBooking.Group2.controllers.admin;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import CinemaBooking.Group2.dtos.Meta;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
