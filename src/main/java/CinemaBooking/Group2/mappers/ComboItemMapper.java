@@ -42,7 +42,8 @@ public class ComboItemMapper implements RowMapper<ComboItem> {
 			ComboItemResponseDTO res = new ComboItemResponseDTO(
 				item.getProductId(),
 				pro.getName(),
-				item.getQuantity()
+				item.getQuantity(),
+				pro.getPrice()
 			);
 			
 			return res;
