@@ -6,6 +6,7 @@ public class AdminMovieOptionDto {
     private int durationMinutes;
     private String posterUrl;
     private String status;
+    private String format;
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
@@ -21,4 +22,7 @@ public class AdminMovieOptionDto {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getFormat() { return format; }
+    public void setFormat(String format) { this.format = format; }
 }
