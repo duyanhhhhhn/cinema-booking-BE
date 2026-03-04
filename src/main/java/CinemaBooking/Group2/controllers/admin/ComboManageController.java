@@ -20,9 +20,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
+import CinemaBooking.Group2.dtos.concession.ComboRequestDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
@@ -83,23 +87,32 @@ public class ComboManageController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(m);
 	}
 	@CrossOrigin
-	@PostMapping("/api/combo/add")
-	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestParam("name") String name,@RequestParam("description") String description,
-			@RequestParam("price")BigDecimal price,@RequestParam("bannerFile")MultipartFile image,@RequestParam("comboItem")List<ComboItem> comboitem) {
+	@PostMapping("/api/public/combo/add")
+	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestBody ComboRequestDTO combo) {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			Combo item = new Combo();
-			item.setName(name);
-			item.setDescription(description);
-			item.setPrice(price);
-			String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/combo","concessions/combo");
+			item.setName(combo.getName());
+			item.setDescription("");
+			item.setPrice(combo.getPrice());
+			String imageName = FileUltility.uploadFileImage(combo.getBannerFile(), "uploads/concessions/combo","concessions/combo");
 			item.setImageUrl(imageName);
-			if(comboitem!=null) {
-				for(ComboItem items :comboitem) {
+			item.setCreatedAt(LocalDateTime.now());
+			item.setIsActive(1);
+			res = service.AddCombo(item);
+			ObjectMapper mapper = new ObjectMapper();
+
+		    List<ComboItem> comboItems =
+		            mapper.readValue(
+		                    combo.getItem(),
+		                    new TypeReference<List<ComboItem>>() {}
+		            );
+			if(combo.getItem()!=null) {
+				for(ComboItem items :comboItems) {
+					items.setComboId(res.getCombo().getId());
 					service.AddComboItem(items);
 				}
 			}
-			res = service.AddCombo(item);
 			return ResponseEntity.status(HttpStatus.CREATED).body(res);
 		}
 		catch (Exception e) {
