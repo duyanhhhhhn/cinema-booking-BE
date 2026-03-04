@@ -95,7 +95,8 @@ public class ComboService {
 									ComboItemResponseDTO itemDTO = new ComboItemResponseDTO(
 										item.getProductId(),
 										product.getName(),
-										item.getQuantity()
+										item.getQuantity(),
+										product.getPrice()
 									);
 									itemList.add(itemDTO);
 								}

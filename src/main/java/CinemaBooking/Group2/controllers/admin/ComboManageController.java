@@ -1,6 +1,7 @@
 package CinemaBooking.Group2.controllers.admin;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,14 +18,19 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
+import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
+import CinemaBooking.Group2.service.ProductService;
+import CinemaBooking.Group2.ultis.FileUltility;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
@@ -32,6 +38,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 public class ComboManageController {
 	@Autowired
 	ComboService service;
+	@Autowired
+	ProductService pro_service;
 	@GetMapping("/public/combo")
 	@CrossOrigin
 	public ResponseEntity<ComboListResponseDTO> getCombo() {
@@ -77,14 +85,15 @@ public class ComboManageController {
 	@CrossOrigin
 	@PostMapping("/api/combo/add")
 	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestParam("name") String name,@RequestParam("description") String description,
-			@RequestParam("price")BigDecimal price,@RequestParam("bannerFile")String image,@RequestParam("comboItem")List<ComboItem> comboitem) {
+			@RequestParam("price")BigDecimal price,@RequestParam("bannerFile")MultipartFile image,@RequestParam("comboItem")List<ComboItem> comboitem) {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			Combo item = new Combo();
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
-			item.setImageUrl(image);
+			String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/combo","concessions/combo");
+			item.setImageUrl(imageName);
 			if(comboitem!=null) {
 				for(ComboItem items :comboitem) {
 					service.AddComboItem(items);
@@ -98,6 +107,30 @@ public class ComboManageController {
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+	}
+	@PostMapping("/api/product/add")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("name")String name
+			,@RequestParam("description") String description,@RequestParam("price")BigDecimal price,
+			@RequestParam("bannerFile")MultipartFile image,@RequestParam("stock")int stock) {
+		//TODO: process POST request
+		try {
+			Product item = new Product();
+			item.setName(name);
+			item.setDescription(description);
+			item.setPrice(price);
+			String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product","concessions/product");
+			item.setImageUrl(imageName);
+			item.setStock(stock);
+			item.setCreatedAt(LocalDateTime.now());
+			String a=pro_service.createProduct(item);
+			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return ResponseEntity.ok(null);
 	}
 	private Integer getCurrentUserId() {
         try {

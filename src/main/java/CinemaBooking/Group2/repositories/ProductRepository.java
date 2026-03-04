@@ -77,7 +77,7 @@ public class ProductRepository implements Icrud<Product>{
 		try {
 			int rs = db.update("insert into "+StringValue.tbl_product+"(name,description,price,image_url,stock,is_active,created_at) value(?,?,?,?,?,?,?)",
 					new Object[] {product.getName(),product.getDescription(),product.getPrice(),product.getImageUrl(),
-							product.getStock(),product.getIsActive(),product.getCreatedAt()});
+							product.getStock(),1,product.getCreatedAt()});
 			return rs;
 		}
 		catch (Exception e) {
