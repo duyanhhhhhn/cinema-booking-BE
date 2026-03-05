@@ -217,10 +217,11 @@ public class ComboService {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			int rs = con.CreateCombo(combo);
-			if (rs == 1) {
+			if (rs!=0) {
 				res.setMessage("Success");
 				res.setStatus(ResponseStatus.SUCCESS);
-			} else if (rs == 0) {
+				res.setCombo(con.comboInfo(rs));
+			}else {
 				res.setMessage("Error");
 				res.setStatus(ResponseStatus.ERROR);
 			}

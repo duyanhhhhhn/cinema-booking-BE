@@ -1,10 +1,15 @@
 package CinemaBooking.Group2.repositories;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.ComboMapper;
@@ -63,12 +68,24 @@ public class ComboRepository implements Icrud<Combo>{
 	}
 	@Override
 	public int create(Combo item) {
+		KeyHolder keyHolder = new GeneratedKeyHolder();
 		try {
-			int rs = db.update("insert into " + StringValue.tbl_combo +
-					" (name,description,price,image_url,is_active,created_at) values(?,?,?,?,?,?)",
-					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
-							item.getImageUrl(),item.getIsActive(),item.getCreatedAt()});
-			return rs;
+			db.update(connection -> {
+			    PreparedStatement ps = connection.prepareStatement(
+			        "INSERT INTO " + StringValue.tbl_combo +
+			        " (name, description, price, image_url, is_active, created_at) VALUES (?,?,?,?,?,?)",
+			        Statement.RETURN_GENERATED_KEYS
+			    );
+			    ps.setString(1, item.getName());
+			    ps.setString(2, item.getDescription());
+			    ps.setBigDecimal(3, item.getPrice());
+			    ps.setString(4, item.getImageUrl());
+			    ps.setInt(5, item.getIsActive());
+			    ps.setTimestamp(6, Timestamp.valueOf(item.getCreatedAt()));
+			    return ps;
+			}, keyHolder);
+			int comboId = keyHolder.getKey().intValue();
+			return comboId;
 		}
 		catch(Exception e) {
 			System.out.print(e);

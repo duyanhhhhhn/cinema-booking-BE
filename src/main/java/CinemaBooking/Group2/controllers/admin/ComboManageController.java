@@ -101,7 +101,6 @@ public class ComboManageController {
 			item.setIsActive(1);
 			res = service.AddCombo(item);
 			ObjectMapper mapper = new ObjectMapper();
-
 		    List<ComboItem> comboItems =
 		            mapper.readValue(
 		                    combo.getItem(),
@@ -136,6 +135,7 @@ public class ComboManageController {
 			item.setImageUrl(imageName);
 			item.setStock(stock);
 			item.setCreatedAt(LocalDateTime.now());
+			item.setIsActive(1);
 			String a=pro_service.createProduct(item);
 			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
 		}
