@@ -12,8 +12,10 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.mappers.ComboItemMapper;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
@@ -95,11 +97,21 @@ public class ComboRepository implements Icrud<Combo>{
 	@Override
 	public int update(Combo item) {
 		try {
-			int rs = db.update("update " + StringValue.tbl_combo +
-					" set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
-					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
-							item.getImageUrl(),item.getIsActive(),item.getCreatedAt(),item.getId()});
+			int rs =0;
+			if(item.getImageUrl()==null) {
+				rs = db.update("update " + StringValue.tbl_combo +
+						" set name=?,description=?,price=?,is_active=?,created_at=? where id=?",
+						new Object[] {item.getName(),item.getDescription(),item.getPrice(),
+								item.getIsActive(),item.getCreatedAt(),item.getId()});
+			}
+			else {
+				rs = db.update("update " + StringValue.tbl_combo +
+						" set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
+						new Object[] {item.getName(),item.getDescription(),item.getPrice(),
+								item.getImageUrl(),item.getIsActive(),item.getCreatedAt(),item.getId()});
+			}
 			return rs;
+			
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -136,5 +148,26 @@ public class ComboRepository implements Icrud<Combo>{
 	public List<Combo> search(String key) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	public int compareComboItem(int id,ComboItem item) {
+		try {
+			List<ComboItem> items = db.query("select * from "+StringValue.tbl_comboItem+" where combo_id=?", new ComboItemMapper(),new Object[] {id});
+			for(ComboItem item2 : items) {
+				if(item.getId()==item2.getId()) {
+					if(item.getQuantity()==item2.getQuantity()) {
+						return 2;
+					}
+					return 1;
+				}
+				else if(item.getId()==0){
+					return 0;
+				}
+			}
+			
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
 	}
 }

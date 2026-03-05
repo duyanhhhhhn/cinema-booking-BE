@@ -40,6 +40,7 @@ public class ComboItemMapper implements RowMapper<ComboItem> {
 			
 			// Use the new ComboItemResponseDTO structure with productId, productName, quantity
 			ComboItemResponseDTO res = new ComboItemResponseDTO(
+					item.getId(),
 				item.getProductId(),
 				pro.getName(),
 				item.getQuantity(),

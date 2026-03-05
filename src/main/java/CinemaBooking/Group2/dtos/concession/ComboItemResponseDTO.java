@@ -3,18 +3,32 @@ package CinemaBooking.Group2.dtos.concession;
 import java.math.BigDecimal;
 
 public class ComboItemResponseDTO {
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
 	private int id;
 	private String name;
 	private int quantity;
 	private BigDecimal price;
+	private int productId;
 	
+	public int getProductId() {
+		return productId;
+	}
+
 	public ComboItemResponseDTO() {}
 	
-	public ComboItemResponseDTO(int productId, String productName, int quantity,BigDecimal price) {
-		this.id = productId;
+	public ComboItemResponseDTO(int id,int productId, String productName, int quantity,BigDecimal price) {
+		this.id = id;
 		this.name = productName;
 		this.quantity = quantity;
 		this.price=price;
+		this.productId = productId;
 	}
 
 	public BigDecimal getPrice() {

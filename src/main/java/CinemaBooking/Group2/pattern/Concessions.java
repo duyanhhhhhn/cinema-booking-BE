@@ -75,6 +75,16 @@ public class Concessions {
 		}
 		return rs;
 	}
+	public int compareItem(int id,ComboItem item) {
+		try {
+			int rs = comboRep.compareComboItem(id, item);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
 
 	public int changeStatusCombo(int id, int status) {
 		int rs = 0;
@@ -160,6 +170,24 @@ public class Concessions {
 		try {
 			int rs= itemRep.create(item);
 			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	public int editComboItem(ComboItem item) {
+		try {
+			return itemRep.update(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	public int delteComboItemByCombo(int id) {
+		try {
+			return itemRep.deleteByCombo(id);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

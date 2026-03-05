@@ -1,11 +1,8 @@
 package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
-
-import CinemaBooking.Group2.models.ComboItem;
 
 public class ComboRequestDTO {
 	public String getComboItem() {
@@ -17,13 +14,11 @@ public class ComboRequestDTO {
 	private String name;
 	private BigDecimal price;
 	private String comboItem;
-	private MultipartFile bannerFile;
-	public ComboRequestDTO(String name, BigDecimal price, String comboItem, MultipartFile bannerFile) {
+	public ComboRequestDTO(String name, BigDecimal price, String comboItem) {
 		super();
 		this.name = name;
 		this.price = price;
 		this.comboItem= comboItem;
-		this.bannerFile = bannerFile;
 	}
 	public String getName() {
 		return name;
@@ -42,11 +37,5 @@ public class ComboRequestDTO {
 	}
 	public void setItem(String item) {
 		this.comboItem = item;
-	}
-	public MultipartFile getBannerFile() {
-		return bannerFile;
-	}
-	public void setBannerFile(MultipartFile bannerFile) {
-		this.bannerFile = bannerFile;
 	}
 }

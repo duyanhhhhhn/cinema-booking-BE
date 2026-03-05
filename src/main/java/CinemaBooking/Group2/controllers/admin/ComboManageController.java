@@ -8,9 +8,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,11 +30,11 @@ import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.models.Product;
-import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
 import CinemaBooking.Group2.service.ProductService;
 import CinemaBooking.Group2.ultis.FileUltility;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.websocket.server.PathParam;
 
 @RestController
 @ResponseBody
@@ -67,17 +66,27 @@ public class ComboManageController {
 
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
 	}
-	@PutMapping("/api/combo/{id}")
+	@PutMapping("/api/public/combo/{id}")
 	@CrossOrigin
-	public ResponseEntity<String> edit(@RequestBody Combo entity,@PathVariable("id")int id) {
+	public ResponseEntity<String> edit(@RequestBody ComboRequestDTO entity,@PathVariable("id")int id,@RequestParam(name="bannerFile",required = false)MultipartFile bannerFile) {
 		String m = "Error";
-		Integer uid = getCurrentUserId();
-		if(service.checkAdmin(uid)==0) {
-			m = "You are not authorize to edit combo";
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(m);
-		}
 		try {
-		 m =service.EditCombo(entity);
+		Combo combo = new Combo();
+		combo.setId(id);
+		combo.setName(entity.getName());
+		combo.setPrice(entity.getPrice());
+		combo.setIsActive(1);
+		System.out.print(combo);
+		if(bannerFile!=null) {
+			combo.setImageUrl(FileUltility.uploadFileImage(bannerFile,"uploads/concessions/combo","concessions/combo"));
+		}
+		ObjectMapper mapper = new ObjectMapper();
+		List<ComboItem> comboItems =
+	            mapper.readValue(
+	                    entity.getItem(),
+	                    new TypeReference<List<ComboItem>>() {}
+	            );
+		 m =service.EditCombo(combo,comboItems);
 		 return ResponseEntity.status(HttpStatus.CREATED).body(m);
 		}
 		catch (Exception e) {
@@ -88,14 +97,14 @@ public class ComboManageController {
 	}
 	@CrossOrigin
 	@PostMapping("/api/public/combo/add")
-	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestBody ComboRequestDTO combo) {
+	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestBody ComboRequestDTO combo,@RequestParam(name="bannerFile",required = false)MultipartFile bannerFile) {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			Combo item = new Combo();
 			item.setName(combo.getName());
 			item.setDescription("");
 			item.setPrice(combo.getPrice());
-			String imageName = FileUltility.uploadFileImage(combo.getBannerFile(), "uploads/concessions/combo","concessions/combo");
+			String imageName = FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo","concessions/combo");
 			item.setImageUrl(imageName);
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
@@ -145,20 +154,21 @@ public class ComboManageController {
 		}
 		return ResponseEntity.ok(null);
 	}
-	private Integer getCurrentUserId() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() 
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof User) {
-                    return ((User) principal).getId();
-                }
-            }
-        } catch (Exception e) {
-            // Return null if any error occurs
-        	System.out.print(e.getMessage());
-        }
-        return null;
-    }
+	@DeleteMapping("/api/public/combo/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<Combo>> deleteCombo(@PathVariable("id") int id){
+		try {
+			int rs =service.DeleteCombo(id);
+			if(rs==1) {
+				return ResponseEntity.ok(new ApiResponse<Combo>("Success", null));
+			}
+			else{
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Combo>("Success", null));
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 }
