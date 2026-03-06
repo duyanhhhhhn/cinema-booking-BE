@@ -70,9 +70,7 @@ public class RoomController {
     @DeleteMapping("/rooms/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable int id) {
-
         service.delete(id);
-
         return ResponseEntity.ok(new ApiResponse<>("Room deleted", null));
     }
 
@@ -90,8 +88,6 @@ public class RoomController {
         List<RoomResponseDTO> data = cinemaId == null
             ? service.getAllRooms()
             : service.getByCinema(cinemaId);
-        System.out.println(service.getAllRooms().size());
-
         return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
 }
