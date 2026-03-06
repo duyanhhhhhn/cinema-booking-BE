@@ -17,24 +17,43 @@ public class RoomService {
 
     @Autowired
     private RoomRepository repo;
-    
+
     private final ObjectMapper objectMapper = new ObjectMapper();
+    
+ // ================= GET ALL ROOMS =================
+    public List<RoomResponseDTO> getAllRooms() {
+        List<Room> rooms = repo.findAll();
+
+        if (rooms == null || rooms.isEmpty()) {
+            return List.of();
+        }
+
+        return rooms.stream()
+                .map(this::toResponse)
+                .toList();
+    }
 
     // ================= GET BY CINEMA =================
     public List<RoomResponseDTO> getByCinema(int cinemaId) {
-        return repo.findByCinema(cinemaId)
-                   .stream()
-                   .map(this::toResponse)
-                   .toList();
+
+        List<Room> rooms = repo.findByCinema(cinemaId);
+
+        if (rooms == null || rooms.isEmpty()) {
+            return List.of();
+        }
+
+        return rooms.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     // ================= GET BY ID =================
     public RoomResponseDTO getById(int id) {
 
         Room r = repo.findById(id);
+
         if (r == null) {
             throw new RuntimeException("Room not found");
-            // Sau này thay bằng NotFoundException
         }
 
         return toResponse(r);
@@ -44,10 +63,12 @@ public class RoomService {
     public RoomResponseDTO create(RoomRequestDTO dto) {
 
         Room r = new Room();
+
         r.setCinemaId(dto.getCinemaId());
         r.setName(dto.getName());
         r.setType(dto.getType());
         r.setTotalSeats(dto.getTotalSeats());
+
         if (dto.getSeatLayout() == null) {
             r.setSeatLayout("[]");
         } else {
@@ -56,7 +77,6 @@ public class RoomService {
 
         repo.insert(r);
 
-        // repo.insert set lại id
         return toResponse(r);
     }
 
@@ -64,6 +84,7 @@ public class RoomService {
     public RoomResponseDTO update(int id, RoomRequestDTO dto) {
 
         Room existing = repo.findById(id);
+
         if (existing == null) {
             throw new RuntimeException("Room not found");
         }
@@ -77,8 +98,8 @@ public class RoomService {
 
         return toResponse(existing);
     }
-    
-    //================== UPDATE SEAT LAYOUT =================
+
+    // ================= UPDATE SEAT LAYOUT =================
     public RoomResponseDTO updateSeatLayout(int id, Object seatLayout) {
 
         Room room = repo.findById(id);
@@ -107,6 +128,7 @@ public class RoomService {
     public void delete(int id) {
 
         Room existing = repo.findById(id);
+
         if (existing == null) {
             throw new RuntimeException("Room not found");
         }
@@ -114,8 +136,21 @@ public class RoomService {
         repo.delete(id);
     }
 
+    // ================= GET ROOM DETAIL =================
+    public RoomResponseDTO getRoomDetail(int id) {
+
+        Room r = repo.findById(id);
+
+        if (r == null) {
+            throw new RuntimeException("Room not found");
+        }
+
+        return toResponse(r);
+    }
+
     // ================= MAPPER =================
     private RoomResponseDTO toResponse(Room r) {
+
         return new RoomResponseDTO(
                 r.getId(),
                 r.getCinemaId(),
@@ -125,13 +160,4 @@ public class RoomService {
                 r.getSeatLayout()
         );
     }
-    
-    // ================= GET ROOM DETAIL =================
-    public RoomResponseDTO getRoomDetail(int id) {
-		Room r = repo.findById(id);
-		if (r == null) {
-			throw new RuntimeException("Room not found");
-		}
-		return toResponse(r);
-	}
 }

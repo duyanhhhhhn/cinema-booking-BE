@@ -27,9 +27,7 @@ public class RoomController {
 
         List<RoomResponseDTO> data = service.getByCinema(cinemaId);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Success", data)
-        );
+        return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
 
     // ================= CREATE ROOM =================
@@ -53,44 +51,47 @@ public class RoomController {
 
         RoomResponseDTO updated = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Room updated", updated)
-        );
+        return ResponseEntity.ok(new ApiResponse<>("Room updated", updated));
     }
-    
- // ================= UPDATE SEAT-MAP ================
+
+    // ================= UPDATE SEAT-MAP =================
     @PutMapping("/rooms/{id}/seat-layout")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<RoomResponseDTO>> updateSeatMap(
             @PathVariable int id,
-            @RequestBody Object seatLayout
-    ) {
+            @RequestBody Object seatLayout) {
 
         RoomResponseDTO updated = service.updateSeatLayout(id, seatLayout);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Seat map updated", updated)
-        );
+        return ResponseEntity.ok(new ApiResponse<>("Seat map updated", updated));
     }
-    
+
     // ================= DELETE ROOM =================
     @DeleteMapping("/rooms/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable int id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable int id) {
 
         service.delete(id);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>("Room deleted", null)
-        );
+        return ResponseEntity.ok(new ApiResponse<>("Room deleted", null));
+    }
+
+    // ================= GET ROOM DETAIL =================
+    @GetMapping("/rooms/{id}")
+    public ResponseEntity<ApiResponse<RoomResponseDTO>> getRoomDetail(@PathVariable int id) {
+        RoomResponseDTO data = service.getRoomDetail(id);
+        return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
     
-    // ================= GET ROOM DETAIL =================
-    @GetMapping("/cinema/rooms/{id}")
-    public ResponseEntity<ApiResponse<RoomResponseDTO>> getRoomDetail(@PathVariable int id) {
-		RoomResponseDTO data = service.getRoomDetail(id);
-		return ResponseEntity.ok(new ApiResponse<>("Success", data));
-	}
-    
+    @GetMapping("/rooms")
+    public ResponseEntity<ApiResponse<List<RoomResponseDTO>>> getRooms(
+            @RequestParam(required = false) Integer cinemaId) {
+
+        List<RoomResponseDTO> data = cinemaId == null
+            ? service.getAllRooms()
+            : service.getByCinema(cinemaId);
+        System.out.println(service.getAllRooms().size());
+
+        return ResponseEntity.ok(new ApiResponse<>("Success", data));
+    }
 }

@@ -24,7 +24,7 @@ import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.ComboService;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @ResponseBody

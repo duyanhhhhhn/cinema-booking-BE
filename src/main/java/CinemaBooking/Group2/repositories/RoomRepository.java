@@ -12,77 +12,89 @@ import CinemaBooking.Group2.models.Room;
 @Repository
 public class RoomRepository {
 
-	@Autowired
-	private JdbcTemplate jdbc;
+    @Autowired
+    private JdbcTemplate jdbc;
+ // ================= FIND ALL ROOMS =================
+    public List<Room> findAll() {
+        String sql = "SELECT * FROM room";
+        return jdbc.query(sql, new RoomMapper());
+    }
+    // ================= FIND BY CINEMA =================
+    public List<Room> findByCinema(int cinemaId) {
 
-	public List<Room> findByCinema(int cinemaId) {
-		String sql = "SELECT * FROM room WHERE cinema_id = ?";
-		try {
-			return jdbc.query(sql, new RoomMapper(), cinemaId);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+        String sql = "SELECT * FROM room WHERE cinema_id = ?";
 
-	public Room findById(int id) {
-		String sql = "SELECT * FROM room WHERE id = ?";
-		try {
-			return jdbc.query(sql, new RoomMapper(), id).stream().findFirst().orElse(null);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+        return jdbc.query(sql, new RoomMapper(), cinemaId);
+    }
 
-	public int insert(Room r) {
-		String sql = """
-				    INSERT INTO room(cinema_id, name, type, total_seats, seat_layout, created_at)
-				    VALUES (?, ?, ?, ?, ?, NOW())
-				""";
-		try {
-			return jdbc.update(sql, r.getCinemaId(), r.getName(), r.getType(), r.getTotalSeats(), r.getSeatLayout());
-		} catch (Exception e) {
-			e.printStackTrace();
-			return 0;
-		}
-	}
+    // ================= FIND BY ID =================
+    public Room findById(int id) {
 
-	public int update(int id, Room r) {
-		String sql = """
-				    UPDATE room
-				    SET name=?, type=?, total_seats=?, seat_layout=?
-				    WHERE id=?
-				""";
-		try {
-			return jdbc.update(sql, r.getName(), r.getType(), r.getTotalSeats(), r.getSeatLayout(), id);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return 0;
-		}
-	}
-	
-	public int updateSeatLayout(int id, String seatLayout) {
-		String sql = """
-				    UPDATE room
-				    SET seat_layout=?
-				    WHERE id=?
-				""";
-		try {
-			return jdbc.update(sql, seatLayout, id);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return 0;
-		}
-	}
-	
-	public int delete(int id) {
-		String sql = "DELETE FROM room WHERE id = ?";
-		try {
-			return jdbc.update(sql, id);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return 0;
-		}
-	}
+        String sql = "SELECT * FROM room WHERE id = ?";
+
+        List<Room> list = jdbc.query(sql, new RoomMapper(), id);
+
+        if (list.isEmpty()) {
+            return null;
+        }
+
+        return list.get(0);
+    }
+
+    // ================= INSERT =================
+    public int insert(Room r) {
+
+        String sql = """
+            INSERT INTO room(cinema_id, name, type, total_seats, seat_layout, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        """;
+
+        return jdbc.update(
+                sql,
+                r.getCinemaId(),
+                r.getName(),
+                r.getType(),
+                r.getTotalSeats(),
+                r.getSeatLayout()
+        );
+    }
+
+    // ================= UPDATE =================
+    public int update(int id, Room r) {
+
+        String sql = """
+            UPDATE room
+            SET name = ?, type = ?, total_seats = ?, seat_layout = ?
+            WHERE id = ?
+        """;
+
+        return jdbc.update(
+                sql,
+                r.getName(),
+                r.getType(),
+                r.getTotalSeats(),
+                r.getSeatLayout(),
+                id
+        );
+    }
+
+    // ================= UPDATE SEAT LAYOUT =================
+    public int updateSeatLayout(int id, String seatLayout) {
+
+        String sql = """
+            UPDATE room
+            SET seat_layout = ?
+            WHERE id = ?
+        """;
+
+        return jdbc.update(sql, seatLayout, id);
+    }
+
+    // ================= DELETE =================
+    public int delete(int id) {
+
+        String sql = "DELETE FROM room WHERE id = ?";
+
+        return jdbc.update(sql, id);
+    }
 }
