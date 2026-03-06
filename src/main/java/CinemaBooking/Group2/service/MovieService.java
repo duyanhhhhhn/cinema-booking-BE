@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +43,7 @@ public class MovieService {
     private String publicPrefix;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     public List<MoviePublicDtos> getAllMovieCommingSoon(
             int page,
@@ -48,7 +51,7 @@ public class MovieService {
             String keyword,
             Movie.MovieGenre genre,
             Movie.MovieStatus status
-    ) {	
+    ) {
         try {
             if (page < 1) page = 1;
             if (perPage < 1) perPage = 10;
@@ -104,7 +107,7 @@ public class MovieService {
             throw new RuntimeException("FAILED TO FETCH MOVIES (COMING_SOON, NOW_SHOWING).", e);
         }
     }
-    
+
     public List<MoviePublicDtos> getAllMovieAdmin(int page, int perPage, String keyword, Movie.MovieGenre genre) {
         try {
             if (page < 1) page = 1;
@@ -127,7 +130,6 @@ public class MovieService {
         }
     }
 
-    
     public long countMoviesAdmin(String keyword, Movie.MovieGenre genre) {
         try {
             String q = (keyword == null) ? null : keyword.trim();
@@ -138,7 +140,6 @@ public class MovieService {
             throw new RuntimeException("FAILED TO COUNT MOVIES (ADMIN).", e);
         }
     }
-
 
     public MovieDetailDtos createMovie(MovieCreateDtos data, MultipartFile poster, MultipartFile banner) {
         if (poster == null || poster.isEmpty()) throw new IllegalArgumentException("POSTER IS REQUIRED.");
@@ -326,7 +327,6 @@ public class MovieService {
             throw new IllegalArgumentException("FILE MUST BE AN IMAGE.");
         }
 
-        
         String original = file.getOriginalFilename();
         String ext = getExtension(original);
         if (ext.isBlank() || !ALLOWED_EXT.contains(ext)) {
@@ -410,7 +410,7 @@ public class MovieService {
     private MovieGenre normalizeGenre(MovieGenre genre) {
         return genre;
     }
-    
+
     public long countMovieComingSoonNowShowing(String keyword, Movie.MovieGenre genre, Movie.MovieStatus status) {
         try {
             String q = (keyword == null) ? null : keyword.trim();
@@ -422,7 +422,6 @@ public class MovieService {
         }
     }
 
-    
     public List<RelatedMovieItemDtos> getRelatedMovies(String genre, Integer limit) {
         String g = (genre == null) ? null : genre.trim();
         if (g == null || g.isEmpty()) throw new IllegalArgumentException("genre is required");
@@ -438,8 +437,6 @@ public class MovieService {
         return list;
     }
 
-
-    
     private String normalizePrefix(String prefix) {
         if (prefix == null || prefix.isBlank()) return "/media";
         String p = prefix.trim();
@@ -447,8 +444,7 @@ public class MovieService {
         if (p.length() > 1 && p.endsWith("/")) p = p.substring(0, p.length() - 1);
         return p;
     }
-    
-    
+
     private String toPublicMedia(String path) {
         if (path == null || path.isBlank()) return null;
 
@@ -459,5 +455,28 @@ public class MovieService {
         return "/media" + s;
     }
 
+    private Movie.MovieStatus resolveClientMovieStatus(Movie movie) {
+        if (movie == null) return null;
 
+        LocalDate today = LocalDate.now(VN_ZONE);
+
+        if (movie.getReleaseDate() != null) {
+            LocalDate release = movie.getReleaseDate().toInstant().atZone(VN_ZONE).toLocalDate();
+
+            if (release.isAfter(today)) {
+                return Movie.MovieStatus.COMING_SOON;
+            }
+
+            if (movie.getEndDate() != null) {
+                LocalDate end = movie.getEndDate().toInstant().atZone(VN_ZONE).toLocalDate();
+                if (end.isBefore(today)) {
+                    return Movie.MovieStatus.ENDED;
+                }
+            }
+
+            return Movie.MovieStatus.NOW_SHOWING;
+        }
+
+        return movie.getStatus();
+    }
 }

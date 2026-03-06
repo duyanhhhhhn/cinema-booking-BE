@@ -9,7 +9,13 @@ public class MovieWithShowtimesDtos {
     private int cinemaId;
     private String cinemaName;
     private String address;
+
+    // NEW: cinema image path in DB, e.g. "cinema/ab4f...jpg"
+    private String cinemaImageUrl;
+
+    // Movie poster (kept for UI that shows movie poster near showtimes)
     private String posterUrl;
+
     private Integer durationMinutes;
     private List<ShowtimeItemDtos> showtimes = new ArrayList<>();
 
@@ -37,6 +43,14 @@ public class MovieWithShowtimesDtos {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getCinemaImageUrl() {
+        return cinemaImageUrl;
+    }
+
+    public void setCinemaImageUrl(String cinemaImageUrl) {
+        this.cinemaImageUrl = cinemaImageUrl;
     }
 
     public String getPosterUrl() {
