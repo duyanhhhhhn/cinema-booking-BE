@@ -16,6 +16,7 @@ public class ComboItemResponseDTO {
 	private int quantity;
 	private BigDecimal price;
 	private int productId;
+	private String image_url;
 	
 	public int getProductId() {
 		return productId;
@@ -23,12 +24,21 @@ public class ComboItemResponseDTO {
 
 	public ComboItemResponseDTO() {}
 	
-	public ComboItemResponseDTO(int id,int productId, String productName, int quantity,BigDecimal price) {
+	public ComboItemResponseDTO(int id,int productId, String productName, int quantity,BigDecimal price,String image_url) {
 		this.id = id;
 		this.name = productName;
 		this.quantity = quantity;
 		this.price=price;
 		this.productId = productId;
+		this.image_url = image_url;
+	}
+
+	public String getImage_url() {
+		return image_url;
+	}
+
+	public void setImage_url(String image_url) {
+		this.image_url = image_url;
 	}
 
 	public BigDecimal getPrice() {

@@ -93,7 +93,8 @@ public class ComboService {
 										item.getProductId(),
 										product.getName(),
 										item.getQuantity(),
-										product.getPrice()
+										product.getPrice(),
+										product.getImageUrl()
 									);
 									itemList.add(itemDTO);
 								}
