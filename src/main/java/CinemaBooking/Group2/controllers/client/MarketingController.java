@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,130 +26,150 @@ import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.User;
+import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.service.MarketingService;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @RestController
+@RequestMapping("/api")
 public class MarketingController {
 	@Autowired
 	MarketingService service;
-	@GetMapping("/api/public/posts")
+
+	@GetMapping("/public/posts")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(@RequestParam(value="page", required = false, defaultValue = "1")int page 
-			,@RequestParam(value="perPage", required = false, defaultValue = "6")int size){
+	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(
+			@RequestParam(value = "page", required = false, defaultValue = "1") int page,
+			@RequestParam(value = "perPage", required = false, defaultValue = "3") int size) {
 		List<PostResponseDTO> item;
 		try {
-			item = service.getPostPaging(page,size);
+			item = service.getPostPaging(page, size);
 			Map<String, Object> meta = new HashMap<>();
 			float totalItem = service.getPostCount();
-			meta.put("page",page);
+			meta.put("page", page);
 			meta.put("perPage", size);
 			meta.put("total", totalItem);
-			return ResponseEntity.ok(new ApiResponse<>("Success", item,meta));
-		}
-		catch (Exception e) {
+			return ResponseEntity.ok(new ApiResponse<>("Success", item, meta));
+		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
-		
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null,null)); 
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", null, null));
 	}
-	@PostMapping("/api/posts")
+
+	@PostMapping("/posts")
 	@CrossOrigin
-	public ResponseEntity<PostResponseDTO> newPost(@RequestBody Post item){
+	public ResponseEntity<PostResponseDTO> newPost(@RequestBody Post item) {
 		PostResponseDTO rs = new PostResponseDTO();
 		try {
-			if(getCurrentUserId()==null) {
+			if (getCurrentUserId() == null) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(rs);
 			}
-			rs=service.newPost(item);
-			if(rs.getIsSuccess()==false) {
+			rs = service.newPost(item);
+			if (rs.getIsSuccess() == false) {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(rs);
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.status(HttpStatus.CREATED).body(rs);
 	}
-	
-	
-	@GetMapping("/api/public/posts/{id}")
+
+	@GetMapping("/public/posts/{id}")
 	@CrossOrigin
-	public ResponseEntity<PageResponse<PostResponseDTO>> postInfo(@PathVariable("id")int id){
-		PageResponse<PostResponseDTO> res= new PageResponse<>();
+	public ResponseEntity<PageResponse<PostResponseDTO>> postInfo(@PathVariable("id") int id) {
+		PageResponse<PostResponseDTO> res = new PageResponse<>();
 		PostResponseDTO item = new PostResponseDTO();
 		try {
 			item = service.postInfo(id);
-			if(item==null) {
+			if (item == null) {
 				res.setMessage("Not found");
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
-			}
-			else{
+			} else {
 				List<PostResponseDTO> post = new ArrayList<>();
 				post.add(item);
 				res.setMessage("success");
 				res.setData(post);
 			}
 			return ResponseEntity.ok(res);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 		}
 		item.setMessage("Error");
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 	}
-	@GetMapping("/api/vouchers/paging")
+
+	@GetMapping("/public/vouchers/{id}")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucherPaging(@RequestParam("page")int page,
-			@RequestParam("size") int size){
-		//ApiResponse<List<VoucherResponseDTO>> response;
-		List<VoucherResponseDTO> item=null;
+	public ResponseEntity<ApiResponse<VoucherResponseDTO>> voucherInfo(@PathVariable("id") int id) {
+		ApiResponse<VoucherResponseDTO> res;
+		try {
+			if (id != 0) {
+				VoucherResponseDTO dto = service.voucherInfo(id);
+				if (dto != null) {
+					res = new ApiResponse<VoucherResponseDTO>("success", dto);
+					return ResponseEntity.ok(res);
+				}
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
+
+	@GetMapping("/public/vouchers")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucherPaging(
+			@RequestParam(name = "page", defaultValue = "1") int page,
+			@RequestParam(name = "perPage", defaultValue = "10") int size) {
+		// ApiResponse<List<VoucherResponseDTO>> response;
+		List<VoucherResponseDTO> item = null;
 		try {
 			Map<String, Object> meta = new HashMap<>();
 			float totalItem = service.getVoucher().size();
 			float totalPage = StringValue.calculateTotalPage(totalItem, size);
 			meta.put("page", page);
-			meta.put("perPage",size);
-			meta.put("total",totalItem);
-			if(totalPage<page) {
+			meta.put("perPage", size);
+			meta.put("total", totalItem);
+			if (totalPage < page) {
 				return ResponseEntity
-						.status(HttpStatus.INTERNAL_SERVER_ERROR).
-						body(new ApiResponse<>("Error",item, meta));
+						.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>("Error", item, meta));
+			} else {
+				item = service.getVoucherPaging(page, size);
+				return ResponseEntity.ok(new ApiResponse<>("Success", item, meta));
 			}
-			else {
-				item= service.getVoucherPaging(page,size);
-				return ResponseEntity.ok(new ApiResponse<>("Success",item, meta));
-			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 			throw new RuntimeException();
 		}
-		}
+	}
+
 	private Integer getCurrentUserId() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() 
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof User) {
-                    return ((User) principal).getId();
-                }
-            }
-        } catch (Exception e) {
-            // Return null if any error occurs
-        	System.out.print(e.getMessage());
-        }
-        return null;
-    }
-	public ResponseEntity<VoucherResponseDTO> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
+		try {
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+			if (authentication != null && authentication.isAuthenticated()
+					&& !"anonymousUser".equals(authentication.getPrincipal())) {
+				Object principal = authentication.getPrincipal();
+				if (principal instanceof User) {
+					return ((User) principal).getId();
+				}
+			}
+		} catch (Exception e) {
+			// Return null if any error occurs
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
+
+	public ResponseEntity<VoucherResponseDTO> checkVoucher(@RequestParam("id") int id,
+			@RequestParam("price") BigDecimal price) {
 		VoucherResponseDTO rs = new VoucherResponseDTO();
 		try {
-			 rs = service.checkDiscount(id, price);
-		}
-		catch (Exception e) {
+			rs = service.checkDiscount(id, price);
+		} catch (Exception e) {
 			// TODO: handle exception
 		}
 		return ResponseEntity.ok(rs);

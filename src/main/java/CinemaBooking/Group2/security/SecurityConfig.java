@@ -50,6 +50,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						// Public routes
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/showtimes/*/seats").permitAll()
 						.requestMatchers(
 								"/api/public/**",
 								"/api/auth/register/**",
@@ -57,6 +58,7 @@ public class SecurityConfig {
 								"/api/auth/logout",
 								"/api/auth/refresh",
 								"/api/auth/forgot/**",
+								"/api/payment/**",
 								"/media/**",
 								"/api/public/**",
 								"/swagger-ui/index.html#/")
@@ -86,18 +88,24 @@ public class SecurityConfig {
 						// ===== AUTHENTICATED =====
 						.requestMatchers(
 								"/api/auth/password/**",
-								"/api/users/me",
-								"/api/users/me/bookings")
+								"/api/users/me/**",
+								"/api/booking/**",
+								"/api/bookings/**",
+								"/api/debug/**"
+							
+								
+								)
 						.authenticated()
 
 						// ===== ROLE BASE =====
 						.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
 						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
-						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER")
-						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						.requestMatchers("/api/staff/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
-						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN")
-						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN")
+						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers("/api/tickets/**").hasAnyAuthority("ADMIN", "STAFF", "MANAGER")
 
 						.anyRequest().authenticated())
 

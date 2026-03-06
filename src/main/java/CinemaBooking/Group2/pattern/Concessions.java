@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.models.Product;
+import CinemaBooking.Group2.repositories.ComboItemRepository;
 import CinemaBooking.Group2.repositories.ComboRepository;
 import CinemaBooking.Group2.repositories.ProductRepository;
 
@@ -17,7 +19,8 @@ public class Concessions {
 	private ProductRepository proRep;
 	@Autowired
 	private ComboRepository comboRep;
-
+	@Autowired
+	private ComboItemRepository itemRep;
 	public Concessions() {
 	}
 
@@ -72,6 +75,16 @@ public class Concessions {
 		}
 		return rs;
 	}
+	public int compareItem(int id,ComboItem item) {
+		try {
+			int rs = comboRep.compareComboItem(id, item);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
 
 	public int changeStatusCombo(int id, int status) {
 		int rs = 0;
@@ -81,6 +94,17 @@ public class Concessions {
 			// TODO: handle exception
 		}
 		return rs;
+	}
+	public List<ComboItem> getComboItem(int id){
+		List<ComboItem> item = new ArrayList<>();
+		try {
+			item = itemRep.getByCombo(id);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return item;
 	}
 
 	public int deleteCombo(int id) {
@@ -136,9 +160,52 @@ public class Concessions {
 		return 0;
 	}
 	public int updateProduct(Product product) {
+		try {
+			int rs = proRep.update(product);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
 		return 0;
 	}
 	public int deleteProduct(int id) {
+		try {
+			int rs = proRep.delete(id);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	//
+	public int addComboItem(ComboItem item) {
+		try {
+			int rs= itemRep.create(item);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	public int editComboItem(ComboItem item) {
+		try {
+			return itemRep.update(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	public int delteComboItemByCombo(int id) {
+		try {
+			return itemRep.deleteByCombo(id);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
 		return 0;
 	}
 }

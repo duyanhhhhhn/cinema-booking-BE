@@ -22,9 +22,10 @@ import CinemaBooking.Group2.dtos.seat.ReleaseSeatResponseDTO;
 import CinemaBooking.Group2.dtos.seat.SeatStatusDTO;
 import CinemaBooking.Group2.dtos.showtime.ShowtimeSeatResponseDTO;
 import CinemaBooking.Group2.models.User;
+import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.SeatBookingFacade;
+import CinemaBooking.Group2.service.UserService;
 import CinemaBooking.Group2.service.ShowtimeService;
-
 
 @RestController
 @RequestMapping("/api")
@@ -33,19 +34,19 @@ public class SeatController {
     @Autowired
     private SeatBookingFacade seatBookingFacade;
     @Autowired
+    private UserService userService;
+    @Autowired
     private ShowtimeService service;
 
     @GetMapping("/showtimes/{id}/seats")
     public ResponseEntity<?> getSeats(
-            @PathVariable int id){
+            @PathVariable int id) {
 
-        ShowtimeSeatResponseDTO data =
-            service.getSeatMap(id);
+        ShowtimeSeatResponseDTO data = service.getSeatMap(id);
 
         return ResponseEntity.ok(data);
     }
 
-    
     @PostMapping("/booking/hold-seat")
     public ResponseEntity<HoldSeatResponseDTO> holdSeats(
             @Validated @RequestBody HoldSeatRequestDTO request) {
@@ -57,7 +58,7 @@ public class SeatController {
             }
 
             HoldSeatResponseDTO response = seatBookingFacade.holdSeats(request, userId);
-            
+
             if (response.isSuccess()) {
                 return ResponseEntity.ok(response);
             } else {
@@ -69,7 +70,6 @@ public class SeatController {
         }
     }
 
-    
     @PostMapping("/booking/release-seat")
     public ResponseEntity<ReleaseSeatResponseDTO> releaseSeats(
             @Validated @RequestBody ReleaseSeatRequestDTO request) {
@@ -82,7 +82,7 @@ public class SeatController {
             }
 
             ReleaseSeatResponseDTO response = seatBookingFacade.releaseSeats(request, userId);
-            
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             ReleaseSeatResponseDTO response = new ReleaseSeatResponseDTO(false, "An error occurred: " + e.getMessage());
@@ -90,20 +90,20 @@ public class SeatController {
         }
     }
 
-  
     private Integer getCurrentUserId() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() 
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof User) {
-                    return ((User) principal).getId();
-                }
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+
+            if (auth == null || !(auth.getPrincipal() instanceof AuthUserPrincipal principal)) {
+                return null;
             }
+
+            User user = userService.findByEmail(principal.email());
+            return user != null ? user.getId() : null;
+
         } catch (Exception e) {
-            // Return null if any error occurs
+            e.printStackTrace(); // In lỗi để debug nếu cần
+            return null;
         }
-        return null;
     }
 }

@@ -57,6 +57,7 @@ public class MarketingService {
 			throw new RuntimeException();
 		}
 	}
+
 	public PostResponseDTO newPost(Post post) {
 		PostResponseDTO res = new PostResponseDTO();
 		try {
@@ -110,11 +111,43 @@ public class MarketingService {
 		}
 		return null;
 	}
+	public VoucherResponseDTO voucherInfo(int id ) {
+		try {
+			if(id ==0) {
+				return null;
+			}
+			Voucher item = mk.voucherInfo(id);
+			return VoucherMapper.toResponseDTO(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public VoucherResponseDTO addVoucher(Voucher item) {
 		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
 			int rs = mk.createVoucher(item);
 			if(rs==1) {
+				dto = VoucherMapper.toResponseDTO(item);
+				dto.setMessage("Success");
+				dto.setIsSuccess(true);
+				return dto;
+			}
+			dto.setMessage("failed");
+			dto.setIsSuccess(false);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return dto;
+	}
+	public VoucherResponseDTO deleteVoucher(int id) {
+		VoucherResponseDTO dto = new VoucherResponseDTO();
+		try {
+			int rs = mk.deleteVoucher(id);
+			if(rs==1) {
+				Voucher item =mk.voucherInfo(id);
 				dto = VoucherMapper.toResponseDTO(item);
 				dto.setMessage("Success");
 				dto.setIsSuccess(true);
@@ -149,7 +182,6 @@ public class MarketingService {
 			if(rs==BigDecimal.valueOf(0)) {
 				return null;
 			}
-			dto.setDiscountPrice(rs);
 			dto.setMessage("Success");
 			dto.setIsSuccess(true);
 			return dto;
@@ -159,4 +191,5 @@ public class MarketingService {
 		}
 		return dto;
 	}
+
 }

@@ -83,6 +83,17 @@ public class Marketing {
 		}
 		return item;
 	}
+	public Voucher voucherInfo(int id) {
+		Voucher item = new Voucher();
+		try {
+			item = vouchRep.findById(id);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public List<Voucher> getVoucher(int page,int size){
 		List<Voucher> item = new ArrayList<>();
 		try {
@@ -97,6 +108,17 @@ public class Marketing {
 		int rs=0;
 		try {
 			rs = vouchRep.create(voucher);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rs;
+	}
+	public int deleteVoucher(int id) {
+		int rs=0;
+		try {
+			rs = vouchRep.delete(id);
 			return rs;
 		}
 		catch (Exception e) {

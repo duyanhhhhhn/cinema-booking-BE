@@ -103,36 +103,34 @@ public class MovieReviewClientController {
 		    }
 		}
     
-		@GetMapping("/{movie_id}/comment")
-		public ResponseEntity<ApiResponse<List<MovieReviewClientDtos>>> getAllComment(
-		        @PathVariable("movie_id") int movieId,
-		        @RequestParam(defaultValue = "1") int page,
-		        @RequestParam(defaultValue = "20") int perPage
-		) {
-		    if (movieId <= 0) {
-		        throw new IllegalArgumentException("INVALID MOVIE ID.");
-		    }
-	
-		    if (page < 1) page = 1;
-		    if (perPage < 1) perPage = 10;
-		    if (perPage > 100) perPage = 100;
-	
-		    int limit = perPage;
-		    int offset = (page - 1) * perPage;
-	
-		    List<MovieReviewClientDtos> data =
-		            mv.getAllCommentById(movieId, limit, offset);
-		    long total = 0L;
-	
-		    Map<String, Object> meta = new LinkedHashMap<>();
-		    meta.put("page", page);
-		    meta.put("perPage", perPage);
-		    meta.put("total", total);
-	
-		    return ResponseEntity.ok(
-		            new ApiResponse<>("success", data, meta)
-		    );
-		}
+	@GetMapping("/{movie_id}/comment")
+	public ResponseEntity<ApiResponse<List<MovieReviewClientDtos>>> getAllComment(
+	        @PathVariable("movie_id") int movieId,
+	        @RequestParam(defaultValue = "1") int page,
+	        @RequestParam(defaultValue = "20") int perPage
+	) {
+	    if (movieId <= 0) throw new IllegalArgumentException("INVALID MOVIE ID.");
+
+	    if (page < 1) page = 1;
+	    if (perPage < 1) perPage = 10;
+	    if (perPage > 100) perPage = 100;
+
+	    int limit = perPage;
+	    int offset = (page - 1) * perPage;
+
+	    List<MovieReviewClientDtos> data = mv.getAllCommentById(movieId, limit, offset);
+	    long total = mv.countAllCommentByMovieId(movieId);
+
+	    long totalPages = perPage > 0 ? (long) Math.ceil((double) total / perPage) : 1;
+
+	    java.util.Map<String, Object> meta = new java.util.LinkedHashMap<>();
+	    meta.put("page", page);
+	    meta.put("perPage", perPage);
+	    meta.put("total", total);
+	    meta.put("totalPages", totalPages);
+
+	    return ResponseEntity.ok(new ApiResponse<>("success", data, meta));
+	}
 
 
 }

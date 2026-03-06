@@ -39,6 +39,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             "/api/showtimes/public",
             "/api/showtimes-seat/",
+         "/api/payment/**",
 
             "/swagger-ui",
             "/swagger-ui.html",
@@ -91,7 +92,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             AuthUserPrincipal principal = new AuthUserPrincipal(email, role, cinemaId);
             List<GrantedAuthority> authorities = new ArrayList<>();
             if (role != null && !role.isBlank()) {
-                authorities.add(new SimpleGrantedAuthority(role));
+                // Normalize role: trim, uppercase and remove optional "ROLE_" prefix
+                String normalized = role.trim().toUpperCase();
+                if (normalized.startsWith("ROLE_")) {
+                    normalized = normalized.substring(5);
+                }
+                // Add both forms so checks using hasAuthority('MANAGER') or hasRole('MANAGER') work
+                authorities.add(new SimpleGrantedAuthority(normalized));
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + normalized));
             }
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

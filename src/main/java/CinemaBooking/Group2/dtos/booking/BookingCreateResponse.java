@@ -13,6 +13,7 @@ public class BookingCreateResponse {
     private BigDecimal discountAmount;
     private String paymentStatus;
     private String paymentMethod;
+    private String paymentUrl; // added to return payment URL when available
     private LocalDateTime createdAt;
     private String message;
 
@@ -78,6 +79,14 @@ public class BookingCreateResponse {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentUrl() { // getter for new field
+        return paymentUrl;
+    }
+
+    public void setPaymentUrl(String paymentUrl) { // setter for new field
+        this.paymentUrl = paymentUrl;
     }
 
     public LocalDateTime getCreatedAt() {

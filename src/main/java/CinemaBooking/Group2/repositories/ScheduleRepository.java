@@ -44,7 +44,30 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		}
 		return list;
 	}
-
+	public List<StaffSchedule> getAll(int page,int size){
+		List<StaffSchedule> list = new ArrayList<>();
+		try {
+			int i = (page-1)*size;
+			list = db.query("select * from "+StringValue.tbl_schedule+ " limit ? offset ?", new StaffMapper(),new Object[] {size,i});
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return list;
+	}
+	public StaffSchedule getSchedulesByDate(LocalDate date){
+		StaffSchedule list = new StaffSchedule();
+		try {
+			list = db.query("select * from "+StringValue.tbl_schedule+" where work_date = ?", new StaffMapper(),new Object[] {date}).get(0);
+			return list;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
 	@Override
 	public StaffSchedule findById(int id) {
 		// TODO Auto-generated method stub

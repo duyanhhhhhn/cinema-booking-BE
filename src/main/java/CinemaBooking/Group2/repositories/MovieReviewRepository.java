@@ -120,12 +120,11 @@ public class MovieReviewRepository {
     	return list_mr;
     }
 
-   
     public float countRatingAverage(int id) {
         String sql =
-            "SELECT AVG(rating) AS avg_rating " +
+            "SELECT COALESCE(ROUND(AVG(rating), 1), 0) AS avg_rating " +
             "FROM movie_review " +
-            "WHERE movie_id = ?";
+            "WHERE movie_id = ? AND is_hidden = 0";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -133,10 +132,7 @@ public class MovieReviewRepository {
             ps.setInt(1, id);
 
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getFloat("avg_rating");
-                }
-                return 0f;
+                return rs.next() ? rs.getFloat("avg_rating") : 0f;
             }
 
         } catch (SQLException e) {
@@ -307,40 +303,63 @@ public class MovieReviewRepository {
         }
     }
 
-    // Lấy toàn bộ comment của user thông qua movieID 
-    public List<MovieReview> getAllCommnetByMovieId(int movieId, int limit, int offset) {
-        if (limit < 1) limit = 10;
+ // Lấy comment theo movieId có phân trang (chỉ lấy comment đang HIỆN)
+    public List<MovieReviewClientDtos> getAllCommnetByMovieId(int movieId, int limit, int offset) {
+        if (limit < 1) limit = 20;
         if (offset < 0) offset = 0;
 
         String sql =
             "SELECT id, user_id, movie_id, rating, comment, created_at " +
             "FROM movie_review " +
-            "WHERE movie_id = ? " +
-            "ORDER BY created_at DESC, user_id DESC " +
-            "LIMIT ? OFFSET ?;";
-    	List<MovieReview> movie_review = new ArrayList<>();
-    	try(Connection conn = dataSource.getConnection();
-    		PreparedStatement ps = conn.prepareStatement(sql)) {
-    		ps.setInt(1, movieId);
-    		ps.setInt(2, limit);
-    		ps.setInt(3, offset);
+            "WHERE movie_id = ? AND is_hidden = 0 " + // ✅ chỉ lấy comment HIỆN
+            "ORDER BY rating DESC, created_at DESC, id DESC " + // ✅ sao cao lên đầu + mới nhất
+            "LIMIT ? OFFSET ?";
 
-    		try(ResultSet rs = ps.executeQuery()) {
-    			while(rs.next()) {
-    				MovieReview review = new MovieReview();
-    				review.setId(rs.getInt("id"));
-    				review.setUserId(rs.getInt("user_id"));
-    				review.setMovieId(rs.getInt("movie_id"));
-    				review.setRating(rs.getInt("rating"));
-    				review.setComment(rs.getString("comment"));
-    				review.setCreatedAt(rs.getTimestamp("created_at"));
-    				movie_review.add(review);
-    			}
-    		}
-    		return movie_review;
-    	}
-    	catch(SQLException e) { 
+        List<MovieReviewClientDtos> out = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, movieId);
+            ps.setInt(2, limit);
+            ps.setInt(3, offset);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    MovieReviewClientDtos dto = new MovieReviewClientDtos();
+                    dto.setId(rs.getInt("id"));
+                    dto.setUserId(rs.getInt("user_id"));
+                    dto.setMovieId(rs.getInt("movie_id"));
+                    dto.setRating(rs.getInt("rating"));
+                    dto.setComment(rs.getString("comment"));
+                    dto.setCreatedAt(rs.getTimestamp("created_at"));
+                    out.add(dto);
+                }
+            }
+
+            return out;
+
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to fetch reviews by movieId with pagination.", e);
-    	}
+        }
+    }
+    public long countAllCommentByMovieId(int movieId) {
+        String sql =
+            "SELECT COUNT(*) AS total " +
+            "FROM movie_review " +
+            "WHERE movie_id = ? AND is_hidden = 0"; // ✅ chỉ đếm comment HIỆN
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, movieId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong("total") : 0L;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to count reviews by movieId.", e);
+        }
     }
 }

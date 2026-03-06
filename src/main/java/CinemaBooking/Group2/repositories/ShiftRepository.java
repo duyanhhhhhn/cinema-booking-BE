@@ -48,6 +48,7 @@ public class ShiftRepository implements Icrud<WorkShift>{
 		}
 		return list;
 	}
+	
 
 	@Override
 	public WorkShift findById(int id) {

@@ -93,25 +93,35 @@ public class MovieReviewService {
     
     public List<MovieReviewClientDtos> getAllCommentById(int movieId, int limit, int offset) {
         try {
+            if (movieId <= 0) throw new IllegalArgumentException("INVALID MOVIE ID.");
+            if (limit < 1) limit = 20;
+            if (offset < 0) offset = 0;
+
+            return mvRepositories.getAllCommnetByMovieId(movieId, limit, offset);
+
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                "FAILED TO FETCH COMMENTS: movieId=" + movieId + ", limit=" + limit + ", offset=" + offset,
+                e
+            );
+        }
+    }
+    public long countAllCommentByMovieId(int movieId) {
+        try {
             if (movieId <= 0) {
                 throw new IllegalArgumentException("INVALID MOVIE ID.");
             }
-
-            if (limit < 1) limit = 10;
-            if (offset < 0) offset = 0;
-
-            return mvRepositories.getAllCommnetByMovieId(movieId, limit, offset)
-                    .stream()
-                    .map(MovieReviewMapper::toDto)
-                    .collect(Collectors.toList());
+            return mvRepositories.countAllCommentByMovieId(movieId);
 
         } catch (IllegalArgumentException e) {
             throw e;
 
-        } catch (Exception e) { 
+        } catch (Exception e) {
             throw new RuntimeException(
-                    "FAILED TO FETCH COMMENTS: movieId=" + movieId + ", limit=" + limit + ", offset=" + offset,
-                    e
+                "FAILED TO COUNT COMMENTS: movieId=" + movieId,
+                e
             );
         }
     }

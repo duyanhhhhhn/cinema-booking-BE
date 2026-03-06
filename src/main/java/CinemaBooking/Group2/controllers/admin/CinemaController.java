@@ -25,7 +25,7 @@ public class CinemaController {
     private CinemaService cinemaService;
 
     // ================= ADMIN GET ALL =================
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
     @GetMapping("/cinemas")
     public ResponseEntity<ApiResponse<List<CinemaResponseDTO>>> getAllCinemasForAdmin(
             @RequestParam(defaultValue = "1") int page,
@@ -82,7 +82,7 @@ public class CinemaController {
 
 
     // ================= CREATE =================
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
     @PostMapping(
             value = "/cinemas",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -99,7 +99,7 @@ public class CinemaController {
 
 
     // ================= UPDATE =================
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
     @PutMapping(
             value = "/cinemas/{id}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -118,7 +118,7 @@ public class CinemaController {
 
 
     // ================= UPLOAD IMAGE =================
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
     @PostMapping(
             value = "/cinemas/{id}/upload-image",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -142,7 +142,7 @@ public class CinemaController {
 
 
     // ================= DELETE =================
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
     @DeleteMapping("/cinemas/{id}")
     public ResponseEntity<ApiResponse<String>> deleteCinema(
             @PathVariable int id) {
@@ -155,7 +155,7 @@ public class CinemaController {
     }
     
     // ================= ACTIVATE =================
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
     @PutMapping("/cinemas/{id}/activate")
     public ResponseEntity<ApiResponse<String>> activateCinema(@PathVariable int id) {
         cinemaService.activate(id);

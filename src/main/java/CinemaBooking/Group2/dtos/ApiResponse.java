@@ -1,12 +1,15 @@
 package CinemaBooking.Group2.dtos;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({ "message", "data", "meta" })
 public class ApiResponse<T> {
 	private String message;
     private T data;
+    
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Object meta;
 
     public ApiResponse(String message, T data) {
