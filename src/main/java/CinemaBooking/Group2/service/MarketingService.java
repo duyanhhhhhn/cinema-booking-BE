@@ -147,6 +147,7 @@ public class MarketingService {
 		try {
 			int rs = mk.deleteVoucher(id);
 			if(rs==1) {
+				Voucher item =mk.voucherInfo(id);
 				dto = VoucherMapper.toResponseDTO(item);
 				dto.setMessage("Success");
 				dto.setIsSuccess(true);
