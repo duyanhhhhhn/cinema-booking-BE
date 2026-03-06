@@ -25,66 +25,76 @@ public class MovieReviewAdminRepository {
         if (size <= 0) size = 10;
 
         int offset = (page - 1) * size;
-        Integer movieId = (filter != null) ? filter.getMovieId() : null;
 
-        final String sqlAll =
-                "SELECT " +
-                "  r.id AS id, " +
-                "  r.user_id AS user_id, " +
-                "  u.full_name AS full_name, " +
-                "  u.email AS email, " +
-                "  r.movie_id AS movie_id, " +
-                "  m.title AS movie_title, " +
-                "  r.rating AS rating, " +
-                "  r.comment AS comment, " +
-                "  r.is_hidden AS is_hidden, " +
-                "  r.created_at AS created_at " +
-                "FROM movie_review AS r " +
-                "JOIN movie AS m ON m.id = r.movie_id " +
-                "JOIN user AS u ON u.id = r.user_id " +
-                "ORDER BY r.created_at DESC, r.id DESC " +
-                "LIMIT ? OFFSET ?";
+        Integer movieId = filter != null ? filter.getMovieId() : null;
+        Integer rating = filter != null ? filter.getRating() : null;
+        Boolean hidden = filter != null ? filter.getHidden() : null;
+        String keyword = filter != null ? normalize(filter.getKeyword()) : null;
 
-        final String sqlByMovie =
-                "SELECT " +
-                "  r.id AS id, " +
-                "  r.user_id AS user_id, " +
-                "  u.full_name AS full_name, " +
-                "  u.email AS email, " +
-                "  r.movie_id AS movie_id, " +
-                "  m.title AS movie_title, " +
-                "  r.rating AS rating, " +
-                "  r.comment AS comment, " +
-                "  r.is_hidden AS is_hidden, " +
-                "  r.created_at AS created_at " +
-                "FROM movie_review AS r " +
-                "JOIN movie AS m ON m.id = r.movie_id " +
-                "JOIN user AS u ON u.id = r.user_id " +
-                "WHERE r.movie_id = ? " +
-                "ORDER BY r.created_at DESC, r.id DESC " +
-                "LIMIT ? OFFSET ?";
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT ")
+           .append("  r.id AS id, ")
+           .append("  r.user_id AS user_id, ")
+           .append("  u.full_name AS full_name, ")
+           .append("  u.email AS email, ")
+           .append("  r.movie_id AS movie_id, ")
+           .append("  m.title AS movie_title, ")
+           .append("  r.rating AS rating, ")
+           .append("  r.comment AS comment, ")
+           .append("  r.is_hidden AS is_hidden, ")
+           .append("  r.created_at AS created_at ")
+           .append("FROM movie_review AS r ")
+           .append("JOIN movie AS m ON m.id = r.movie_id ")
+           .append("JOIN user AS u ON u.id = r.user_id ")
+           .append("WHERE 1=1 ");
+
+        List<Object> params = new ArrayList<>();
+
+        if (movieId != null) {
+            sql.append("AND r.movie_id = ? ");
+            params.add(movieId);
+        }
+
+        if (rating != null) {
+            sql.append("AND r.rating = ? ");
+            params.add(rating);
+        }
+
+        if (hidden != null) {
+            sql.append("AND r.is_hidden = ? ");
+            params.add(hidden);
+        }
+
+        if (keyword != null) {
+            sql.append("AND (")
+               .append("LOWER(COALESCE(u.full_name, '')) LIKE ? ")
+               .append("OR LOWER(COALESCE(u.email, '')) LIKE ? ")
+               .append("OR LOWER(COALESCE(m.title, '')) LIKE ? ")
+               .append("OR LOWER(COALESCE(r.comment, '')) LIKE ?")
+               .append(") ");
+            String likeValue = "%" + keyword.toLowerCase() + "%";
+            params.add(likeValue);
+            params.add(likeValue);
+            params.add(likeValue);
+            params.add(likeValue);
+        }
+
+        sql.append("ORDER BY r.created_at DESC, r.id DESC ")
+           .append("LIMIT ? OFFSET ?");
+
+        params.add(size);
+        params.add(offset);
 
         List<AdminReviewRowDto> out = new ArrayList<>();
 
-        try (Connection conn = dataSource.getConnection()) {
-            if (movieId == null) {
-                try (PreparedStatement ps = conn.prepareStatement(sqlAll)) {
-                    ps.setInt(1, size);
-                    ps.setInt(2, offset);
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) out.add(mapRowSetterStyle(rs));
-                    }
-                }
-            } else {
-                try (PreparedStatement ps = conn.prepareStatement(sqlByMovie)) {
-                    ps.setInt(1, movieId);
-                    ps.setInt(2, size);
-                    ps.setInt(3, offset);
+            bindParams(ps, params);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) out.add(mapRowSetterStyle(rs));
-                    }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(mapRowSetterStyle(rs));
                 }
             }
         } catch (SQLException e) {
@@ -94,54 +104,57 @@ public class MovieReviewAdminRepository {
         return out;
     }
 
-    private AdminReviewRowDto mapRowSetterStyle(ResultSet rs) throws SQLException {
-        AdminReviewRowDto dto = new AdminReviewRowDto();
-
-        dto.setId(rs.getInt("id"));
-        dto.setUserId(rs.getInt("user_id"));
-        dto.setUserFullName(rs.getString("full_name"));
-        dto.setUserEmail(rs.getString("email"));
-        dto.setMovieId(rs.getInt("movie_id"));
-        dto.setMovieTitle(rs.getString("movie_title"));
-        dto.setRating(rs.getInt("rating"));
-        dto.setComment(rs.getString("comment"));
-
-        Timestamp ts = rs.getTimestamp("created_at");
-        dto.setCreatedAt(ts == null ? null : ts.toLocalDateTime());
-
-        dto.setHidden(rs.getBoolean("is_hidden"));
-        return dto;
-    }
-
     public long countAllReviews(AdminReviewFilterDto filter) {
-        Integer movieId = (filter != null) ? filter.getMovieId() : null;
+        Integer movieId = filter != null ? filter.getMovieId() : null;
+        Integer rating = filter != null ? filter.getRating() : null;
+        Boolean hidden = filter != null ? filter.getHidden() : null;
+        String keyword = filter != null ? normalize(filter.getKeyword()) : null;
 
-        final String sqlAll =
-                "SELECT COUNT(*) AS total " +
-                "FROM movie_review r " +
-                "JOIN user u ON u.id = r.user_id " +
-                "JOIN movie m ON m.id = r.movie_id";
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT COUNT(*) AS total ")
+           .append("FROM movie_review r ")
+           .append("JOIN user u ON u.id = r.user_id ")
+           .append("JOIN movie m ON m.id = r.movie_id ")
+           .append("WHERE 1=1 ");
 
-        final String sqlByMovie =
-                "SELECT COUNT(*) AS total " +
-                "FROM movie_review r " +
-                "JOIN user u ON u.id = r.user_id " +
-                "JOIN movie m ON m.id = r.movie_id " +
-                "WHERE r.movie_id = ?";
+        List<Object> params = new ArrayList<>();
 
-        try (Connection cn = dataSource.getConnection()) {
-            if (movieId == null) {
-                try (PreparedStatement ps = cn.prepareStatement(sqlAll);
-                     ResultSet rs = ps.executeQuery()) {
-                    return rs.next() ? rs.getLong("total") : 0L;
-                }
-            } else {
-                try (PreparedStatement ps = cn.prepareStatement(sqlByMovie)) {
-                    ps.setInt(1, movieId);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        return rs.next() ? rs.getLong("total") : 0L;
-                    }
-                }
+        if (movieId != null) {
+            sql.append("AND r.movie_id = ? ");
+            params.add(movieId);
+        }
+
+        if (rating != null) {
+            sql.append("AND r.rating = ? ");
+            params.add(rating);
+        }
+
+        if (hidden != null) {
+            sql.append("AND r.is_hidden = ? ");
+            params.add(hidden);
+        }
+
+        if (keyword != null) {
+            sql.append("AND (")
+               .append("LOWER(COALESCE(u.full_name, '')) LIKE ? ")
+               .append("OR LOWER(COALESCE(u.email, '')) LIKE ? ")
+               .append("OR LOWER(COALESCE(m.title, '')) LIKE ? ")
+               .append("OR LOWER(COALESCE(r.comment, '')) LIKE ?")
+               .append(") ");
+            String likeValue = "%" + keyword.toLowerCase() + "%";
+            params.add(likeValue);
+            params.add(likeValue);
+            params.add(likeValue);
+            params.add(likeValue);
+        }
+
+        try (Connection cn = dataSource.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+
+            bindParams(ps, params);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong("total") : 0L;
             }
         } catch (SQLException e) {
             throw new RuntimeException("MovieReviewAdminRepository.countAllReviews failed: " + e.getMessage(), e);
@@ -255,5 +268,49 @@ public class MovieReviewAdminRepository {
         } catch (SQLException e) {
             throw new RuntimeException("getHidden failed: " + e.getMessage(), e);
         }
+    }
+
+    private AdminReviewRowDto mapRowSetterStyle(ResultSet rs) throws SQLException {
+        AdminReviewRowDto dto = new AdminReviewRowDto();
+
+        dto.setId(rs.getInt("id"));
+        dto.setUserId(rs.getInt("user_id"));
+        dto.setUserFullName(rs.getString("full_name"));
+        dto.setUserEmail(rs.getString("email"));
+        dto.setMovieId(rs.getInt("movie_id"));
+        dto.setMovieTitle(rs.getString("movie_title"));
+        dto.setRating(rs.getInt("rating"));
+        dto.setComment(rs.getString("comment"));
+
+        Timestamp ts = rs.getTimestamp("created_at");
+        dto.setCreatedAt(ts == null ? null : ts.toLocalDateTime());
+
+        dto.setHidden(rs.getBoolean("is_hidden"));
+        return dto;
+    }
+
+    private void bindParams(PreparedStatement ps, List<Object> params) throws SQLException {
+        for (int i = 0; i < params.size(); i++) {
+            Object value = params.get(i);
+            int index = i + 1;
+
+            if (value instanceof Integer) {
+                ps.setInt(index, (Integer) value);
+            } else if (value instanceof Boolean) {
+                ps.setBoolean(index, (Boolean) value);
+            } else if (value instanceof Long) {
+                ps.setLong(index, (Long) value);
+            } else if (value instanceof String) {
+                ps.setString(index, (String) value);
+            } else {
+                ps.setObject(index, value);
+            }
+        }
+    }
+
+    private String normalize(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
