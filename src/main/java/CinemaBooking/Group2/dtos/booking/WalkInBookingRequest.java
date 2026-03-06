@@ -21,6 +21,8 @@ public class WalkInBookingRequest {
     // Optional concessions
     private List<ComboItem> combos;
     
+    private List<ProductItem> products;
+    
     // Optional voucher
     private String voucherCode;
     
@@ -59,6 +61,32 @@ public class WalkInBookingRequest {
             this.quantity = quantity;
         }
     }
+    
+    public static class ProductItem {
+        @NotNull(message = "Product ID is required")
+        @Positive(message = "Product ID must be positive")
+        private Integer productId;
+        
+        @NotNull(message = "Quantity is required")
+        @Positive(message = "Quantity must be positive")
+        private Integer quantity;
+
+        public Integer getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Integer productId) {
+            this.productId = productId;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+    }
 
     // Getters and Setters
     public Integer getShowtimeId() {
@@ -83,6 +111,14 @@ public class WalkInBookingRequest {
 
     public void setCombos(List<ComboItem> combos) {
         this.combos = combos;
+    }
+
+    public List<ProductItem> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<ProductItem> products) {
+        this.products = products;
     }
 
     public String getVoucherCode() {

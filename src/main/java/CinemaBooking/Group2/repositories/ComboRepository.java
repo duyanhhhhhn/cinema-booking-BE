@@ -51,15 +51,17 @@ public class ComboRepository implements Icrud<Combo>{
 		return list;
 	}
 	public Combo findById(int id){
-		Combo item = new Combo();
 		try {
-			item = db.query("select * from "+StringValue.tbl_combo+
-					" where id=? and is_active=1", new ComboMapper(),new Object[] {id}).get(0);
+			List<Combo> results = db.query("select * from "+StringValue.tbl_combo+
+					" where id=? and is_active=1", new ComboMapper(),new Object[] {id});
+			if (results != null && !results.isEmpty()) {
+				return results.get(0);
+			}
 		}
 		catch(Exception e) {
 			System.out.print(e);
 		}
-		return item;
+		return null;
 	}
 	@Override
 	public int create(Combo item) {
