@@ -10,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.WorkShift;
 import CinemaBooking.Group2.ultis.StringValue;
 

@@ -34,7 +34,6 @@ import CinemaBooking.Group2.service.ComboService;
 import CinemaBooking.Group2.service.ProductService;
 import CinemaBooking.Group2.ultis.FileUltility;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import jakarta.websocket.server.PathParam;
 
 @RestController
 @ResponseBody
@@ -140,8 +139,11 @@ public class ComboManageController {
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
-			String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product","concessions/product");
-			item.setImageUrl(imageName);
+			if(image!=null) {
+				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product","concessions/product");
+				item.setImageUrl(imageName);
+			}
+			
 			item.setStock(stock);
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
@@ -151,6 +153,32 @@ public class ComboManageController {
 		catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
+		}
+		return ResponseEntity.ok(null);
+	}
+	@PutMapping("/api/public/product/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<Product>> editProduct(@PathVariable("id")int id,@RequestParam("name")String name
+			,@RequestParam("description") String description,@RequestParam("price")BigDecimal price,
+			@RequestParam("bannerFile")MultipartFile image,@RequestParam("stock")int stock){
+		try {
+			Product item = new Product();
+			item.setName(name);
+			item.setDescription(description);
+			item.setPrice(price);
+			if(image!=null) {
+				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product","concessions/product");
+				item.setImageUrl(imageName);
+			}
+			item.setStock(stock);
+			item.setCreatedAt(LocalDateTime.now());
+			item.setIsActive(1);
+			item.setId(id);
+			String a=pro_service.editProduct(item);
+			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
+		}
+		catch (Exception e) {
+			// TODO: handle exception
 		}
 		return ResponseEntity.ok(null);
 	}
@@ -164,6 +192,23 @@ public class ComboManageController {
 			}
 			else{
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Combo>("Success", null));
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	@DeleteMapping("/api/public/product/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<Product>> deleteProduct(@PathVariable("id") int id){
+		try {
+			int rs =service.DeleteProduct(id);
+			if(rs==1) {
+				return ResponseEntity.ok(new ApiResponse<Product>("Success", null));
+			}
+			else{
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Product>("Success", null));
 			}
 		}
 		catch (Exception e) {

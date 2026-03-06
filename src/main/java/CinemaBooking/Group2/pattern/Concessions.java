@@ -160,9 +160,23 @@ public class Concessions {
 		return 0;
 	}
 	public int updateProduct(Product product) {
+		try {
+			int rs = proRep.update(product);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
 		return 0;
 	}
 	public int deleteProduct(int id) {
+		try {
+			int rs = proRep.delete(id);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
 		return 0;
 	}
 	//

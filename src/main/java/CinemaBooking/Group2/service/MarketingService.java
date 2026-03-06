@@ -142,6 +142,24 @@ public class MarketingService {
 		}
 		return dto;
 	}
+	public VoucherResponseDTO deleteVoucher(int id) {
+		VoucherResponseDTO dto = new VoucherResponseDTO();
+		try {
+			int rs = mk.deleteVoucher(id);
+			if(rs==1) {
+				dto = VoucherMapper.toResponseDTO(item);
+				dto.setMessage("Success");
+				dto.setIsSuccess(true);
+				return dto;
+			}
+			dto.setMessage("failed");
+			dto.setIsSuccess(false);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return dto;
+	}
 	public PostResponseDTO postInfo(int id) {
 		try {
 			return PostMapper.toResponseDTO(mk.postInfo(id));

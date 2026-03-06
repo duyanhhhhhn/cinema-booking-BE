@@ -265,6 +265,16 @@ public class ComboService {
 		}
 		return 0;
 	}
+	public int DeleteProduct(int id) {
+		try {
+			int rs =con.deleteProduct(id);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
 
 	public int ChangeActive(int id, int active) {
 		return con.changeStatusCombo(id, active);
