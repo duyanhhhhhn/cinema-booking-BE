@@ -1,14 +1,21 @@
 package CinemaBooking.Group2.repositories;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import CinemaBooking.Group2.mappers.ComboItemMapper;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
+import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
@@ -51,24 +58,38 @@ public class ComboRepository implements Icrud<Combo>{
 		return list;
 	}
 	public Combo findById(int id){
-		Combo item = new Combo();
 		try {
-			item = db.query("select * from "+StringValue.tbl_combo+
-					" where id=? and is_active=1", new ComboMapper(),new Object[] {id}).get(0);
+			List<Combo> results = db.query("select * from "+StringValue.tbl_combo+
+					" where id=? and is_active=1", new ComboMapper(),new Object[] {id});
+			if (results != null && !results.isEmpty()) {
+				return results.get(0);
+			}
 		}
 		catch(Exception e) {
 			System.out.print(e);
 		}
-		return item;
+		return null;
 	}
 	@Override
 	public int create(Combo item) {
+		KeyHolder keyHolder = new GeneratedKeyHolder();
 		try {
-			int rs = db.update("insert into " + StringValue.tbl_combo +
-					" (name,description,price,image_url,is_active,created_at) values(?,?,?,?,?,?)",
-					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
-							item.getImageUrl(),item.getIsActive(),item.getCreatedAt()});
-			return rs;
+			db.update(connection -> {
+			    PreparedStatement ps = connection.prepareStatement(
+			        "INSERT INTO " + StringValue.tbl_combo +
+			        " (name, description, price, image_url, is_active, created_at) VALUES (?,?,?,?,?,?)",
+			        Statement.RETURN_GENERATED_KEYS
+			    );
+			    ps.setString(1, item.getName());
+			    ps.setString(2, item.getDescription());
+			    ps.setBigDecimal(3, item.getPrice());
+			    ps.setString(4, item.getImageUrl());
+			    ps.setInt(5, item.getIsActive());
+			    ps.setTimestamp(6, Timestamp.valueOf(item.getCreatedAt()));
+			    return ps;
+			}, keyHolder);
+			int comboId = keyHolder.getKey().intValue();
+			return comboId;
 		}
 		catch(Exception e) {
 			System.out.print(e);
@@ -78,11 +99,21 @@ public class ComboRepository implements Icrud<Combo>{
 	@Override
 	public int update(Combo item) {
 		try {
-			int rs = db.update("update " + StringValue.tbl_combo +
-					" set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
-					new Object[] {item.getName(),item.getDescription(),item.getPrice(),
-							item.getImageUrl(),item.getIsActive(),item.getCreatedAt(),item.getId()});
+			int rs =0;
+			if(item.getImageUrl()==null) {
+				rs = db.update("update " + StringValue.tbl_combo +
+						" set name=?,description=?,price=?,is_active=?,created_at=? where id=?",
+						new Object[] {item.getName(),item.getDescription(),item.getPrice(),
+								item.getIsActive(),item.getCreatedAt(),item.getId()});
+			}
+			else {
+				rs = db.update("update " + StringValue.tbl_combo +
+						" set name=?,description=?,price=?,image_url=?,is_active=?,created_at=? where id=?",
+						new Object[] {item.getName(),item.getDescription(),item.getPrice(),
+								item.getImageUrl(),item.getIsActive(),item.getCreatedAt(),item.getId()});
+			}
 			return rs;
+			
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -119,5 +150,26 @@ public class ComboRepository implements Icrud<Combo>{
 	public List<Combo> search(String key) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	public int compareComboItem(int id,ComboItem item) {
+		try {
+			List<ComboItem> items = db.query("select * from "+StringValue.tbl_comboItem+" where combo_id=?", new ComboItemMapper(),new Object[] {id});
+			for(ComboItem item2 : items) {
+				if(item.getId()==item2.getId()) {
+					if(item.getQuantity()==item2.getQuantity()) {
+						return 2;
+					}
+					return 1;
+				}
+				else if(item.getId()==0){
+					return 0;
+				}
+			}
+			
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
 	}
 }

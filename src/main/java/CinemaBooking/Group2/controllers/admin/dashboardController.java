@@ -2,6 +2,8 @@ package CinemaBooking.Group2.controllers.admin;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.dashboardnreports.AuditLogListResponseDTO;
 import CinemaBooking.Group2.dtos.dashboardnreports.auditLogResponseDTO;
 import CinemaBooking.Group2.dtos.dashboardnreports.revenueResponseDTO;
@@ -20,7 +23,7 @@ import CinemaBooking.Group2.models.Enum.Status;
 import CinemaBooking.Group2.service.DashboardService;
 
 @RestController
-@RequestMapping("/admin/api")
+@RequestMapping("/api")
 public class dashboardController {
 	@Autowired
 	private DashboardService service;
@@ -66,7 +69,7 @@ public class dashboardController {
 	}
 	@GetMapping("/revenue/month")
 	@CrossOrigin
-	public ResponseEntity<revenueResponseDTO> getRevenueByMonth(@RequestParam("month") int month){
+	public ResponseEntity<revenueResponseDTO> getRevenueByMonth(@RequestParam(name="month",defaultValue = "1") int month){
 		revenueResponseDTO item = new revenueResponseDTO();
 		try {
 			BigDecimal re = service.getRevenueByMonth(month);
@@ -109,5 +112,21 @@ public class dashboardController {
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.ok(item);
+	}
+	@GetMapping("/revenue/week")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<List<revenueResponseDTO>>> getRevenueByWeek(@RequestParam("date") LocalDate firstDate){
+		try {
+			ApiResponse<List<revenueResponseDTO>> res;
+			List<revenueResponseDTO> list = service.getAWeekOfRevenue(firstDate);
+			if(list!=null) {
+				res = new ApiResponse<List<revenueResponseDTO>>("Success", list);
+				return ResponseEntity.ok(res);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
 	}
 }

@@ -56,9 +56,7 @@ public class ComboService {
 
 			// Fetch COMBO data if filterType is "COMBO" or null
 			if (filterType == null || "COMBO".equalsIgnoreCase(filterType)) {
-				System.out.println("=== DEBUG: Fetching combos from database...");
 				List<Combo> combos = con.pagingCombo(page, size);
-				System.out.println("=== DEBUG: Found " + (combos != null ? combos.size() : 0) + " combos");
 				
 				if (combos != null) {
 					for (Combo combo : combos) {
@@ -77,8 +75,6 @@ public class ComboService {
 						dto.setImageUrl(formatImageUrl(combo.getImageUrl()));
 						dto.setStock(calculateComboStock(combo.getId()));
 						dto.setType("COMBO");
-						
-						// Only set isActive for admin view (when filterType is null)
 						if (filterType == null) {
 							dto.setIsActive(combo.getIsActive());
 						}
@@ -93,9 +89,11 @@ public class ComboService {
 								Product product = con.productInfo(item.getProductId());
 								if (product != null) {
 									ComboItemResponseDTO itemDTO = new ComboItemResponseDTO(
+										item.getId(),
 										item.getProductId(),
 										product.getName(),
-										item.getQuantity()
+										item.getQuantity(),
+										product.getPrice()
 									);
 									itemList.add(itemDTO);
 								}
@@ -216,10 +214,11 @@ public class ComboService {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			int rs = con.CreateCombo(combo);
-			if (rs == 1) {
+			if (rs!=0) {
 				res.setMessage("Success");
 				res.setStatus(ResponseStatus.SUCCESS);
-			} else if (rs == 0) {
+				res.setCombo(con.comboInfo(rs));
+			}else {
 				res.setMessage("Error");
 				res.setStatus(ResponseStatus.ERROR);
 			}
@@ -228,11 +227,24 @@ public class ComboService {
 		}
 		return res;
 	}
+	public void AddComboItem (ComboItem item) {
+		try {
+			con.addComboItem(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
 
-	public String EditCombo(Combo combo) {
+	public String EditCombo(Combo combo,List<ComboItem>items) {
 		String s = "Error";
 		try {
 			int rs = con.updateCombo(combo);
+			con.delteComboItemByCombo(combo.getId());
+			for(ComboItem item :items) {
+				item.setComboId(combo.getId());
+				AddComboItem(item);;
+			}
 			if (rs == 1) {
 				s = "Edit Success";
 			}
@@ -242,9 +254,26 @@ public class ComboService {
 		}
 		return s;
 	}
-
 	public int DeleteCombo(int id) {
-		return con.deleteCombo(id);
+		try {
+			int rs =con.deleteCombo(id);
+            con.delteComboItemByCombo(id);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
+	public int DeleteProduct(int id) {
+		try {
+			int rs =con.deleteProduct(id);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
 	}
 
 	public int ChangeActive(int id, int active) {

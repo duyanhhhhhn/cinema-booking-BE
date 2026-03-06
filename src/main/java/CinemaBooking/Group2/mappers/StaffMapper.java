@@ -29,7 +29,7 @@ public class StaffMapper implements RowMapper<StaffSchedule>{
 		item.setId(rs.getInt("id"));
 		item.setShiftId(rs.getInt("shift_id"));
 		item.setStaffId(rs.getInt("staff_id"));
-		item.setWorkDate(rs.getDate("date").toLocalDate());
+		item.setWorkDate(rs.getDate("work_date").toLocalDate());
 		item.setStatus(StaffScheduleStatus.valueOf(rs.getString("status")));
 		
 		return item;

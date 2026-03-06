@@ -8,6 +8,7 @@ public class BookingCalculateResponse {
     private BigDecimal basePrice;           // Tổng giá vé cơ bản
     private BigDecimal seatExtraPrice;      // Phụ thu ghế VIP
     private BigDecimal comboPrice;          // Tổng giá combo
+    private BigDecimal productPrice;        // Tổng giá sản phẩm lẻ
     private BigDecimal holidaySurcharge;    // Phụ thu lễ
     private BigDecimal subtotal;            // Tổng trước giảm giá
     private BigDecimal discountAmount;      // Số tiền giảm giá từ voucher
@@ -18,6 +19,7 @@ public class BookingCalculateResponse {
     public static class PriceBreakdown {
         private List<SeatDetail> seats;
         private List<ComboDetail> combos;
+        private List<ProductDetail> products;
         private HolidayDetail holiday;
         
         public static class SeatDetail {
@@ -105,6 +107,45 @@ public class BookingCalculateResponse {
             }
         }
         
+        public static class ProductDetail {
+            private Integer productId;
+            private String productName;
+            private Integer quantity;
+            private BigDecimal unitPrice;
+            private BigDecimal totalPrice;
+            
+            public Integer getProductId() {
+                return productId;
+            }
+            public void setProductId(Integer productId) {
+                this.productId = productId;
+            }
+            public String getProductName() {
+                return productName;
+            }
+            public void setProductName(String productName) {
+                this.productName = productName;
+            }
+            public Integer getQuantity() {
+                return quantity;
+            }
+            public void setQuantity(Integer quantity) {
+                this.quantity = quantity;
+            }
+            public BigDecimal getUnitPrice() {
+                return unitPrice;
+            }
+            public void setUnitPrice(BigDecimal unitPrice) {
+                this.unitPrice = unitPrice;
+            }
+            public BigDecimal getTotalPrice() {
+                return totalPrice;
+            }
+            public void setTotalPrice(BigDecimal totalPrice) {
+                this.totalPrice = totalPrice;
+            }
+        }
+        
         public static class HolidayDetail {
             private String holidayName;
             private String adjustmentType;
@@ -149,6 +190,12 @@ public class BookingCalculateResponse {
         public void setCombos(List<ComboDetail> combos) {
             this.combos = combos;
         }
+        public List<ProductDetail> getProducts() {
+            return products;
+        }
+        public void setProducts(List<ProductDetail> products) {
+            this.products = products;
+        }
         public HolidayDetail getHoliday() {
             return holiday;
         }
@@ -179,6 +226,14 @@ public class BookingCalculateResponse {
 
     public void setComboPrice(BigDecimal comboPrice) {
         this.comboPrice = comboPrice;
+    }
+
+    public BigDecimal getProductPrice() {
+        return productPrice;
+    }
+
+    public void setProductPrice(BigDecimal productPrice) {
+        this.productPrice = productPrice;
     }
 
     public BigDecimal getHolidaySurcharge() {

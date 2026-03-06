@@ -46,6 +46,19 @@ public class ProductService {
 			throw new RuntimeException();
 		}
 	}
+	public String editProduct(Product item) {
+		try{
+			int rs = con.updateProduct(item);
+			if(rs ==1) {
+				return "Success";
+			}
+			return "Error";
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException();
+		}
+	}
 	public String createProduct(Product item) {
 		String s = "Failed to create a new product";
 		try {

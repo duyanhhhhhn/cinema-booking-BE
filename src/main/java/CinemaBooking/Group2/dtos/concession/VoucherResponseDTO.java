@@ -16,14 +16,6 @@ public class VoucherResponseDTO {
     private LocalDate endAt;
     private int usageLimit;
     private int usedCount;
-    private LocalDate createdAt;
-    private BigDecimal discountPrice;
-    public BigDecimal getDiscountPrice() {
-		return discountPrice;
-	}
-	public void setDiscountPrice(BigDecimal discountPrice) {
-		this.discountPrice = discountPrice;
-	}
 	private String message;
     private boolean isSuccess;
 	
@@ -100,12 +92,6 @@ public class VoucherResponseDTO {
 	public void setUsedCount(int usedCount) {
 		this.usedCount = usedCount;
 	}
-	public LocalDate getCreatedAt() {
-		return createdAt;
-	}
-	public void setCreatedAt(LocalDate createdAt) {
-		this.createdAt = createdAt;
-	}
 	
 	/**
 	 * @param id
@@ -134,7 +120,6 @@ public class VoucherResponseDTO {
 		this.endAt = endAt;
 		this.usageLimit = usageLimit;
 		this.usedCount = usedCount;
-		this.createdAt = createdAt;
 	}
 	/**
 	 * 

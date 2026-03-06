@@ -2,6 +2,7 @@ package CinemaBooking.Group2.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.dashboardnreports.AuditLogListResponseDTO;
 import CinemaBooking.Group2.dtos.dashboardnreports.auditLogResponseDTO;
+import CinemaBooking.Group2.dtos.dashboardnreports.revenueResponseDTO;
 import CinemaBooking.Group2.models.AuditLog;
 import CinemaBooking.Group2.pattern.DashboardNReport;
 
@@ -82,5 +84,26 @@ public class DashboardService {
 			System.out.print(e.getMessage());
 		}
 		return rs;
+	}
+	public List<revenueResponseDTO> getAWeekOfRevenue(LocalDate date) {
+		List<revenueResponseDTO> list = new ArrayList<>();
+		try {
+			for(int i=0;i<7;i++) {
+				LocalDate date1 = date.minusDays(i);
+				BigDecimal rev = dashboard.getRevenueByDate(date1);
+				if(rev!=null) {
+					revenueResponseDTO dto = new revenueResponseDTO();
+					dto.setRevenue(rev);
+					dto.setMessage("");
+					dto.setDate(date1);
+					list.add(dto);
+				}
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return list;
 	}
 }

@@ -15,11 +15,13 @@ public class WalkInBookingResponse {
     private LocalDateTime showtime;
     private List<SeatInfo> seats;
     private List<ComboInfo> combos;
+    private List<ProductInfo> products;
     private String voucherCode;
     private BigDecimal discountAmount;
     private BigDecimal totalPrice;
     private String paymentMethod;
     private String paymentStatus;
+    private String paymentUrl;  // URL thanh toán MOMO QR (chỉ có khi paymentMethod = MOMO)
     private LocalDateTime createdAt;
     private Integer createdByStaffId;
     private String createdByStaffName;
@@ -129,6 +131,72 @@ public class WalkInBookingResponse {
             this.totalPrice = totalPrice;
         }
     }
+    
+    public static class ProductInfo {
+        private Integer productId;
+        private String productName;
+        private Integer quantity;
+        private BigDecimal unitPrice;
+        private BigDecimal totalPrice;
+        
+        public ProductInfo() {}
+        
+        public ProductInfo(Integer productId, String productName, Integer quantity, BigDecimal unitPrice) {
+            this.productId = productId;
+            this.productName = productName;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+            this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        }
+
+        public Integer getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Integer productId) {
+            this.productId = productId;
+        }
+
+        public String getProductName() {
+            return productName;
+        }
+
+        public void setProductName(String productName) {
+            this.productName = productName;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+
+        public BigDecimal getUnitPrice() {
+            return unitPrice;
+        }
+
+        public void setUnitPrice(BigDecimal unitPrice) {
+            this.unitPrice = unitPrice;
+        }
+
+        public BigDecimal getTotalPrice() {
+            return totalPrice;
+        }
+
+        public void setTotalPrice(BigDecimal totalPrice) {
+            this.totalPrice = totalPrice;
+        }
+    }
+
+    public String getPaymentUrl() {
+        return paymentUrl;
+    }
+
+    public void setPaymentUrl(String paymentUrl) {
+        this.paymentUrl = paymentUrl;
+    }
 
     // Getters and Setters
     public Integer getBookingId() {
@@ -201,6 +269,14 @@ public class WalkInBookingResponse {
 
     public void setCombos(List<ComboInfo> combos) {
         this.combos = combos;
+    }
+
+    public List<ProductInfo> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<ProductInfo> products) {
+        this.products = products;
     }
 
     public String getVoucherCode() {

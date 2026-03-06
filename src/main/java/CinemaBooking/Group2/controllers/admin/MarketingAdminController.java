@@ -23,8 +23,11 @@ import CinemaBooking.Group2.ultis.FileUltility;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
@@ -107,24 +110,22 @@ public class MarketingAdminController {
 		}
 		return ResponseEntity.ok(rs);
 	}
-	@PostMapping("/admin/api/vouchers")
+	@PostMapping("/api/vouchers")
 	@CrossOrigin
-	public ResponseEntity<VoucherResponseDTO> addVoucher(@RequestParam("code") String code,
-			@RequestParam("description") String description,@RequestParam("discount_type") DiscountType type,
+	public ResponseEntity<ApiResponse<VoucherResponseDTO>> addVoucher(@RequestParam("code") String code,
+			@RequestParam("discount_type") DiscountType type,
 			@RequestParam("discount_value") BigDecimal value,@RequestParam("min_order_amount") BigDecimal min_order,
 			@RequestParam("start_at") LocalDate start, @RequestParam("end_at") LocalDate end,
-			@RequestParam("usage_limit") int limit,@RequestParam("usage") int count){
+			@RequestParam("usage_limit") int limit	){
 		VoucherResponseDTO dto = new VoucherResponseDTO();
 		Voucher item = new Voucher();
 		item.setCode(code);
-		item.setDescription(description);
 		item.setDiscountType(type);
 		item.setDiscountValue(value);
 		item.setMinOrderAmount(min_order);
 		item.setStartAt(start);
 		item.setEndAt(end);
 		item.setUsageLimit(limit);
-		item.setUsedCount(count);
 		item.setCreatedAt(LocalDate.now());
 		try {
 			dto = service.addVoucher(item);
@@ -132,6 +133,45 @@ public class MarketingAdminController {
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return ResponseEntity.ok(dto);
+		return ResponseEntity.ok(new ApiResponse<VoucherResponseDTO>("Success", dto));
+	}
+	@PutMapping("/api/vouchers/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<VoucherResponseDTO>> editVoucher(@PathVariable("id")int id,@RequestParam("code") String code,
+			@RequestParam("discount_type") DiscountType type,
+			@RequestParam("discount_value") BigDecimal value,@RequestParam("min_order_amount") BigDecimal min_order,
+			@RequestParam("start_at") LocalDate start, @RequestParam("end_at") LocalDate end,
+			@RequestParam("usage_limit") int limit	){
+		VoucherResponseDTO dto = new VoucherResponseDTO();
+		Voucher item = new Voucher();
+		item.setCode(code);
+		item.setDiscountType(type);
+		item.setDiscountValue(value);
+		item.setMinOrderAmount(min_order);
+		item.setStartAt(start);
+		item.setEndAt(end);
+		item.setUsageLimit(limit);
+		item.setCreatedAt(LocalDate.now());
+		item.setId(id);
+		try {
+			dto = service.addVoucher(item);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return ResponseEntity.ok(new ApiResponse<VoucherResponseDTO>("Success", dto));
+	}
+	@DeleteMapping("/api/vouchers/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<VoucherResponseDTO>> deleteVoucher(@PathVariable("id")int id){
+		VoucherResponseDTO dto = new VoucherResponseDTO();
+		try {
+			
+			dto = service.deleteVoucher(id);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return ResponseEntity.ok(new ApiResponse<VoucherResponseDTO>("Success", dto));
 	}
 }

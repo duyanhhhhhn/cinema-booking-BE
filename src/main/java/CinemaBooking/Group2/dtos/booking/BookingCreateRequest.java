@@ -20,9 +20,13 @@ public class BookingCreateRequest {
     
     private List<ComboItem> combos;
     
+    private List<ProductItem> products;
+    
     private String voucherCode;
     
     private String paymentMethod; // CASH, MOMO, ZALOPAY, VNPAY, STRIPE
+    // Optional bank code / payment channel (e.g. for ATM card payment)
+    private String bankCode;
     
     public static class ComboItem {
         @NotNull(message = "Combo ID is required")
@@ -39,6 +43,32 @@ public class BookingCreateRequest {
 
         public void setComboId(Integer comboId) {
             this.comboId = comboId;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+    }
+    
+    public static class ProductItem {
+        @NotNull(message = "Product ID is required")
+        @Positive(message = "Product ID must be positive")
+        private Integer productId;
+        
+        @NotNull(message = "Quantity is required")
+        @Positive(message = "Quantity must be positive")
+        private Integer quantity;
+
+        public Integer getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Integer productId) {
+            this.productId = productId;
         }
 
         public Integer getQuantity() {
@@ -82,6 +112,14 @@ public class BookingCreateRequest {
         this.combos = combos;
     }
 
+    public List<ProductItem> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<ProductItem> products) {
+        this.products = products;
+    }
+
     public String getVoucherCode() {
         return voucherCode;
     }
@@ -96,5 +134,13 @@ public class BookingCreateRequest {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public String getBankCode() {
+        return bankCode;
+    }
+
+    public void setBankCode(String bankCode) {
+        this.bankCode = bankCode;
     }
 }
