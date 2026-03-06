@@ -25,7 +25,7 @@ import CinemaBooking.Group2.models.Banner;
 import CinemaBooking.Group2.models.Banner.BannerPosition;
 import CinemaBooking.Group2.service.BannerService;
 import CinemaBooking.Group2.ultis.FileUltility;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api")
@@ -100,7 +100,7 @@ public class HomeController {
 	}
 	@PostMapping("/admin/banner")
 	//@PreAuthorize("hasAuthority('ADMIN')")
-	public ResponseEntity<PageResponse<BannerResponseDTO>> addBanner(@RequestBody() BannerRequestDTO dto,@RequestParam("bannerFile")MultipartFile bannerFile){
+	public ResponseEntity<PageResponse<BannerResponseDTO>> addBanner(@RequestBody BannerRequestDTO dto,@RequestParam("bannerFile")MultipartFile bannerFile){
 		PageResponse<BannerResponseDTO> res = new PageResponse<>();
 		try {
 			if(dto==null) {
@@ -132,7 +132,7 @@ public class HomeController {
 	@PutMapping("/admin/banner/{id}")
 	//@PreAuthorize("hasAuthority('ADMIN')")
 	public ResponseEntity<PageResponse<BannerResponseDTO>> updateBanner(
-			@RequestBody() BannerRequestDTO dto,
+			@RequestBody BannerRequestDTO dto,
 			@PathVariable(name = "id")int id,@RequestParam(name="bannerFile",required = false)MultipartFile bannerFile){
 		PageResponse<BannerResponseDTO> res = new PageResponse<>();
 		try {

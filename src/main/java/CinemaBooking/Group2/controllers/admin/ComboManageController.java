@@ -42,6 +42,7 @@ public class ComboManageController {
 	ComboService service;
 	@Autowired
 	ProductService pro_service;
+
 	@GetMapping("/public/combo")
 	@CrossOrigin
 	public ResponseEntity<ComboListResponseDTO> getCombo() {
@@ -65,153 +66,158 @@ public class ComboManageController {
 
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
 	}
+
 	@PutMapping("/api/public/combo/{id}")
 	@CrossOrigin
-	public ResponseEntity<String> edit(@RequestBody ComboRequestDTO entity,@PathVariable("id")int id,@RequestParam(name="bannerFile",required = false)MultipartFile bannerFile) {
+	public ResponseEntity<String> edit(@RequestBody ComboRequestDTO entity, @PathVariable("id") int id,
+			@RequestParam(name = "bannerFile", required = false) MultipartFile bannerFile) {
 		String m = "Error";
 		try {
-		Combo combo = new Combo();
-		combo.setId(id);
-		combo.setName(entity.getName());
-		combo.setPrice(entity.getPrice());
-		combo.setIsActive(1);
-		System.out.print(combo);
-		if(bannerFile!=null) {
-			combo.setImageUrl(FileUltility.uploadFileImage(bannerFile,"uploads/concessions/combo","concessions/combo"));
-		}
-		ObjectMapper mapper = new ObjectMapper();
-		List<ComboItem> comboItems =
-	            mapper.readValue(
-	                    entity.getItem(),
-	                    new TypeReference<List<ComboItem>>() {}
-	            );
-		 m =service.EditCombo(combo,comboItems);
-		 return ResponseEntity.status(HttpStatus.CREATED).body(m);
-		}
-		catch (Exception e) {
+			Combo combo = new Combo();
+			combo.setId(id);
+			combo.setName(entity.getName());
+			combo.setPrice(entity.getPrice());
+			combo.setIsActive(1);
+			System.out.print(combo);
+			if (bannerFile != null) {
+				combo.setImageUrl(
+						FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo", "concessions/combo"));
+			}
+			ObjectMapper mapper = new ObjectMapper();
+			List<ComboItem> comboItems = mapper.readValue(
+					entity.getItem(),
+					new TypeReference<List<ComboItem>>() {
+					});
+			m = service.EditCombo(combo, comboItems);
+			return ResponseEntity.status(HttpStatus.CREATED).body(m);
+		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e);
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(m);
 	}
+
 	@CrossOrigin
 	@PostMapping("/api/public/combo/add")
-	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestBody ComboRequestDTO combo,@RequestParam(name="bannerFile",required = false)MultipartFile bannerFile) {
+	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestBody ComboRequestDTO combo,
+			@RequestParam(name = "bannerFile", required = false) MultipartFile bannerFile) {
 		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
 		try {
 			Combo item = new Combo();
 			item.setName(combo.getName());
 			item.setDescription("");
 			item.setPrice(combo.getPrice());
-			String imageName = FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo","concessions/combo");
+			String imageName = FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo",
+					"concessions/combo");
 			item.setImageUrl(imageName);
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
 			res = service.AddCombo(item);
 			ObjectMapper mapper = new ObjectMapper();
-		    List<ComboItem> comboItems =
-		            mapper.readValue(
-		                    combo.getItem(),
-		                    new TypeReference<List<ComboItem>>() {}
-		            );
-			if(combo.getItem()!=null) {
-				for(ComboItem items :comboItems) {
+			List<ComboItem> comboItems = mapper.readValue(
+					combo.getItem(),
+					new TypeReference<List<ComboItem>>() {
+					});
+			if (combo.getItem() != null) {
+				for (ComboItem items : comboItems) {
 					items.setComboId(res.getCombo().getId());
 					service.AddComboItem(items);
 				}
 			}
 			return ResponseEntity.status(HttpStatus.CREATED).body(res);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 	}
+
 	@PostMapping("/api/product/add")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("name")String name
-			,@RequestParam("description") String description,@RequestParam("price")BigDecimal price,
-			@RequestParam("bannerFile")MultipartFile image,@RequestParam("stock")int stock) {
-		//TODO: process POST request
+	public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("name") String name,
+			@RequestParam("description") String description, @RequestParam("price") BigDecimal price,
+			@RequestParam("bannerFile") MultipartFile image, @RequestParam("stock") int stock) {
+		// TODO: process POST request
 		try {
 			Product item = new Product();
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
-			if(image!=null) {
-				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product","concessions/product");
+			if (image != null) {
+				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product",
+						"concessions/product");
 				item.setImageUrl(imageName);
 			}
-			
+
 			item.setStock(stock);
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
-			String a=pro_service.createProduct(item);
+			String a = pro_service.createProduct(item);
 			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.ok(null);
 	}
+
 	@PutMapping("/api/public/product/{id}")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<Product>> editProduct(@PathVariable("id")int id,@RequestParam("name")String name
-			,@RequestParam("description") String description,@RequestParam("price")BigDecimal price,
-			@RequestParam("bannerFile")MultipartFile image,@RequestParam("stock")int stock){
+	public ResponseEntity<ApiResponse<Product>> editProduct(@PathVariable("id") int id,
+			@RequestParam("name") String name, @RequestParam("description") String description,
+			@RequestParam("price") BigDecimal price,
+			@RequestParam("bannerFile") MultipartFile image, @RequestParam("stock") int stock) {
 		try {
 			Product item = new Product();
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
-			if(image!=null) {
-				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product","concessions/product");
+			if (image != null) {
+				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product",
+						"concessions/product");
 				item.setImageUrl(imageName);
 			}
 			item.setStock(stock);
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
 			item.setId(id);
-			String a=pro_service.editProduct(item);
+			String a = pro_service.editProduct(item);
 			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 		}
 		return ResponseEntity.ok(null);
 	}
+
 	@DeleteMapping("/api/public/combo/{id}")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<Combo>> deleteCombo(@PathVariable("id") int id){
+	public ResponseEntity<ApiResponse<Combo>> deleteCombo(@PathVariable("id") int id) {
 		try {
-			int rs =service.DeleteCombo(id);
-			if(rs==1) {
+			int rs = service.DeleteCombo(id);
+			if (rs == 1) {
 				return ResponseEntity.ok(new ApiResponse<Combo>("Success", null));
+			} else {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body(new ApiResponse<Combo>("Success", null));
 			}
-			else{
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Combo>("Success", null));
-			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 		}
 		return null;
 	}
+
 	@DeleteMapping("/api/public/product/{id}")
 	@CrossOrigin
-	public ResponseEntity<ApiResponse<Product>> deleteProduct(@PathVariable("id") int id){
+	public ResponseEntity<ApiResponse<Product>> deleteProduct(@PathVariable("id") int id) {
 		try {
-			int rs =service.DeleteProduct(id);
-			if(rs==1) {
+			int rs = service.DeleteProduct(id);
+			if (rs == 1) {
 				return ResponseEntity.ok(new ApiResponse<Product>("Success", null));
+			} else {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body(new ApiResponse<Product>("Success", null));
 			}
-			else{
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<Product>("Success", null));
-			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 		}
 		return null;
