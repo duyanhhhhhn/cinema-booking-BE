@@ -2,6 +2,7 @@ package CinemaBooking.Group2.repositories;
 
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
@@ -36,20 +38,80 @@ public class BookingRepository {
     @Autowired
     private JdbcTemplate jdbc;
 
+    /**
+     * Custom RowMapper for Booking that properly handles enum fields (paymentStatus, paymentMethod)
+     */
+    private final RowMapper<Booking> bookingRowMapper = (ResultSet rs, int rowNum) -> {
+        Booking b = new Booking();
+        b.setId(rs.getInt("id"));
+        b.setBookingCode(rs.getString("bookingCode"));
+        
+        // userId can be null
+        int userId = rs.getInt("userId");
+        b.setUserId(rs.wasNull() ? null : userId);
+        
+        b.setCreatedByStaffId(rs.getInt("createdByStaffId"));
+        b.setShowtimeId(rs.getInt("showtimeId"));
+        b.setVoucherId(rs.getInt("voucherId"));
+        b.setDiscountAmount(rs.getBigDecimal("discountAmount"));
+        b.setTotalPrice(rs.getBigDecimal("totalPrice"));
+        
+        // Safely convert String to enum for paymentStatus
+        String statusStr = rs.getString("paymentStatus");
+        if (statusStr != null && !statusStr.isBlank()) {
+            try {
+                b.setPaymentStatus(Booking.PaymentStatus.valueOf(statusStr));
+            } catch (IllegalArgumentException e) {
+                logger.warn("Unknown paymentStatus '{}' for booking {}", statusStr, rs.getInt("id"));
+            }
+        }
+        
+        // Safely convert String to enum for paymentMethod
+        String methodStr = rs.getString("paymentMethod");
+        if (methodStr != null && !methodStr.isBlank()) {
+            try {
+                b.setPaymentMethod(Booking.PaymentMethod.valueOf(methodStr));
+            } catch (IllegalArgumentException e) {
+                logger.warn("Unknown paymentMethod '{}' for booking {}", methodStr, rs.getInt("id"));
+            }
+        }
+        
+        // Handle LocalDateTime fields
+        java.sql.Timestamp createdAt = rs.getTimestamp("createdAt");
+        b.setCreatedAt(createdAt != null ? createdAt.toLocalDateTime() : null);
+        
+        java.sql.Timestamp paidAt = rs.getTimestamp("paidAt");
+        b.setPaidAt(paidAt != null ? paidAt.toLocalDateTime() : null);
+        
+        return b;
+    };
+
+    private static final String BOOKING_SELECT_COLUMNS = 
+        "id, booking_code as bookingCode, user_id as userId, created_by_staff_id as createdByStaffId, " +
+        "showtime_id as showtimeId, voucher_id as voucherId, discount_amount as discountAmount, " +
+        "total_price as totalPrice, payment_status as paymentStatus, payment_method as paymentMethod, " +
+        "created_at as createdAt, paid_at as paidAt";
+
     public Booking findById(int bookingId) {
-        String sql = "SELECT * FROM booking WHERE id = ?";
+        String sql = "SELECT " + BOOKING_SELECT_COLUMNS + " FROM booking WHERE id = ?";
         try {
-            return jdbc.queryForObject(sql, new BeanPropertyRowMapper<>(Booking.class), bookingId);
+            return jdbc.queryForObject(sql, bookingRowMapper, bookingId);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
+            logger.error("Error finding booking by id {}: {}", bookingId, e.getMessage(), e);
             return null;
         }
     }
 
     public Booking findByBookingCode(String bookingCode) {
-        String sql = "SELECT * FROM booking WHERE booking_code = ?";
+        String sql = "SELECT " + BOOKING_SELECT_COLUMNS + " FROM booking WHERE booking_code = ?";
         try {
-            return jdbc.queryForObject(sql, new BeanPropertyRowMapper<>(Booking.class), bookingCode);
+            return jdbc.queryForObject(sql, bookingRowMapper, bookingCode);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         } catch (Exception e) {
+            logger.error("Error finding booking by code {}: {}", bookingCode, e.getMessage(), e);
             return null;
         }
     }
@@ -67,7 +129,12 @@ public class BookingRepository {
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, booking.getBookingCode());
-            ps.setInt(2, booking.getUserId());
+            Integer userId = booking.getUserId();
+            if (userId != null) {
+                ps.setInt(2, userId);
+            } else {
+                ps.setNull(2, java.sql.Types.INTEGER);
+            }
             if (booking.getCreatedByStaffId() > 0) {
                 ps.setInt(3, booking.getCreatedByStaffId());
             } else {
@@ -150,10 +217,96 @@ public class BookingRepository {
     }
 
     public List<BookingSeat> findBookingSeats(int bookingId) {
-        String sql = "SELECT * FROM booking_seat WHERE booking_id = ?";
+        String sql = """
+            SELECT id, booking_id, seat_id, seat_price, ticket_code,
+                   is_printed, printed_by, printed_at, printed_stamp
+            FROM booking_seat WHERE booking_id = ?
+        """;
         try {
-            return jdbc.query(sql, new BeanPropertyRowMapper<>(BookingSeat.class), bookingId);
+            return jdbc.query(sql, (rs, rowNum) -> {
+                BookingSeat bs = new BookingSeat();
+                bs.setId(rs.getInt("id"));
+                bs.setBookingId(rs.getInt("booking_id"));
+                bs.setSeatId(rs.getInt("seat_id"));
+                bs.setSeatPrice(rs.getBigDecimal("seat_price"));
+                bs.setTicketCode(rs.getString("ticket_code"));
+                
+                Object isPrintedObj = rs.getObject("is_printed");
+                if (isPrintedObj != null) {
+                    if (isPrintedObj instanceof Boolean) {
+                        bs.setIsPrinted((Boolean) isPrintedObj);
+                    } else if (isPrintedObj instanceof Number) {
+                        bs.setIsPrinted(((Number) isPrintedObj).intValue() == 1);
+                    }
+                } else {
+                    bs.setIsPrinted(false);
+                }
+                
+                bs.setPrintedBy(rs.getInt("printed_by"));
+                
+                java.sql.Timestamp printedAt = rs.getTimestamp("printed_at");
+                bs.setPrintedAt(printedAt != null ? printedAt.toLocalDateTime() : null);
+                
+                bs.setPrintedStamp(rs.getString("printed_stamp"));
+                return bs;
+            }, bookingId);
         } catch (Exception e) {
+            logger.error("Error finding booking seats for booking {}: {}", bookingId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy danh sách seat_code của booking bằng 1 query JOIN duy nhất.
+     * Tránh vấn đề mapping enum SeatType khi dùng SeatRepository.findById().
+     */
+    public List<String> findSeatCodesByBookingId(int bookingId) {
+        String sql = """
+            SELECT s.seat_code
+            FROM booking_seat bs
+            JOIN seat s ON s.id = bs.seat_id
+            WHERE bs.booking_id = ?
+            ORDER BY s.seat_code
+        """;
+        try {
+            return jdbc.queryForList(sql, String.class, bookingId);
+        } catch (Exception e) {
+            logger.error("Error finding seat codes for booking {}: {}", bookingId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy chi tiết combo/product kèm tên bằng 1 query JOIN duy nhất.
+     * Tránh vấn đề BeanPropertyRowMapper không map được NULL vào int primitive.
+     */
+    public List<java.util.Map<String, Object>> findConcessionDetailsByBookingId(int bookingId) {
+        String sql = """
+            SELECT bc.quantity, bc.price,
+                   COALESCE(cb.name, p.name, 'Sản phẩm') AS item_name
+            FROM booking_concession bc
+            LEFT JOIN combo cb ON cb.id = bc.combo_id
+            LEFT JOIN product p ON p.id = bc.product_id
+            WHERE bc.booking_id = ?
+        """;
+        try {
+            return jdbc.queryForList(sql, bookingId);
+        } catch (Exception e) {
+            logger.error("Error finding concession details for booking {}: {}", bookingId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public List<BookingConcession> findBookingConcessions(int bookingId) {
+        String sql = """
+            SELECT id, booking_id AS bookingId, product_id AS productId, 
+                   combo_id AS comboId, quantity, price
+            FROM booking_concession WHERE booking_id = ?
+        """;
+        try {
+            return jdbc.query(sql, new BeanPropertyRowMapper<>(BookingConcession.class), bookingId);
+        } catch (Exception e) {
+            logger.error("Error finding booking concessions for booking {}: {}", bookingId, e.getMessage(), e);
             return List.of();
         }
     }
@@ -707,25 +860,32 @@ public class BookingRepository {
                 int bookingId = ((Number) booking.get("id")).intValue();
                 String bookingCode = (String) booking.get("booking_code");
                 
-                // Xóa booking_seat trước (release ghế)
-                String deleteSeats = "DELETE FROM booking_seat WHERE booking_id = ?";
-                jdbc.update(deleteSeats, bookingId);
-                
-                // Xóa booking_concession
-                String deleteConcessions = "DELETE FROM booking_concession WHERE booking_id = ?";
-                jdbc.update(deleteConcessions, bookingId);
-                
-                // Cập nhật trạng thái booking thành CANCELLED thay vì xóa
+                // Release any active seat holds related to this booking so seats become available again.
+                // We DO NOT delete booking_seat or booking_concession rows because they are part of the
+                // historical invoice record. Only update booking.payment_status to CANCELLED.
+                try {
+                    // Delete seat_hold entries that match seats from this booking for the same showtime
+                    String deleteSeatHoldSql = "DELETE sh FROM seat_hold sh JOIN booking_seat bs ON sh.seat_id = bs.seat_id WHERE sh.showtime_id = ? AND bs.booking_id = ?";
+                    // fetch showtime_id for this booking (safe fallback)
+                    Integer showtimeId = jdbc.queryForObject("SELECT showtime_id FROM booking WHERE id = ?", Integer.class, bookingId);
+                    if (showtimeId != null) {
+                        jdbc.update(deleteSeatHoldSql, showtimeId, bookingId);
+                    }
+                } catch (Exception ex) {
+                    logger.warn("Failed to release seat holds for expired booking {}: {}", bookingCode, ex.getMessage());
+                }
+
+                // Update booking status to CANCELLED (preserve booking detail rows)
                 String updateBooking = "UPDATE booking SET payment_status = 'CANCELLED' WHERE id = ?";
                 jdbc.update(updateBooking, bookingId);
-                
-                logger.info("Cancelled expired booking: {} (ID: {})", bookingCode, bookingId);
-                canceledCount++;
-                
-            } catch (Exception e) {
-                logger.error("Error canceling booking {}: {}", booking.get("booking_code"), e.getMessage());
-            }
-        }
+                 
+                 logger.info("Cancelled expired booking: {} (ID: {})", bookingCode, bookingId);
+                 canceledCount++;
+                 
+             } catch (Exception e) {
+                 logger.error("Error canceling booking {}: {}", booking.get("booking_code"), e.getMessage());
+             }
+         }
         
         return canceledCount;
     }

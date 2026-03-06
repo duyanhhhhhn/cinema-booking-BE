@@ -16,6 +16,8 @@ public class BookingCalculateRequest {
     
     private List<ComboItem> combos;
     
+    private List<ProductItem> products;
+    
     private String voucherCode;
     
     public static class ComboItem {
@@ -33,6 +35,32 @@ public class BookingCalculateRequest {
 
         public void setComboId(Integer comboId) {
             this.comboId = comboId;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+    }
+    
+    public static class ProductItem {
+        @NotNull(message = "Product ID is required")
+        @Positive(message = "Product ID must be positive")
+        private Integer productId;
+        
+        @NotNull(message = "Quantity is required")
+        @Positive(message = "Quantity must be positive")
+        private Integer quantity;
+
+        public Integer getProductId() {
+            return productId;
+        }
+
+        public void setProductId(Integer productId) {
+            this.productId = productId;
         }
 
         public Integer getQuantity() {
@@ -66,6 +94,14 @@ public class BookingCalculateRequest {
 
     public void setCombos(List<ComboItem> combos) {
         this.combos = combos;
+    }
+
+    public List<ProductItem> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<ProductItem> products) {
+        this.products = products;
     }
 
     public String getVoucherCode() {

@@ -63,6 +63,20 @@ public class BookingController {
         }
     }
 
+    @GetMapping("/detail/{bookingCode}")
+    @Operation(summary = "Get booking detail by booking code", description = "Lấy chi tiết vé theo mã booking. Dùng cho trang kết quả thanh toán.")
+    public ResponseEntity<?> getBookingByCode(@PathVariable String bookingCode) {
+        try {
+            BookingDetailResponse response = bookingService.getBookingByCodeAdmin(bookingCode);
+            return ResponseEntity.ok(new ApiResponse<>("Success", response));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("An error occurred while fetching booking: " + e.getMessage()));
+        }
+    }
+
     private static class ErrorResponse {
         private String error;
         private long timestamp;

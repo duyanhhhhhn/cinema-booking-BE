@@ -46,17 +46,17 @@ public class ProductRepository implements Icrud<Product>{
 		return item;
 	}
 	public Product findById(int id){
-		Product item = new Product();
 		try {
-			item = db.query("select * from "+StringValue.tbl_product+" where id=?", new ProductMapper()
-					,new Object[] {id}).get(0);
-			return item;
+			List<Product> results = db.query("select * from "+StringValue.tbl_product+" where id=?", new ProductMapper()
+					,new Object[] {id});
+			if (results != null && !results.isEmpty()) {
+				return results.get(0);
+			}
 		}
 		catch (Exception e) {
 			System.out.print(e);
-			// TODO: handle exception
 		}
-		return item;
+		return null;
 	}
 	public List<Product> Paging(int page,int size){
 		List<Product> item = new ArrayList<>();
