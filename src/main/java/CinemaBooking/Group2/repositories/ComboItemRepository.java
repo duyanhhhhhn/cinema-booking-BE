@@ -50,8 +50,22 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 		}
 		return item;
 	}
+	public int deleteByCombo(int idCombo) {
+		try {
+			int rs = db.update("delete from "+StringValue.tbl_comboItem+" where combo_id=?", new Object[] {idCombo});
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return 0;
+	}
 	public int create(ComboItem item) {
 		try {
+			if(check(item)) {
+				int rs=db.update("update "+StringValue.tbl_comboItem+" set quantity=? where id=?",new Object[] {item.getQuantity(),item.getId()});
+				return rs;
+			}
 			int rs = db.update("insert into "+StringValue.tbl_comboItem +"(combo_id,product_id,quantity) values(?,?,?)",
 					new Object[] {item.getComboId(),item.getProductId(),item.getQuantity()});
 			return rs;
@@ -60,6 +74,19 @@ public class ComboItemRepository implements Icrud<ComboItem>{
 			System.out.print(e);
 		}
 		return 0;
+	}
+	public boolean check(ComboItem item) {
+		try {
+			ComboItem cbi = db.query("select * from "+StringValue.tbl_comboItem+" where product_id=? and combo_id=?",new ComboItemMapper(),new Object[] {item.getProductId(),item.getComboId()}).get(0);
+			if(cbi!=null) {
+					return true;
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return false;
 	}
 	public int update(ComboItem item) {
 		try {

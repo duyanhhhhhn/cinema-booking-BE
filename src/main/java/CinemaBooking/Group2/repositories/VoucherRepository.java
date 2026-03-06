@@ -86,7 +86,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 	public int create(Voucher item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs =  db.update("insert into "+StringValue.tbl_voucher+"(code ,description,discount_type,discount_value,"
+			int rs =  db.update("insert into "+StringValue.tbl_voucher+" (code ,description,discount_type,discount_value,"
 					+ "min_order_amount,start_at,end_at,usage_limit,used_count,created_at) "
 					+ "values(?,?,?,?,?,?,?,?,?,?)",new Object[] {item.getCode(),item.getDescription(),
 							item.getDiscountType().name(),item.getDiscountValue(),item.getMinOrderAmount(),
@@ -104,12 +104,32 @@ public class VoucherRepository implements Icrud<Voucher>{
 	@Override
 	public int update(Voucher item) {
 		// TODO Auto-generated method stub
+		try {
+			int rs =  db.update("update "+StringValue.tbl_voucher+"set code=? ,description=?,discount_type=?,discount_value=?,"
+					+ "min_order_amount=?,start_at=?,end_at=?,usage_limit=? where id=? "
+					,new Object[] {item.getCode(),item.getDescription(),
+							item.getDiscountType().name(),item.getDiscountValue(),item.getMinOrderAmount(),
+							item.getStartAt(),item.getEndAt(),item.getUsageLimit(),item.getId()});
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
 		return 0;
 	}
 
 	@Override
 	public int delete(int id) {
 		// TODO Auto-generated method stub
+		try {
+			int rs = db.update("delete from"+StringValue.tbl_voucher+" where id=?",new Object[] {id});
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
 		return 0;
 	}
 	public boolean checkAvailableVoucher(int id) {

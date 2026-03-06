@@ -115,6 +115,17 @@ public class Marketing {
 		}
 		return rs;
 	}
+	public int deleteVoucher(int id) {
+		int rs=0;
+		try {
+			rs = vouchRep.delete(id);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rs;
+	}
 	public int checkVoucher(int id) {
 		try {
 		   boolean rs = vouchRep.checkAvailableVoucher(id);

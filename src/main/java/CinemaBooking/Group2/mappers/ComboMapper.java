@@ -41,7 +41,7 @@ public class ComboMapper implements RowMapper<Combo> {
 		item.setPrice(rs.getBigDecimal("price"));
 		item.setImageUrl(rs.getNString("image_url"));
 		item.setIsActive(rs.getInt("is_active"));
-		item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+		//item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
 		//item.setComboItems(rep.getByCombo(item.getId()));
 		return item;
 	}

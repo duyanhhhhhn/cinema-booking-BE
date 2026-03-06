@@ -77,7 +77,7 @@ public class ProductRepository implements Icrud<Product>{
 		try {
 			int rs = db.update("insert into "+StringValue.tbl_product+"(name,description,price,image_url,stock,is_active,created_at) value(?,?,?,?,?,?,?)",
 					new Object[] {product.getName(),product.getDescription(),product.getPrice(),product.getImageUrl(),
-							product.getStock(),product.getIsActive(),product.getCreatedAt()});
+							product.getStock(),1,product.getCreatedAt()});
 			return rs;
 		}
 		catch (Exception e) {
@@ -94,11 +94,38 @@ public class ProductRepository implements Icrud<Product>{
 	@Override
 	public int update(Product item) {
 		// TODO Auto-generated method stub
+		try {
+			int rs=0;
+			if(item.getImageUrl()!=null) {
+				rs= db.update("update "+StringValue.tbl_product+" set name=?,description=?,price=?,image_url=?,stock=? where id=?",
+						new Object[] {item.getName(),item.getDescription(),item.getPrice(),item.getImageUrl(),
+								item.getStock(),item.getId()});
+			}
+			else {
+				rs= db.update("update "+StringValue.tbl_product+" set name=?,description=?,price=?,stock=? where id=?",
+						new Object[] {item.getName(),item.getDescription(),item.getPrice(),
+								item.getStock(),item.getId()});
+			}
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e);
+		}
 		return 0;
 	}
 	@Override
 	public int delete(int id) {
 		// TODO Auto-generated method stub
+		try {
+			int rs = 0;
+			rs=db.update("delete from "+StringValue.tbl_product+" where id=?",new Object[] {id});
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
 		return 0;
 	}
 }
