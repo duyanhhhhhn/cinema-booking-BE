@@ -67,6 +67,15 @@ public class ShowtimeSchedulerAdminService {
 
         var rooms = repo.findRoomsByCinema(cinemaId);
         var eventsRows = repo.findEventsByCinemaInRange(cinemaId, from, to);
+        var cinemas = repo.findAllCinemaOptions();
+
+        String cinemaName = null;
+        for (var c : cinemas) {
+            if (c.getId() == cinemaId) {
+                cinemaName = c.getName();
+                break;
+            }
+        }
 
         List<AdminSchedulerResourceDto> resources = new ArrayList<>(rooms.size());
         for (var r : rooms) {
@@ -94,7 +103,7 @@ public class ShowtimeSchedulerAdminService {
         }
 
         SchedulerResult out = new SchedulerResult();
-        out.data = new AdminSchedulerResponseDto(resources, events);
+        out.data = new AdminSchedulerResponseDto(cinemaName, resources, events);
         out.totalConflicts = markConflicts(events);
         return out;
     }
@@ -205,7 +214,16 @@ public class ShowtimeSchedulerAdminService {
         return repo.findMovieOptions(keyword);
     }
 
-    public List<AdminMovieOptionDto> getMovieOptions(String keyword, String roomType) {
+    public List<AdminMovieOptionDto> getMovieOptions(
+            String keyword,
+            String roomType,
+            Integer roomId,
+            Integer cinemaId
+    ) {
+        if (roomId != null && roomId > 0 && cinemaId != null && cinemaId > 0) {
+            return repo.findMovieOptionsByRoom(cinemaId, roomId, keyword);
+        }
+
         return repo.findMovieOptions(keyword, roomType);
     }
 
@@ -287,5 +305,9 @@ public class ShowtimeSchedulerAdminService {
 
         int affected = repo.updateEdit(id, req.getRoomId(), req.getMovieId(), startAt, endAt, req.getBasePrice());
         if (affected != 1) conflict("Không thể cập nhật suất chiếu (có thể đã bị huỷ hoặc không tồn tại).");
+    }
+    
+    public List<CinemaOptionDto> getAllCinemas() {
+        return repo.findAllCinemaOptions();
     }
 }

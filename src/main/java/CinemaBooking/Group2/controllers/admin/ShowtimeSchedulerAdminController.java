@@ -8,13 +8,20 @@ import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.scheduler.AdminCreateShowtimeReqDto;
 import CinemaBooking.Group2.dtos.scheduler.AdminMoveShowtimeReqDto;
-import CinemaBooking.Group2.service.ShowtimeSchedulerAdminService;
 import CinemaBooking.Group2.dtos.scheduler.AdminUpdateShowtimeReqDto;
+import CinemaBooking.Group2.service.ShowtimeSchedulerAdminService;
+
 @RestController
 @RequestMapping("/api/admin/showtime-scheduler")
 public class ShowtimeSchedulerAdminController {
@@ -80,16 +87,18 @@ public class ShowtimeSchedulerAdminController {
         service.cancelShowtime(id);
         return ResponseEntity.ok(new ApiResponse<>("CANCELLED", Map.of("id", id)));
     }
-
+    
     @GetMapping("/movies")
     public ResponseEntity<ApiResponse<Object>> movies(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String roomType
+            @RequestParam(required = false) String roomType,
+            @RequestParam(required = false) Integer roomId,
+            @RequestParam(required = false) Integer cinemaId
     ) {
-        var data = service.getMovieOptions(keyword, roomType);
+        var data = service.getMovieOptions(keyword, roomType, roomId, cinemaId);
         return ResponseEntity.ok(new ApiResponse<>("OK", data));
     }
-    
+
     @GetMapping("/detail/{id}")
     public ResponseEntity<ApiResponse<Object>> detail(
             @PathVariable int id,
@@ -116,6 +125,13 @@ public class ShowtimeSchedulerAdminController {
         req.setBasePrice(basePrice);
 
         service.editShowtime(id, req);
-        return ResponseEntity.ok(new ApiResponse<>("UPDATED", java.util.Map.of("id", id)));
+        return ResponseEntity.ok(new ApiResponse<>("UPDATED", Map.of("id", id)));
     }
+    
+    @GetMapping("/cinemas")
+    public ResponseEntity<ApiResponse<Object>> cinemas() {
+        var data = service.getAllCinemas();
+        return ResponseEntity.ok(new ApiResponse<>("OK", data));
+    }
+
 }
