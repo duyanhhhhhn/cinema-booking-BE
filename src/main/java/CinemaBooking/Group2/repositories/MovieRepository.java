@@ -33,11 +33,14 @@ public class MovieRepository {
     private String effectiveStatusExpr(String alias) {
         String p = (alias == null || alias.isBlank()) ? "" : alias + ".";
         return "CASE " +
+               " WHEN " + p + "status = 'ENDED' THEN 'ENDED' " +
+               " WHEN " + p + "status = 'HIDDEN' THEN 'HIDDEN' " +
                " WHEN " + p + "end_date IS NOT NULL AND DATE(" + p + "end_date) < CURDATE() THEN 'ENDED' " +
                " WHEN " + p + "release_date IS NOT NULL AND DATE(" + p + "release_date) > CURDATE() THEN 'COMING_SOON' " +
                " WHEN " + p + "release_date IS NOT NULL AND DATE(" + p + "release_date) <= CURDATE() " +
                "      AND (" + p + "end_date IS NULL OR DATE(" + p + "end_date) >= CURDATE()) THEN 'NOW_SHOWING' " +
-               " ELSE COALESCE(" + p + "status, 'COMING_SOON') " +
+               " WHEN " + p + "status IS NOT NULL THEN " + p + "status " +
+               " ELSE 'COMING_SOON' " +
                "END";
     }
 
@@ -206,6 +209,7 @@ public class MovieRepository {
             throw new RuntimeException("Failed to fetch movies (ADMIN) with filters + pagination.", e);
         }
     }
+    
     public List<Movie> getAllMovieCommingSoon(
             int page,
             int perPage,
@@ -240,7 +244,7 @@ public class MovieRepository {
 
             (hasKeyword
                 ? " AND ( " +
-                  "   m.title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_as_ci " +
+                  "   m.title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci " +
                   " ) "
                 : "") +
 
@@ -257,7 +261,6 @@ public class MovieRepository {
             " END, " +
             " m.created_at DESC, " +
             " m.id DESC " +
-
             "LIMIT ? OFFSET ?;";
 
         List<Movie> movies = new ArrayList<>();
@@ -359,7 +362,11 @@ public class MovieRepository {
         }
     }
 
-    public long countMoviesComingSoonNowShowing(String keyword, Movie.MovieGenre genre, Movie.MovieStatus status) {
+    public long countMoviesComingSoonNowShowing(
+            String keyword,
+            Movie.MovieGenre genre,
+            Movie.MovieStatus status
+    ) {
         String q = (keyword == null) ? null : keyword.trim();
         boolean hasKeyword = (q != null && !q.isEmpty());
         boolean hasStatus = (status != null);
@@ -370,18 +377,12 @@ public class MovieRepository {
             "SELECT COUNT(*) AS total " +
             "FROM movie m " +
             "WHERE (" + effectiveStatus + ") IN (?, ?) " +
-            (hasStatus ? "  AND (" + effectiveStatus + ") = ? " : "") +
+            (hasStatus ? " AND (" + effectiveStatus + ") = ? " : "") +
             (hasKeyword
-                ? "  AND ( " +
-                  "    LOWER(m.title) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(m.short_description) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(m.description) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(m.director) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "    OR LOWER(m.`cast`) LIKE CONCAT('%', LOWER(?), '%') " +
-                  "  ) "
+                ? " AND m.title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci "
                 : "") +
             (genre != null
-                ? "  AND REPLACE(UPPER(m.genre), '-', '_') = ? "
+                ? " AND REPLACE(UPPER(m.genre), '-', '_') = ? "
                 : "");
 
         try (Connection conn = dataSource.getConnection();
@@ -397,10 +398,6 @@ public class MovieRepository {
             }
 
             if (hasKeyword) {
-                ps.setString(idx++, q);
-                ps.setString(idx++, q);
-                ps.setString(idx++, q);
-                ps.setString(idx++, q);
                 ps.setString(idx++, q);
             }
 

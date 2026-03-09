@@ -5,7 +5,7 @@ import java.util.Date;
 public class MovieReviewClientDtos {
 	private int id;
     private int userId;
-    private int movieId;
+	private int movieId;
     private int rating;
     private String comment;
     private Date createdAt;
@@ -60,8 +60,9 @@ public class MovieReviewClientDtos {
 	public void setRole_id(int role_id) {
 		this.role_id = role_id;
 	}
-	public MovieReviewClientDtos(int id, int userId, int movieId, int rating, String comment, Date createdAt,
-			String full_name, int role_id) {
+
+	public MovieReviewClientDtos(int id, int userId, String fullName, int movieId, int rating, String comment,
+			Date createdAt, String full_name, int role_id) {
 		super();
 		this.id = id;
 		this.userId = userId;
