@@ -292,27 +292,29 @@ public class UserService {
 	public PageResponse<UserDTO> getStaffs(
 	        int page,
 	        int perPage,
-	        String search
+	        String search,
+	        Integer cinemaIdParam
 	) {
 
-	    AuthUserPrincipal p = authService.getPrincipal();
+		AuthUserPrincipal p = authService.getPrincipal();
 
-	    if ("STAFF".equals(p.role()))
-	        throw new RuntimeException("Không có quyền");
+		if ("STAFF".equals(p.role()))
+		    throw new RuntimeException("Không có quyền");
 
-	    List<Integer> roles;
-	    Integer cinemaId = null;
+		List<Integer> roles;
+		Integer cinemaId = null;
 
-	    if ("ADMIN".equals(p.role())) {
-	        // ADMIN thấy MANAGER + STAFF
-	        roles = List.of(2, 3);
-	    } else if ("MANAGER".equals(p.role())) {
-	        // MANAGER chỉ thấy STAFF trong cinema của mình
-	        roles = List.of(3);
-	        cinemaId = p.cinemaId();
-	    } else {
-	        throw new RuntimeException("Role không hợp lệ");
-	    }
+		if ("ADMIN".equals(p.role())) {
+		    roles = List.of(2, 3);
+		    cinemaId = cinemaIdParam;   // 👈 ADMIN được chọn cinema
+		} 
+		else if ("MANAGER".equals(p.role())) {
+		    roles = List.of(3);
+		    cinemaId = p.cinemaId();    // 👈 ép cinema của manager
+		}
+		else {
+		    throw new RuntimeException("Role không hợp lệ");
+		}
 
 	    int offset = getOffset(page, perPage);
 
@@ -324,7 +326,7 @@ public class UserService {
 
 	    int total =
 	        userRepo.countUsers(roles, cinemaId, search);
-
+	    
 	    return new PageResponse<>(
 	        "Lấy danh sách nhân viên thành công",
 	        list,
@@ -396,8 +398,14 @@ public class UserService {
             throw new RuntimeException("Email đã tồn tại");
 
         if (avatar != null && !avatar.isEmpty()) {
-            String avatarUrl = uploadAvatar(avatar);
-            req.setAvatarUrl(avatarUrl);
+            try {
+                Path newAvatarPath = saveAvatarToFolder(avatar);
+                String newAvatarRel = toRelativePath(newAvatarPath);
+                // store relative path (same as createUser/updateUser)
+                req.setAvatarUrl(newAvatarRel);
+            } catch (Exception e) {
+                throw new RuntimeException("Upload avatar thất bại: " + e.getMessage(), e);
+            }
         }
 
         userRepo.createStaff(req, encoder.encode(req.getPassword()));
@@ -421,8 +429,26 @@ public class UserService {
         if ("MANAGER".equals(principal.role()) && target.getRoleId() == 2)
             throw new RuntimeException("MANAGER không được chỉnh MANAGER");
         if (avatar != null && !avatar.isEmpty()) {
-            String avatarUrl = uploadAvatar(avatar);
-            req.setAvatarUrl(avatarUrl);
+            Path newAvatarPath = null;
+            try {
+                newAvatarPath = saveAvatarToFolder(avatar);
+                String newAvatarRel = toRelativePath(newAvatarPath);
+                // store relative path (same as createUser/updateUser)
+                req.setAvatarUrl(newAvatarRel);
+
+                // delete old avatar file of the target user
+                if (target.getAvatarUrl() != null && !target.getAvatarUrl().isBlank()) {
+                    Files.deleteIfExists(resolveUploadPath(target.getAvatarUrl()));
+                }
+            } catch (Exception e) {
+                if (newAvatarPath != null) {
+                    try {
+                        Files.deleteIfExists(newAvatarPath);
+                    } catch (Exception ignore) {
+                    }
+                }
+                throw new RuntimeException("Upload avatar thất bại: " + e.getMessage(), e);
+            }
         }
 
         userRepo.updateUser(id, req);

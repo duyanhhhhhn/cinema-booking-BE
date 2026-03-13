@@ -21,18 +21,17 @@ public class MovieReviewAdminService {
         this.repo = repo;
     }
 
-    public ApiResponse<List<AdminReviewRowDto>> getAllReviews(Integer movieId, int page, int perPage) {
+    public ApiResponse<List<AdminReviewRowDto>> getAllReviews(AdminReviewFilterDto filter, int page, int perPage) {
         if (page <= 0) page = 1;
         if (perPage <= 0) perPage = 10;
         if (perPage > 50) perPage = 50;
 
-        AdminReviewFilterDto filter = new AdminReviewFilterDto();
-        filter.setMovieId(movieId);
+        if (filter == null) {
+            filter = new AdminReviewFilterDto();
+        }
 
         long total = repo.countAllReviews(filter);
-
-        int pageIndex = page - 1;
-        List<AdminReviewRowDto> items = repo.findAllReviews(filter, pageIndex, perPage);
+        List<AdminReviewRowDto> items = repo.findAllReviews(filter, page, perPage);
 
         Meta meta = new Meta(page, total, perPage);
         return new ApiResponse<>("OK", items, meta);
@@ -54,7 +53,7 @@ public class MovieReviewAdminService {
 
         return new ApiResponse<>("OK", data);
     }
-    
+
     public ApiResponse<Object> setHidden(int id, boolean hidden) {
         boolean ok = repo.setHidden(id, hidden);
         if (!ok) return new ApiResponse<>("REVIEW_NOT_FOUND", null);
