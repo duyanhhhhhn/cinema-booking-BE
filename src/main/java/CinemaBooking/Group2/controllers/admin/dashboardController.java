@@ -2,6 +2,7 @@ package CinemaBooking.Group2.controllers.admin;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +90,30 @@ public class dashboardController {
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.ok(item);
+	}
+	@GetMapping("/revenue/month/all")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<List<revenueResponseDTO>>> getAllRevenueByMonth(){
+		List<revenueResponseDTO> list = new ArrayList<>();
+		try {
+			
+			for(int i=1;i<=12;i++) {
+				BigDecimal re = service.getRevenueByMonth(i);
+				revenueResponseDTO res =  new revenueResponseDTO();
+				if(re!=null) {
+					res.setRevenue(re);
+				}
+				else {
+					res.setRevenue(BigDecimal.valueOf(0));
+				}
+				list.add(res);
+			}
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return ResponseEntity.ok(new ApiResponse<List<revenueResponseDTO>>("", list));
 	}
 	@GetMapping("/revenue/date")
 	@CrossOrigin

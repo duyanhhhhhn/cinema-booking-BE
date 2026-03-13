@@ -44,7 +44,8 @@ public class ComboItemMapper implements RowMapper<ComboItem> {
 				item.getProductId(),
 				pro.getName(),
 				item.getQuantity(),
-				pro.getPrice()
+				pro.getPrice(),
+				pro.getImageUrl()
 			);
 			
 			return res;

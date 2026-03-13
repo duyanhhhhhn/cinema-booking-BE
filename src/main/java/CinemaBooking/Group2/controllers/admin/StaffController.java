@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
@@ -54,9 +56,10 @@ public class StaffController {
 	}
 	@CrossOrigin
 	@GetMapping("/schedules")
-	public List<staffScheduleResponseDTO> getSchedules(@RequestParam(name="page",defaultValue = "1") int page,@RequestParam(name="pageSize",defaultValue = "6") int size){
+	public ResponseEntity<ApiResponse<List<ScheduleResponseDTO>>> getSchedules(@RequestParam(name="page",defaultValue = "1") int page,@RequestParam(name="pageSize",defaultValue = "6") int size){
 		try {
-			return service.getSchedule(page,size);
+			List<ScheduleResponseDTO> schedule=service.getSchedule(page,size);
+			return ResponseEntity.ok(new ApiResponse<List<ScheduleResponseDTO>>("success", schedule));
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -102,7 +105,7 @@ public class StaffController {
 	}
 	@CrossOrigin
 	@GetMapping("/schedule/my")
-	public List<staffScheduleResponseDTO> getMySchedules(@RequestParam("id")int id){
+	public List<ScheduleResponseDTO> getMySchedules(@RequestParam("id")int id){
 		try {
 			return service.getScheduleByStaffId(id);
 		}

@@ -3,23 +3,27 @@ package CinemaBooking.Group2.mappers;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
-import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
+import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
+import CinemaBooking.Group2.service.AuthService;
 
 public class StaffMapper implements RowMapper<StaffSchedule>{
-	public static staffScheduleResponseDTO toResponseDTO(StaffSchedule item) {
+	@Autowired
+	private AuthService service;
+	public static ScheduleResponseDTO toResponseDTO(StaffSchedule item) {
 		if(item==null) {
 			return null;
 		}
-		staffScheduleResponseDTO staff = new staffScheduleResponseDTO();
+		ScheduleResponseDTO staff = new ScheduleResponseDTO();
 		staff.setId(item.getId());
-		staff.setShiftId(item.getShiftId());
-		staff.setWorkDate(item.getWorkDate());
 		staff.setStatus(item.getStatus());
-		staff.setStaffId(item.getStaffId());
+		staff.setStaff(null);
+		staff.setShift(null);
+		staff.setWorkdate(null);
 		return staff;
 	}
 	@Override

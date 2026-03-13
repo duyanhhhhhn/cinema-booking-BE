@@ -2,18 +2,14 @@ package CinemaBooking.Group2.service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
-import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.workShiftResponseDTO;
 import CinemaBooking.Group2.mappers.StaffMapper;
 import CinemaBooking.Group2.mappers.WorkShiftMapper;
@@ -25,10 +21,22 @@ import CinemaBooking.Group2.pattern.StaffSchedulePattern;
 public class StaffScheduleService {
 	@Autowired
 	private StaffSchedulePattern pattern;
-	public List<staffScheduleResponseDTO> getSchedule(int page,int size){
+	public List<ScheduleResponseDTO> getSchedule(int page,int size){
 		try {
-			List<StaffSchedule> item = pattern.getSchedule(page,size);
-			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
+			List<StaffSchedule> list = pattern.getSchedule(page,size);
+			List<ScheduleResponseDTO> lists = new ArrayList<>();
+			for(StaffSchedule item : list) {
+				ScheduleResponseDTO dto = new ScheduleResponseDTO();
+				if(item!=null) {
+					dto.setId(item.getId());
+					dto.setStaff(pattern.findStaffById(item.getStaffId()));
+					dto.setShift(pattern.findByShiftId(item.getShiftId()));
+					dto.setStatus(item.getStatus());
+					dto.setWorkdate(item.getWorkDate());
+					lists.add(dto);
+				}
+			}
+			return lists;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -62,7 +70,7 @@ public class StaffScheduleService {
 		}
 		return null;
 	}
-	public List<staffScheduleResponseDTO> getScheduleByStaffId(int id){
+	public List<ScheduleResponseDTO> getScheduleByStaffId(int id){
 		try {
 			List<StaffSchedule> item = pattern.getScheduleByStaffId(id);
 			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
