@@ -92,9 +92,8 @@ public class SecurityConfig {
 								"/api/booking/**",
 								"/api/bookings/**",
 								"/api/debug/**"
-							
-								
-								)
+
+						)
 						.authenticated()
 
 						// ===== ROLE BASE =====
@@ -106,7 +105,6 @@ public class SecurityConfig {
 						.requestMatchers("/api/cinemas/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						.requestMatchers("/api/room/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						.requestMatchers("/api/tickets/**").hasAnyAuthority("ADMIN", "STAFF", "MANAGER")
-						
 
 						.anyRequest().authenticated())
 
