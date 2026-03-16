@@ -35,6 +35,7 @@ public class InvoiceResponse {
     private String posterUrl;
     private String format;              // 2D, 3D, IMAX...
     private int durationMinutes;
+    private Integer cinemaId;
     private String cinemaName;
     private String cinemaAddress;
     private String roomName;
@@ -169,6 +170,9 @@ public class InvoiceResponse {
 
     public int getDurationMinutes() { return durationMinutes; }
     public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
+
+    public Integer getCinemaId() { return cinemaId; }
+    public void setCinemaId(Integer cinemaId) { this.cinemaId = cinemaId; }
 
     public String getCinemaName() { return cinemaName; }
     public void setCinemaName(String cinemaName) { this.cinemaName = cinemaName; }
