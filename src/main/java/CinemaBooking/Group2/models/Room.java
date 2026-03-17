@@ -9,7 +9,7 @@ public class Room {
     private String name;
     private String type;
     private int totalSeats;
-    private String seatLayout;   // JSON dạng String
+    private String seatLayout;
     private LocalDateTime createdAt;
 	public int getId() {
 		return id;
