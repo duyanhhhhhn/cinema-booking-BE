@@ -39,6 +39,7 @@ public class InvoiceRepository {
                 m.poster_url        AS posterUrl,
                 m.format            AS format,
                 m.duration_minutes  AS durationMinutes,
+                c.id                AS cinemaId,
                 c.name              AS cinemaName,
                 c.address           AS cinemaAddress,
                 r.name              AS roomName,

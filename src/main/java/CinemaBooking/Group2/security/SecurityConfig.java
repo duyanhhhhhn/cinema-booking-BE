@@ -92,13 +92,12 @@ public class SecurityConfig {
 								"/api/booking/**",
 								"/api/bookings/**",
 								"/api/debug/**"
-							
-								
-								)
+
+						)
 						.authenticated()
 
 						// ===== ROLE BASE =====
-						.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+						.requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "MANAGER")
 						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
 						.requestMatchers("/api/movies/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						.requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")

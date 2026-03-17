@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -100,6 +102,39 @@ public class BookingService {
         BookingCalculateResponse response = new BookingCalculateResponse();
         BookingCalculateResponse.PriceBreakdown breakdown = new BookingCalculateResponse.PriceBreakdown();
         
+        // Fetch active price adjustments early
+        List<PriceAdjustment> activeAdjustments = bookingRepository.findActivePriceAdjustments();
+        LocalDate showtimeDate = showtime.getStartTime().toLocalDate();
+        // Use Short style (Mon, Tue) to match DB storage
+        String dayName = showtimeDate.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+        
+        PriceAdjustment appliedAdjustment = null;
+        for (PriceAdjustment adjustment : activeAdjustments) {
+            boolean match = false;
+            
+            // 1. Check Date Range
+            if (adjustment.getStartDate() != null && adjustment.getEndDate() != null) {
+                if (!showtimeDate.isBefore(adjustment.getStartDate()) && !showtimeDate.isAfter(adjustment.getEndDate())) {
+                    match = true;
+                }
+            }
+            // 2. Check Days of Week
+            else if (adjustment.getApplyOnDays() != null) {
+                String[] days = adjustment.getApplyOnDays().split(",");
+                for (String d : days) {
+                    if (d.trim().equalsIgnoreCase(dayName)) {
+                        match = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (match) {
+                appliedAdjustment = adjustment;
+                break;
+            }
+        }
+
         // 1. Tính giá vé và phụ thu ghế VIP
         BigDecimal totalSeatsPrice = BigDecimal.ZERO; // Tổng giá tất cả ghế (bao gồm cả base và extra)
         BigDecimal basePrice = BigDecimal.ZERO;        // Tổng giá vé cơ bản
@@ -119,7 +154,26 @@ public class BookingService {
             
             BigDecimal seatBasePrice = showtime.getBasePrice();
             BigDecimal extraPrice = seat.getExtraPrice() != null ? seat.getExtraPrice() : BigDecimal.ZERO;
-            BigDecimal seatTotalPrice = seatBasePrice.add(extraPrice);
+            BigDecimal seatTotalPrice = seatBasePrice.add(extraPrice); // (Base + Extra)
+            
+            // Apply Price Adjustment on TOTAL (Base + Extra)
+            if (appliedAdjustment != null) {
+                if (appliedAdjustment.getAdjustmentType() == PriceAdjustment.AdjustmentType.PERCENT) {
+                    BigDecimal increase = seatTotalPrice.multiply(appliedAdjustment.getValue())
+                            .divide(new BigDecimal(100));
+                    seatTotalPrice = seatTotalPrice.add(increase);
+                    
+                    // Note: If percentage is applied, we usually distribute it. 
+                    // But for simple breakdown, we can just say the 'basePrice' part increased or keep it as markup.
+                    // To keep breakdown clean:
+                    seatBasePrice = seatTotalPrice.subtract(extraPrice); 
+                } else {
+                    // AMOUNT
+                    BigDecimal increase = appliedAdjustment.getValue();
+                    seatTotalPrice = seatTotalPrice.add(increase);
+                    seatBasePrice = seatBasePrice.add(increase);
+                }
+            }
             
             // Cộng dồn vào tổng
             basePrice = basePrice.add(seatBasePrice);
@@ -208,39 +262,24 @@ public class BookingService {
         
         breakdown.setProducts(productDetails);
         
-        // 3. Tính phụ thu lễ (nếu có) - áp dụng trên tổng giá ghế + combo + product
+        // 3. Tính phụ thu lễ (nếu có) - Đã áp dụng trực tiếp vào giá vé ở trên nên bỏ qua phần này hoặc chỉ áp dụng cho combo nếu cần
+        // Hiện tại comment lại để tránh tính trùng
         BigDecimal holidaySurcharge = BigDecimal.ZERO;
-        List<PriceAdjustment> activeAdjustments = bookingRepository.findActivePriceAdjustments();
         
-        LocalDate showtimeDate = showtime.getStartTime().toLocalDate();
-        DayOfWeek dayOfWeek = showtimeDate.getDayOfWeek();
-        String dayName = dayOfWeek.name();
-        
-        for (PriceAdjustment adjustment : activeAdjustments) {
-            String applyOnDays = adjustment.getApplyOnDays();
-            if (applyOnDays != null && applyOnDays.contains(dayName)) {
-                BigDecimal subtotalBeforeHoliday = totalSeatsPrice.add(comboPrice).add(productPrice);
-                
-                if (adjustment.getAdjustmentType() == PriceAdjustment.AdjustmentType.PERCENT) {
-                    holidaySurcharge = subtotalBeforeHoliday
-                        .multiply(adjustment.getValue())
-                        .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
-                } else {
-                    holidaySurcharge = adjustment.getValue();
-                }
-                
-                // Add to breakdown
-                BookingCalculateResponse.PriceBreakdown.HolidayDetail holidayDetail = 
-                    new BookingCalculateResponse.PriceBreakdown.HolidayDetail();
-                holidayDetail.setHolidayName(adjustment.getName());
-                holidayDetail.setAdjustmentType(adjustment.getAdjustmentType().name());
-                holidayDetail.setValue(adjustment.getValue());
-                holidayDetail.setSurchargeAmount(holidaySurcharge);
-                breakdown.setHoliday(holidayDetail);
-                
-                break; // Chỉ áp dụng 1 price adjustment
-            }
-        }
+        /* 
+         * Logic cũ áp dụng trên tổng bill, đã chuyển sang áp dụng từng ghế.
+         * Giữ lại code tham khảo:
+         */
+         if (appliedAdjustment != null) {
+             BookingCalculateResponse.PriceBreakdown.HolidayDetail holidayDetail = 
+                     new BookingCalculateResponse.PriceBreakdown.HolidayDetail();
+             holidayDetail.setHolidayName(appliedAdjustment.getName());
+             holidayDetail.setAdjustmentType(appliedAdjustment.getAdjustmentType().name());
+             holidayDetail.setValue(appliedAdjustment.getValue());
+             // Surcharge hiển thị là 0 vì đã tính vào giá vé
+             holidayDetail.setSurchargeAmount(BigDecimal.ZERO); 
+             // breakdown.setHoliday(holidayDetail); 
+         }
         
         // 4. Tính subtotal - sử dụng totalSeatsPrice thay vì basePrice + seatExtraPrice để tránh sai lệch
         BigDecimal subtotal = totalSeatsPrice

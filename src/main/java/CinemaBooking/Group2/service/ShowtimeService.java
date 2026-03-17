@@ -1,16 +1,19 @@
 package CinemaBooking.Group2.service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle; // Add
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale; // Add
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.TreeMap; // Add
+import java.util.Set; // Add
+import java.util.HashSet; // Add
 
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired; // Add
 
 import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
 import CinemaBooking.Group2.dtos.seat.SeatDTO;
@@ -18,30 +21,35 @@ import CinemaBooking.Group2.dtos.seat.SeatRowDTO;
 import CinemaBooking.Group2.dtos.showtime.MovieShowtimeGroupDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimePublicDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimeSeatResponseDTO;
+import CinemaBooking.Group2.models.PriceAdjustment; // Add
 import CinemaBooking.Group2.models.Seat;
+import CinemaBooking.Group2.repositories.BookingRepository; // Add
 import CinemaBooking.Group2.repositories.SeatRepository;
 import CinemaBooking.Group2.repositories.ShowtimeRepository;
 import CinemaBooking.Group2.repositories.SeatHoldRepository;
 
 @Service
 public class ShowtimeService {
-	private final ShowtimeRepository stRepo;
-	private final SeatRepository seatRepo;
+    private final ShowtimeRepository stRepo;
+    private final SeatRepository seatRepo;
     private final SeatHoldRepository seatHoldRepo;
-	
-		public ShowtimeService(ShowtimeRepository stRepo,
-		SeatRepository seatRepo,
-		SeatHoldRepository seatHoldRepo) {
-		this.stRepo = stRepo;
-		this.seatRepo = seatRepo;
-		this.seatHoldRepo = seatHoldRepo;
-	}
-	
-	public List<MovieShowtimeGroupDtos> getShowtimesGroupedByMovie(int cinemaId, Integer movieId, String dateStr) {
+    
+    @Autowired // Inject BookingRepository
+    private BookingRepository bookingRepository;
+
+    public ShowtimeService(ShowtimeRepository stRepo,
+            SeatRepository seatRepo,
+            SeatHoldRepository seatHoldRepo) {
+        this.stRepo = stRepo;
+        this.seatRepo = seatRepo;
+        this.seatHoldRepo = seatHoldRepo;
+    }
+
+    public List<MovieShowtimeGroupDtos> getShowtimesGroupedByMovie(int cinemaId, Integer movieId, String dateStr) {
         LocalDate date = parseAndValidate(cinemaId, movieId, dateStr);
         return stRepo.getShowtimesPublicGrouped(cinemaId, movieId, date);
     }
-	
+
     public List<MovieShowtimeGroupDtos> getShowtimesGroupedByMovie(int cinemaId, Integer movieId, LocalDate date) {
         validate(cinemaId, movieId, date);
         return stRepo.getShowtimesPublicGrouped(cinemaId, movieId, date);
@@ -62,7 +70,7 @@ public class ShowtimeService {
         validate(cinemaId, movieId, date);
         return date;
     }
-    
+
     public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId) {
         // delegate to new overload without cinema filter
         return getCinemasWithShowtimesByMovieId(movieId, null);
@@ -74,7 +82,6 @@ public class ShowtimeService {
         }
         return stRepo.getCinemasWithShowtimesByMovieId(movieId, cinemaId);
     }
-    
 
     private void validate(int cinemaId, Integer movieId, LocalDate date) {
         if (cinemaId <= 0) {
@@ -87,152 +94,228 @@ public class ShowtimeService {
             throw new IllegalArgumentException("movieId invalid.");
         }
     }
-    
+
     public ShowtimeSeatResponseDTO getSeatMap(int showtimeId) {
 
-    // 1. Lấy cinema name
-    String cinemaName =
-            stRepo.getCinemaNameByShowtime(showtimeId);
+        // 1. Lấy cinema name
+        String cinemaName = stRepo.getCinemaNameByShowtime(showtimeId);
 
-    if (cinemaName == null) {
-        throw new IllegalArgumentException("Showtime not found");
-    }
-    
-    // 2. Lấy thông tin showtime để có basePrice
-    Map<String, Object> showtimeInfo = stRepo.getShowtimeDetails(showtimeId);
-    if (showtimeInfo == null) {
-        throw new IllegalArgumentException("Showtime details not found");
-    }
-    
-    // Lấy basePrice từ showtime
-    java.math.BigDecimal basePrice = java.math.BigDecimal.ZERO;
-    Object basePriceObj = showtimeInfo.get("base_price");
-    if (basePriceObj != null) {
-        if (basePriceObj instanceof java.math.BigDecimal) {
-            basePrice = (java.math.BigDecimal) basePriceObj;
-        } else {
-            try {
-                basePrice = new java.math.BigDecimal(basePriceObj.toString());
-            } catch (NumberFormatException e) {
-                // Fallback to 0 if parsing fails
-            }
+        if (cinemaName == null) {
+            throw new IllegalArgumentException("Showtime not found");
         }
-    }
-    
-    // 3. Lấy roomId
-    int roomId =
-            seatRepo.getRoomIdByShowtime(showtimeId);
-    // 4. Lấy ghế
-    List<Seat> seats =
-            seatRepo.getSeatsByRoomId(roomId);
 
-    // 5. Lấy ghế đã đặt
-    Map<Integer,String> booked =
-            seatRepo.getBookedSeats(showtimeId);
+        // 2. Lấy thông tin showtime để có basePrice
+        Map<String, Object> showtimeInfo = stRepo.getShowtimeDetails(showtimeId);
+        if (showtimeInfo == null) {
+            throw new IllegalArgumentException("Showtime details not found");
+        }
 
-    // 5.1 Lấy ghế đang được hold (active holds)
-    List<Integer> heldSeatIds = new ArrayList<>();
-    try {
-        heldSeatIds = seatHoldRepo.findActiveSeatIdsByShowtime(showtimeId);
-    } catch (Exception ex) {
-        // If hold fetch fails, ignore and proceed (seats will be shown as available)
-    }
-
-    // 6. Build response
-    ShowtimeSeatResponseDTO res =
-            new ShowtimeSeatResponseDTO();
-
-    res.setShowtimeId(showtimeId);
-
-    //  SET CINEMA NAME
-    res.setCinemaName(cinemaName);
-
-    // --- SET ADDITIONAL MOVIE / SHOWTIME DATA ---
-    try {
-        // showtimeInfo đã được lấy ở trên
-        if (showtimeInfo != null) {
-            res.setMovieTitle((String) showtimeInfo.get("movie_title"));
-
-            // Prefix "/media/" before poster url (handle null and avoid duplicate prefix)
-            Object posterObj = showtimeInfo.get("poster_url");
-            if (posterObj != null) {
-                String poster = posterObj.toString();
-                if (!poster.startsWith("/media/")) {
-                    // remove leading slash to avoid double slashes
-                    if (poster.startsWith("/")) {
-                        poster = poster.substring(1);
-                    }
-                    poster = "/media/" + poster;
-                }
-                res.setMoviePosterUrl(poster);
+        // Lấy basePrice từ showtime
+        java.math.BigDecimal basePrice = java.math.BigDecimal.ZERO;
+        Object basePriceObj = showtimeInfo.get("base_price");
+        if (basePriceObj != null) {
+            if (basePriceObj instanceof java.math.BigDecimal) {
+                basePrice = (java.math.BigDecimal) basePriceObj;
             } else {
-                res.setMoviePosterUrl(null);
-            }
-
-            res.setGenre((String) showtimeInfo.get("genre"));
-
-            Object durObj = showtimeInfo.get("duration_minutes");
-            if (durObj != null) {
-                if (durObj instanceof Number) {
-                    res.setDuration(((Number) durObj).intValue());
-                } else {
-                    try {
-                        res.setDuration(Integer.parseInt(durObj.toString()));
-                    } catch (NumberFormatException ex) {
-                        // ignore -> leave default 0
-                    }
-                }
-            }
-
-            res.setRoomName((String) showtimeInfo.get("room_name"));
-            res.setFullAddress((String) showtimeInfo.get("address"));
-
-            Object stObj = showtimeInfo.get("start_time");
-            if (stObj != null) {
-                if (stObj instanceof java.sql.Timestamp) {
-                    res.setStartTime(((java.sql.Timestamp) stObj).toLocalDateTime());
-                } else if (stObj instanceof LocalDateTime) {
-                    res.setStartTime((LocalDateTime) stObj);
+                try {
+                    basePrice = new java.math.BigDecimal(basePriceObj.toString());
+                } catch (NumberFormatException e) {
+                    // Fallback to 0 if parsing fails
                 }
             }
         }
-    } catch (Exception ex) {
-        // If details fetch fails, continue returning seat map but log? For now, rethrow to surface error
-        throw new RuntimeException("Failed to fetch showtime details for id: " + showtimeId, ex);
+        
+        // --- START NEW LOGIC: Calculate dynamic price based on PriceAdjustment ---
+        Object startTimeObj = showtimeInfo.get("start_time");
+        LocalDateTime startTime = null;
+        if (startTimeObj != null) {
+             if (startTimeObj instanceof java.sql.Timestamp) {
+                 startTime = ((java.sql.Timestamp) startTimeObj).toLocalDateTime();
+             } else if (startTimeObj instanceof LocalDateTime) {
+                 startTime = (LocalDateTime) startTimeObj;
+             }
+        }
+
+        if (startTime != null) {
+            List<PriceAdjustment> adjustments = bookingRepository.findActivePriceAdjustments();
+            LocalDate showtimeDate = startTime.toLocalDate();
+            // Use Short style to match "Mon", "Tue" etc. stored in DB
+            String dayName = showtimeDate.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+            
+            for (PriceAdjustment adj : adjustments) {
+                boolean match = false;
+                
+                // 1. Check Date Range
+                if (adj.getStartDate() != null && adj.getEndDate() != null) {
+                    if (!showtimeDate.isBefore(adj.getStartDate()) && !showtimeDate.isAfter(adj.getEndDate())) {
+                        match = true;
+                    }
+                }
+                // 2. Check Days of Week
+                else if (adj.getApplyOnDays() != null) {
+                    String[] days = adj.getApplyOnDays().split(",");
+                    for (String d : days) {
+                        if (d.trim().equalsIgnoreCase(dayName)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (match) {
+                    // Pass the adjustment to buildSeatRows instead of calculating basePrice here
+                    // Because PERCENT adjustment should be applied on (Base + Extra)
+                    
+                    // FIX: We need roomID, seats, booked, heldSeatIds, res, etc. BEFORE calling buildSeatRows
+                    // Moving this logic DOWN after all the necessary data is fetched.
+                    break; 
+                }
+            }
+        }
+        // --- END NEW LOGIC ---
+
+        // 3. Lấy roomId
+        int roomId = seatRepo.getRoomIdByShowtime(showtimeId);
+        // 4. Lấy ghế
+        List<Seat> seats = seatRepo.getSeatsByRoomId(roomId);
+
+        // 5. Lấy ghế đã đặt
+        Map<Integer, String> booked = seatRepo.getBookedSeats(showtimeId);
+
+        // 5.1 Lấy ghế đang được hold (active holds)
+        List<Integer> heldSeatIds = new ArrayList<>();
+        try {
+            heldSeatIds = seatHoldRepo.findActiveSeatIdsByShowtime(showtimeId);
+        } catch (Exception ex) {
+            // If hold fetch fails, ignore and proceed (seats will be shown as available)
+        }
+
+        // 6. Build response
+        ShowtimeSeatResponseDTO res = new ShowtimeSeatResponseDTO();
+
+        res.setShowtimeId(showtimeId);
+
+        // SET CINEMA NAME
+        res.setCinemaName(cinemaName);
+
+        // --- APPLY ADJUSTMENT LOGIC HERE AFTER DATA IS READY ---
+        PriceAdjustment activeAdjustment = null;
+        if (startTime != null) {
+            List<PriceAdjustment> adjustments = bookingRepository.findActivePriceAdjustments();
+            LocalDate showtimeDate = startTime.toLocalDate();
+            String dayName = showtimeDate.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+            
+            for (PriceAdjustment adj : adjustments) {
+                boolean match = false;
+                
+                // 1. Check Date Range
+                if (adj.getStartDate() != null && adj.getEndDate() != null) {
+                    if (!showtimeDate.isBefore(adj.getStartDate()) && !showtimeDate.isAfter(adj.getEndDate())) {
+                        match = true;
+                    }
+                }
+                // 2. Check Days of Week
+                else if (adj.getApplyOnDays() != null) {
+                    String[] days = adj.getApplyOnDays().split(",");
+                    for (String d : days) {
+                        if (d.trim().equalsIgnoreCase(dayName)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (match) {
+                    activeAdjustment = adj;
+                    break;
+                }
+            }
+        }
+        // ----------------------------------------------------
+
+        // --- SET ADDITIONAL MOVIE / SHOWTIME DATA ---
+        try {
+            // showtimeInfo đã được lấy ở trên
+            if (showtimeInfo != null) {
+                res.setMovieTitle((String) showtimeInfo.get("movie_title"));
+
+                // Prefix "/media/" before poster url (handle null and avoid duplicate prefix)
+                Object posterObj = showtimeInfo.get("poster_url");
+                if (posterObj != null) {
+                    String poster = posterObj.toString();
+                    if (!poster.startsWith("/media/")) {
+                        // remove leading slash to avoid double slashes
+                        if (poster.startsWith("/")) {
+                            poster = poster.substring(1);
+                        }
+                        poster = "/media/" + poster;
+                    }
+                    res.setMoviePosterUrl(poster);
+                } else {
+                    res.setMoviePosterUrl(null);
+                }
+
+                res.setGenre((String) showtimeInfo.get("genre"));
+
+                Object durObj = showtimeInfo.get("duration_minutes");
+                if (durObj != null) {
+                    if (durObj instanceof Number) {
+                        res.setDuration(((Number) durObj).intValue());
+                    } else {
+                        try {
+                            res.setDuration(Integer.parseInt(durObj.toString()));
+                        } catch (NumberFormatException ex) {
+                            // ignore -> leave default 0
+                        }
+                    }
+                }
+
+                res.setRoomName((String) showtimeInfo.get("room_name"));
+                res.setFullAddress((String) showtimeInfo.get("address"));
+
+                Object stObj = showtimeInfo.get("start_time");
+                if (stObj != null) {
+                    if (stObj instanceof java.sql.Timestamp) {
+                        res.setStartTime(((java.sql.Timestamp) stObj).toLocalDateTime());
+                    } else if (stObj instanceof LocalDateTime) {
+                        res.setStartTime((LocalDateTime) stObj);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            // If details fetch fails, continue returning seat map but log? For now, rethrow
+            // to surface error
+            throw new RuntimeException("Failed to fetch showtime details for id: " + showtimeId, ex);
+        }
+
+        // Pass heldSeatIds và basePrice so held seats are shown as HELD instead of
+        // AVAILABLE
+        res.setRows(
+                buildSeatRows(seats, booked, heldSeatIds, basePrice, activeAdjustment));
+
+        return res;
     }
-
-    // Pass heldSeatIds và basePrice so held seats are shown as HELD instead of AVAILABLE
-    res.setRows(
-            buildSeatRows(seats, booked, heldSeatIds, basePrice)
-    );
-
-    return res;
-}
-
-
 
     /**
      * Group ghế theo hàng (A,B,C...)
      */
     private List<SeatRowDTO> buildSeatRows(
             List<Seat> seats,
-            Map<Integer,String> booked,
+            Map<Integer, String> booked,
             List<Integer> heldSeatIds,
-            java.math.BigDecimal basePrice){
+            java.math.BigDecimal basePrice,
+            PriceAdjustment adj) {
 
         // TreeMap → auto sort theo A,B,C
-        Map<String,List<SeatDTO>> map =
-                new TreeMap<>();
-
+        Map<String, List<SeatDTO>> map = new TreeMap<>();
 
         // ========== Convert Seat → SeatDTO ==========
-        for(Seat s : seats){
+        for (Seat s : seats) {
 
             String code = s.getSeatCode(); // VD: A12
 
-            String row = code.substring(0,1); // A
-            String num = code.substring(1);  // 12
-
+            String row = code.substring(0, 1); // A
+            String num = code.substring(1); // 12
 
             SeatDTO dto = new SeatDTO();
 
@@ -242,47 +325,55 @@ public class ShowtimeService {
             dto.setNumber(num);
             dto.setType(s.getSeatType().name());
 
-
             // ===== Status =====
-            if(booked.containsKey(s.getId())){
+            if (booked.containsKey(s.getId())) {
 
                 String st = booked.get(s.getId());
 
-                if("PAID".equals(st)){
+                if ("PAID".equals(st)) {
                     dto.setStatus("SOLD");
-                }else{
+                } else {
                     dto.setStatus("BOOKED");
                 }
 
-            }else if (heldSeatIds != null && !heldSeatIds.isEmpty() && heldSeatIds.contains(s.getId())){
+            } else if (heldSeatIds != null && !heldSeatIds.isEmpty() && heldSeatIds.contains(s.getId())) {
                 // Seat is currently held (not booked)
                 dto.setStatus("HELD");
-            }else{
+            } else {
                 dto.setStatus("AVAILABLE");
             }
 
-
-            // ===== Price ===== 
-            // Tính giá = basePrice + extraPrice (giống như logic trong BookingService)
+            // ===== Price =====
+            // Tính giá = basePrice + extraPrice
             java.math.BigDecimal totalPrice = basePrice;
-            if(s.getExtraPrice() != null){
+            if (s.getExtraPrice() != null) {
                 totalPrice = totalPrice.add(s.getExtraPrice());
             }
             
+            // Apply Price Adjustment on the TOTAL (Base + Extra)
+            if (adj != null) {
+                if (adj.getAdjustmentType() == PriceAdjustment.AdjustmentType.PERCENT) {
+                    java.math.BigDecimal increase = totalPrice.multiply(adj.getValue())
+                            .divide(new java.math.BigDecimal(100));
+                    totalPrice = totalPrice.add(increase);
+                } else {
+                    // AMOUNT
+                    totalPrice = totalPrice.add(adj.getValue());
+                }
+            }
+
             long price = totalPrice.longValue();
             dto.setPrice(price);
 
-
             // ===== Group theo row =====
-            map.computeIfAbsent(row,k->new ArrayList<>())
-               .add(dto);
+            map.computeIfAbsent(row, k -> new ArrayList<>())
+                    .add(dto);
         }
 
-
         // ========== Sort từng hàng ==========
-        for(List<SeatDTO> list : map.values()){
+        for (List<SeatDTO> list : map.values()) {
 
-            list.sort((a,b)->{
+            list.sort((a, b) -> {
 
                 int n1 = Integer.parseInt(a.getNumber());
                 int n2 = Integer.parseInt(b.getNumber());
@@ -291,11 +382,10 @@ public class ShowtimeService {
             });
         }
 
-
         // ========== Convert Map → List ==========
         List<SeatRowDTO> rows = new ArrayList<>();
 
-        for(String row : map.keySet()){
+        for (String row : map.keySet()) {
 
             SeatRowDTO r = new SeatRowDTO();
 

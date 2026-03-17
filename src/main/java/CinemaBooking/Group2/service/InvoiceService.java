@@ -63,6 +63,7 @@ public class InvoiceService {
         dto.setPosterUrl(str(row.get("posterUrl")));
         dto.setFormat(str(row.get("format")));
         dto.setDurationMinutes(toInt(row.get("durationMinutes")));
+        dto.setCinemaId(toInt(row.get("cinemaId")));
         dto.setCinemaName(str(row.get("cinemaName")));
         dto.setCinemaAddress(str(row.get("cinemaAddress")));
         dto.setRoomName(str(row.get("roomName")));
@@ -134,6 +135,25 @@ public class InvoiceService {
         dto.setLineItems(lineItems);
 
         return dto;
+    }
+
+    // ─────────────────────────────────────────
+    // Lấy chi tiết hoá đơn theo booking_code (có kiểm tra quyền theo rạp)
+    // ─────────────────────────────────────────
+    public InvoiceResponse getInvoiceByBookingCodeWithAuth(String bookingCode, String role, Integer userCinemaId) {
+        InvoiceResponse invoice = getInvoiceByBookingCode(bookingCode);
+
+        // ADMIN xem được tất cả
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return invoice;
+        }
+
+        // MANAGER / STAFF chỉ xem được vé thuộc rạp của mình
+        if (userCinemaId == null || !userCinemaId.equals(invoice.getCinemaId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Vé không thuộc về rạp của bạn");
+        }
+
+        return invoice;
     }
 
     // ─────────────────────────────────────────

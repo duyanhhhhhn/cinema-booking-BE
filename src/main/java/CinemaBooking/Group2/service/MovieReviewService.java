@@ -71,18 +71,18 @@ public class MovieReviewService {
             if (newReviewId != null) {
                 MovieReviewDtos dto = mvRepositories.findAdminDtoByReviewId(newReviewId);
                 if (dto != null) return dto;
-                throw new RuntimeException("Tạo review thành công nhưng không lấy được dữ liệu trả về");
+                throw new RuntimeException("Tạo đánh giá thành công nhưng không lấy được dữ liệu trả về");
             }
 
             if (mvRepositories.existsByUserAndMovie(userId, movieId)) {
-                throw new IllegalStateException("Bạn đã review phim này rồi");
+                throw new IllegalStateException("Bạn đã đánh giá phim này rồi");
             }
 
             if (!mvRepositories.canReview(userId, movieId)) {
-                throw new IllegalStateException("Bạn chỉ có thể review sau khi đã mua vé và xem phim");
+                throw new IllegalStateException("Bạn chỉ có thể đánh giá sau khi đã mua vé và xem phim");
             }
 
-            throw new IllegalStateException("Không thể tạo review. Vui lòng thử lại");
+            throw new IllegalStateException("Không thể tạo đánh giá. Vui lòng thử lại");
 
         } catch (RuntimeException e) {
             throw e;

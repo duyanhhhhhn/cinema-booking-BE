@@ -24,4 +24,5 @@ public class AdminUpdateShowtimeReqDto {
 
     public BigDecimal getBasePrice() { return basePrice; }
     public void setBasePrice(BigDecimal basePrice) { this.basePrice = basePrice; }
+    
 }

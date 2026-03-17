@@ -309,11 +309,12 @@ public class MovieReviewRepository {
         if (offset < 0) offset = 0;
 
         String sql =
-            "SELECT id, user_id, movie_id, rating, comment, created_at " +
-            "FROM movie_review " +
-            "WHERE movie_id = ? AND is_hidden = 0 " + // ✅ chỉ lấy comment HIỆN
-            "ORDER BY rating DESC, created_at DESC, id DESC " + // ✅ sao cao lên đầu + mới nhất
-            "LIMIT ? OFFSET ?";
+        	    "SELECT mr.id, mr.user_id, mr.movie_id, u.full_name, mr.rating, mr.comment, mr.created_at " +
+        	    "FROM movie_review mr " +
+        	    "JOIN `user` u ON mr.user_id = u.id " +
+        	    "WHERE mr.movie_id = ? AND mr.is_hidden = 0 " +
+        	    "ORDER BY mr.rating DESC, mr.created_at DESC, mr.id DESC " +
+        	    "LIMIT ? OFFSET ?";
 
         List<MovieReviewClientDtos> out = new ArrayList<>();
 
@@ -330,6 +331,7 @@ public class MovieReviewRepository {
                     dto.setId(rs.getInt("id"));
                     dto.setUserId(rs.getInt("user_id"));
                     dto.setMovieId(rs.getInt("movie_id"));
+                    dto.setFull_name(rs.getString("full_name"));
                     dto.setRating(rs.getInt("rating"));
                     dto.setComment(rs.getString("comment"));
                     dto.setCreatedAt(rs.getTimestamp("created_at"));
@@ -347,7 +349,7 @@ public class MovieReviewRepository {
         String sql =
             "SELECT COUNT(*) AS total " +
             "FROM movie_review " +
-            "WHERE movie_id = ? AND is_hidden = 0"; // ✅ chỉ đếm comment HIỆN
+            "WHERE movie_id = ? AND is_hidden = 0";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

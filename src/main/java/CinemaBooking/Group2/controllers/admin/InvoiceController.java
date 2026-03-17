@@ -2,6 +2,8 @@ package CinemaBooking.Group2.controllers.admin;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +14,7 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.invoice.InvoiceListResponse;
 import CinemaBooking.Group2.dtos.invoice.InvoiceResponse;
+import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.InvoiceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -61,17 +64,25 @@ public class InvoiceController {
     /**
      * GET /api/admin/invoices/{bookingCode}
      * Lấy chi tiết hoá đơn theo mã booking
+     * - ADMIN: xem được tất cả
+     * - MANAGER / STAFF: chỉ xem được vé thuộc rạp của mình
      */
     @GetMapping("/{bookingCode}")
     @Operation(
         summary = "Chi tiết hoá đơn",
-        description = "Lấy chi tiết đầy đủ của hoá đơn: thông tin khách hàng, phim, suất chiếu, danh sách ghế, combo và tổng tiền."
+        description = "Lấy chi tiết đầy đủ của hoá đơn. ADMIN xem tất cả, MANAGER/STAFF chỉ xem được vé thuộc rạp của mình."
     )
     public ResponseEntity<ApiResponse<InvoiceResponse>> getInvoiceDetail(
             @Parameter(description = "Mã booking, VD: BK00000001")
             @PathVariable String bookingCode
     ) {
-        InvoiceResponse invoice = invoiceService.getInvoiceByBookingCode(bookingCode);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        AuthUserPrincipal principal = (AuthUserPrincipal) auth.getPrincipal();
+
+        String role = principal.role();
+        Integer userCinemaId = principal.cinemaId();
+
+        InvoiceResponse invoice = invoiceService.getInvoiceByBookingCodeWithAuth(bookingCode, role, userCinemaId);
         return ResponseEntity.ok(new ApiResponse<>("Success", invoice));
     }
 }

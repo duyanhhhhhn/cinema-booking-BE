@@ -4,13 +4,15 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import CinemaBooking.Group2.dtos.scheduler.AdminShowtimeDetailDto;
+
 import CinemaBooking.Group2.dtos.scheduler.AdminMovieOptionDto;
+import CinemaBooking.Group2.dtos.scheduler.CinemaOptionDto;
 
 @Repository
 public class ShowtimeSchedulerAdminRepository {
@@ -80,8 +82,15 @@ public class ShowtimeSchedulerAdminRepository {
     public List<EventRow> findEventsByCinemaInRange(int cinemaId, LocalDateTime from, LocalDateTime to) {
         String sql = """
             SELECT
-                s.id, s.room_id, s.movie_id, s.start_time, s.end_time, s.base_price, s.status,
-                m.title, m.poster_url
+                s.id,
+                s.room_id,
+                s.movie_id,
+                s.start_time,
+                s.end_time,
+                s.base_price,
+                s.status,
+                m.title,
+                m.poster_url
             FROM showtime s
             JOIN room r ON r.id = s.room_id
             JOIN movie m ON m.id = s.movie_id
@@ -91,7 +100,9 @@ public class ShowtimeSchedulerAdminRepository {
               AND s.end_time > ?
             ORDER BY s.room_id ASC, s.start_time ASC
         """;
-        return jdbc.query(sql, eventMapper,
+        return jdbc.query(
+                sql,
+                eventMapper,
                 cinemaId,
                 Timestamp.valueOf(to),
                 Timestamp.valueOf(from)
@@ -101,7 +112,9 @@ public class ShowtimeSchedulerAdminRepository {
     public boolean roomBelongsToCinema(int roomId, int cinemaId) {
         Integer c = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM room WHERE id = ? AND cinema_id = ?",
-                Integer.class, roomId, cinemaId
+                Integer.class,
+                roomId,
+                cinemaId
         );
         return c != null && c > 0;
     }
@@ -117,14 +130,22 @@ public class ShowtimeSchedulerAdminRepository {
     }
 
     public String findRoomType(int roomId) {
-        List<String> list = jdbc.queryForList("SELECT type FROM room WHERE id = ? LIMIT 1", String.class, roomId);
+        List<String> list = jdbc.queryForList(
+                "SELECT type FROM room WHERE id = ? LIMIT 1",
+                String.class,
+                roomId
+        );
         if (list.isEmpty()) return null;
         String v = list.get(0);
         return v == null ? null : v.trim();
     }
 
     public String findMovieFormat(int movieId) {
-        List<String> list = jdbc.queryForList("SELECT format FROM movie WHERE id = ? LIMIT 1", String.class, movieId);
+        List<String> list = jdbc.queryForList(
+                "SELECT format FROM movie WHERE id = ? LIMIT 1",
+                String.class,
+                movieId
+        );
         if (list.isEmpty()) return null;
         String v = list.get(0);
         return v == null ? null : v.trim();
@@ -157,13 +178,21 @@ public class ShowtimeSchedulerAdminRepository {
     };
 
     public ShowtimeInfo findShowtimeById(int id) {
-        String sql = "SELECT id, movie_id, room_id, start_time, end_time, base_price, status FROM showtime WHERE id = ?";
+        String sql = """
+            SELECT id, movie_id, room_id, start_time, end_time, base_price, status
+            FROM showtime
+            WHERE id = ?
+        """;
         List<ShowtimeInfo> list = jdbc.query(sql, showtimeInfoMapper, id);
         return list.isEmpty() ? null : list.get(0);
     }
 
     public int findMovieDurationMinutes(int movieId) {
-        Integer v = jdbc.queryForObject("SELECT duration_minutes FROM movie WHERE id = ?", Integer.class, movieId);
+        Integer v = jdbc.queryForObject(
+                "SELECT duration_minutes FROM movie WHERE id = ?",
+                Integer.class,
+                movieId
+        );
         return v == null ? 0 : v;
     }
 
@@ -176,11 +205,15 @@ public class ShowtimeSchedulerAdminRepository {
               AND start_time < ?
               AND end_time > ?
         """;
-        if (excludeId != null) sql += " AND id <> ? ";
+        if (excludeId != null) {
+            sql += " AND id <> ? ";
+        }
         sql += " ORDER BY start_time ASC LIMIT 1";
 
         if (excludeId != null) {
-            List<Integer> ids = jdbc.queryForList(sql, Integer.class,
+            List<Integer> ids = jdbc.queryForList(
+                    sql,
+                    Integer.class,
                     roomId,
                     Timestamp.valueOf(endAt),
                     Timestamp.valueOf(startAt),
@@ -189,7 +222,9 @@ public class ShowtimeSchedulerAdminRepository {
             return ids.isEmpty() ? null : ids.get(0);
         }
 
-        List<Integer> ids = jdbc.queryForList(sql, Integer.class,
+        List<Integer> ids = jdbc.queryForList(
+                sql,
+                Integer.class,
                 roomId,
                 Timestamp.valueOf(endAt),
                 Timestamp.valueOf(startAt)
@@ -206,18 +241,25 @@ public class ShowtimeSchedulerAdminRepository {
               AND start_time < ?
               AND end_time > ?
         """;
-        if (excludeId != null) sql += " AND id <> ? ";
+        if (excludeId != null) {
+            sql += " AND id <> ? ";
+        }
         sql += " FOR UPDATE";
 
         if (excludeId != null) {
-            return jdbc.queryForList(sql, Integer.class,
+            return jdbc.queryForList(
+                    sql,
+                    Integer.class,
                     roomId,
                     Timestamp.valueOf(endAt),
                     Timestamp.valueOf(startAt),
                     excludeId
             );
         }
-        return jdbc.queryForList(sql, Integer.class,
+
+        return jdbc.queryForList(
+                sql,
+                Integer.class,
                 roomId,
                 Timestamp.valueOf(endAt),
                 Timestamp.valueOf(startAt)
@@ -229,7 +271,8 @@ public class ShowtimeSchedulerAdminRepository {
             INSERT INTO showtime (movie_id, room_id, start_time, end_time, base_price, status)
             VALUES (?, ?, ?, ?, ?, 'SCHEDULED')
         """;
-        jdbc.update(sql,
+        jdbc.update(
+                sql,
                 movieId,
                 roomId,
                 Timestamp.valueOf(startAt),
@@ -247,7 +290,8 @@ public class ShowtimeSchedulerAdminRepository {
             WHERE id = ?
               AND (status IS NULL OR status <> 'CANCELLED')
         """;
-        return jdbc.update(sql,
+        return jdbc.update(
+                sql,
                 roomId,
                 Timestamp.valueOf(startAt),
                 Timestamp.valueOf(endAt),
@@ -306,7 +350,24 @@ public class ShowtimeSchedulerAdminRepository {
             return dto;
         }, args.toArray());
     }
-    
+
+    public List<AdminMovieOptionDto> findMovieOptionsByRoom(int cinemaId, int roomId, String keyword) {
+        String roomSql = """
+            SELECT type
+            FROM room
+            WHERE id = ? AND cinema_id = ?
+            LIMIT 1
+        """;
+
+        List<String> roomTypes = jdbc.queryForList(roomSql, String.class, roomId, cinemaId);
+        if (roomTypes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String roomType = roomTypes.get(0);
+        return findMovieOptions(keyword, roomType);
+    }
+
     public static class ShowtimeDetailRow {
         public int id;
         public int cinemaId;
@@ -379,6 +440,22 @@ public class ShowtimeSchedulerAdminRepository {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    public List<CinemaOptionDto> findAllCinemaOptions() {
+        String sql = """
+            SELECT id, name
+            FROM cinema
+            WHERE is_active = 1
+            ORDER BY name ASC
+        """;
+
+        return jdbc.query(sql, (rs, i) -> {
+            CinemaOptionDto dto = new CinemaOptionDto();
+            dto.setId(rs.getInt("id"));
+            dto.setName(rs.getString("name"));
+            return dto;
+        });
+    }
+
     public int updateEdit(int id, int roomId, int movieId, LocalDateTime startAt, LocalDateTime endAt, BigDecimal basePrice) {
         String sql = """
             UPDATE showtime
@@ -386,7 +463,8 @@ public class ShowtimeSchedulerAdminRepository {
             WHERE id = ?
               AND (status IS NULL OR status <> 'CANCELLED')
         """;
-        return jdbc.update(sql,
+        return jdbc.update(
+                sql,
                 roomId,
                 movieId,
                 Timestamp.valueOf(startAt),
