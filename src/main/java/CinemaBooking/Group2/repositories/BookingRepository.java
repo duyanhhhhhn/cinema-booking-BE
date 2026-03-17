@@ -86,6 +86,33 @@ public class BookingRepository {
         return b;
     };
 
+    private final RowMapper<PriceAdjustment> priceAdjustmentRowMapper = (ResultSet rs, int rowNum) -> {
+        PriceAdjustment p = new PriceAdjustment();
+        p.setId(rs.getInt("id"));
+        p.setName(rs.getString("name"));
+        
+        String typeStr = rs.getString("adjustment_type");
+        if (typeStr != null) {
+            try {
+                p.setAdjustmentType(PriceAdjustment.AdjustmentType.valueOf(typeStr));
+            } catch (Exception e) {
+                // Ignore invalid enum
+            }
+        }
+        
+        p.setValue(rs.getBigDecimal("value"));
+        p.setApplyOnDays(rs.getString("apply_on_days"));
+        
+        java.sql.Date start = rs.getDate("start_date");
+        if (start != null) p.setStartDate(start.toLocalDate());
+        
+        java.sql.Date end = rs.getDate("end_date");
+        if (end != null) p.setEndDate(end.toLocalDate());
+        
+        p.setIsActive(rs.getInt("is_active"));
+        return p;
+    };
+
     private static final String BOOKING_SELECT_COLUMNS = 
         "id, booking_code as bookingCode, user_id as userId, created_by_staff_id as createdByStaffId, " +
         "showtime_id as showtimeId, voucher_id as voucherId, discount_amount as discountAmount, " +
@@ -180,13 +207,12 @@ public class BookingRepository {
         String sql = """
             SELECT * FROM price_adjustment 
             WHERE is_active = 1 
-            AND (start_date IS NULL OR start_date <= CURDATE())
-            AND (end_date IS NULL OR end_date >= CURDATE())
         """;
         try {
-            return jdbc.query(sql, new BeanPropertyRowMapper<>(PriceAdjustment.class));
+            List<PriceAdjustment> list = jdbc.query(sql, priceAdjustmentRowMapper);
+            logger.info("Found {} active price adjustments", list.size());
+            return list;
         } catch (Exception e) {
-            // Log original exception and return empty list so calculation can continue
             logger.error("Failed to fetch price adjustments", e);
             return List.of();
         }

@@ -255,13 +255,13 @@ public class PriceAdjustmentAdminService {
     private String formatDay(String day) {
         String d = day.trim().toLowerCase(Locale.ROOT);
         return switch (d) {
-            case "mon" -> "Mon";
-            case "tue" -> "Tue";
-            case "wed" -> "Wed";
-            case "thu" -> "Thu";
-            case "fri" -> "Fri";
-            case "sat" -> "Sat";
-            case "sun" -> "Sun";
+            case "mon", "monday" -> "Mon";
+            case "tue", "tuesday" -> "Tue";
+            case "wed", "wednesday" -> "Wed";
+            case "thu", "thursday" -> "Thu";
+            case "fri", "friday" -> "Fri";
+            case "sat", "saturday" -> "Sat";
+            case "sun", "sunday" -> "Sun";
             default -> null;
         };
     }

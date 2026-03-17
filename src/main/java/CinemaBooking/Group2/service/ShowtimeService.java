@@ -1,16 +1,19 @@
 package CinemaBooking.Group2.service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle; // Add
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale; // Add
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.TreeMap; // Add
+import java.util.Set; // Add
+import java.util.HashSet; // Add
 
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired; // Add
 
 import CinemaBooking.Group2.dtos.movie.MovieWithShowtimesDtos;
 import CinemaBooking.Group2.dtos.seat.SeatDTO;
@@ -18,7 +21,9 @@ import CinemaBooking.Group2.dtos.seat.SeatRowDTO;
 import CinemaBooking.Group2.dtos.showtime.MovieShowtimeGroupDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimePublicDtos;
 import CinemaBooking.Group2.dtos.showtime.ShowtimeSeatResponseDTO;
+import CinemaBooking.Group2.models.PriceAdjustment; // Add
 import CinemaBooking.Group2.models.Seat;
+import CinemaBooking.Group2.repositories.BookingRepository; // Add
 import CinemaBooking.Group2.repositories.SeatRepository;
 import CinemaBooking.Group2.repositories.ShowtimeRepository;
 import CinemaBooking.Group2.repositories.SeatHoldRepository;
@@ -28,6 +33,9 @@ public class ShowtimeService {
     private final ShowtimeRepository stRepo;
     private final SeatRepository seatRepo;
     private final SeatHoldRepository seatHoldRepo;
+    
+    @Autowired // Inject BookingRepository
+    private BookingRepository bookingRepository;
 
     public ShowtimeService(ShowtimeRepository stRepo,
             SeatRepository seatRepo,
@@ -116,6 +124,55 @@ public class ShowtimeService {
                 }
             }
         }
+        
+        // --- START NEW LOGIC: Calculate dynamic price based on PriceAdjustment ---
+        Object startTimeObj = showtimeInfo.get("start_time");
+        LocalDateTime startTime = null;
+        if (startTimeObj != null) {
+             if (startTimeObj instanceof java.sql.Timestamp) {
+                 startTime = ((java.sql.Timestamp) startTimeObj).toLocalDateTime();
+             } else if (startTimeObj instanceof LocalDateTime) {
+                 startTime = (LocalDateTime) startTimeObj;
+             }
+        }
+
+        if (startTime != null) {
+            List<PriceAdjustment> adjustments = bookingRepository.findActivePriceAdjustments();
+            LocalDate showtimeDate = startTime.toLocalDate();
+            // Use Short style to match "Mon", "Tue" etc. stored in DB
+            String dayName = showtimeDate.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+            
+            for (PriceAdjustment adj : adjustments) {
+                boolean match = false;
+                
+                // 1. Check Date Range
+                if (adj.getStartDate() != null && adj.getEndDate() != null) {
+                    if (!showtimeDate.isBefore(adj.getStartDate()) && !showtimeDate.isAfter(adj.getEndDate())) {
+                        match = true;
+                    }
+                }
+                // 2. Check Days of Week
+                else if (adj.getApplyOnDays() != null) {
+                    String[] days = adj.getApplyOnDays().split(",");
+                    for (String d : days) {
+                        if (d.trim().equalsIgnoreCase(dayName)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (match) {
+                    // Pass the adjustment to buildSeatRows instead of calculating basePrice here
+                    // Because PERCENT adjustment should be applied on (Base + Extra)
+                    
+                    // FIX: We need roomID, seats, booked, heldSeatIds, res, etc. BEFORE calling buildSeatRows
+                    // Moving this logic DOWN after all the necessary data is fetched.
+                    break; 
+                }
+            }
+        }
+        // --- END NEW LOGIC ---
 
         // 3. Lấy roomId
         int roomId = seatRepo.getRoomIdByShowtime(showtimeId);
@@ -140,6 +197,41 @@ public class ShowtimeService {
 
         // SET CINEMA NAME
         res.setCinemaName(cinemaName);
+
+        // --- APPLY ADJUSTMENT LOGIC HERE AFTER DATA IS READY ---
+        PriceAdjustment activeAdjustment = null;
+        if (startTime != null) {
+            List<PriceAdjustment> adjustments = bookingRepository.findActivePriceAdjustments();
+            LocalDate showtimeDate = startTime.toLocalDate();
+            String dayName = showtimeDate.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+            
+            for (PriceAdjustment adj : adjustments) {
+                boolean match = false;
+                
+                // 1. Check Date Range
+                if (adj.getStartDate() != null && adj.getEndDate() != null) {
+                    if (!showtimeDate.isBefore(adj.getStartDate()) && !showtimeDate.isAfter(adj.getEndDate())) {
+                        match = true;
+                    }
+                }
+                // 2. Check Days of Week
+                else if (adj.getApplyOnDays() != null) {
+                    String[] days = adj.getApplyOnDays().split(",");
+                    for (String d : days) {
+                        if (d.trim().equalsIgnoreCase(dayName)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (match) {
+                    activeAdjustment = adj;
+                    break;
+                }
+            }
+        }
+        // ----------------------------------------------------
 
         // --- SET ADDITIONAL MOVIE / SHOWTIME DATA ---
         try {
@@ -199,7 +291,7 @@ public class ShowtimeService {
         // Pass heldSeatIds và basePrice so held seats are shown as HELD instead of
         // AVAILABLE
         res.setRows(
-                buildSeatRows(seats, booked, heldSeatIds, basePrice));
+                buildSeatRows(seats, booked, heldSeatIds, basePrice, activeAdjustment));
 
         return res;
     }
@@ -211,7 +303,8 @@ public class ShowtimeService {
             List<Seat> seats,
             Map<Integer, String> booked,
             List<Integer> heldSeatIds,
-            java.math.BigDecimal basePrice) {
+            java.math.BigDecimal basePrice,
+            PriceAdjustment adj) {
 
         // TreeMap → auto sort theo A,B,C
         Map<String, List<SeatDTO>> map = new TreeMap<>();
@@ -251,10 +344,22 @@ public class ShowtimeService {
             }
 
             // ===== Price =====
-            // Tính giá = basePrice + extraPrice (giống như logic trong BookingService)
+            // Tính giá = basePrice + extraPrice
             java.math.BigDecimal totalPrice = basePrice;
             if (s.getExtraPrice() != null) {
                 totalPrice = totalPrice.add(s.getExtraPrice());
+            }
+            
+            // Apply Price Adjustment on the TOTAL (Base + Extra)
+            if (adj != null) {
+                if (adj.getAdjustmentType() == PriceAdjustment.AdjustmentType.PERCENT) {
+                    java.math.BigDecimal increase = totalPrice.multiply(adj.getValue())
+                            .divide(new java.math.BigDecimal(100));
+                    totalPrice = totalPrice.add(increase);
+                } else {
+                    // AMOUNT
+                    totalPrice = totalPrice.add(adj.getValue());
+                }
             }
 
             long price = totalPrice.longValue();
