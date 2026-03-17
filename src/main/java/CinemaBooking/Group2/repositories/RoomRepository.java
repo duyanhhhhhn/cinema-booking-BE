@@ -79,15 +79,15 @@ public class RoomRepository {
     }
 
     // ================= UPDATE SEAT LAYOUT =================
-    public int updateSeatLayout(int id, String seatLayout) {
+    public int updateSeatLayout(int id, String seatLayout, int totalSeats) {
 
         String sql = """
             UPDATE room
-            SET seat_layout = ?
+            SET seat_layout = ?, total_seats = ?
             WHERE id = ?
         """;
 
-        return jdbc.update(sql, seatLayout, id);
+        return jdbc.update(sql, seatLayout, totalSeats, id);
     }
 
     // ================= DELETE =================
