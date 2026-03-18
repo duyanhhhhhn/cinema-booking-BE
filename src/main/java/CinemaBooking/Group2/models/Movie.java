@@ -42,6 +42,7 @@ public class Movie {
     private String posterUrl;
     private String bannerUrl;
     private String trailerUrl;
+    private String ageating;
     private Date releaseDate;
     private Date endDate;
     private MovieStatus status; 
@@ -51,6 +52,12 @@ public class Movie {
 	}
 	public void setId(int id) {
 		this.id = id;
+	}
+	public String getAgerating() {
+		return ageating;
+	}
+	public void setAgerating(String ageRating) {
+		this.ageating = ageRating;
 	}
 	public String getTitle() {
 		return title;
@@ -138,7 +145,7 @@ public class Movie {
 	}
 	public Movie(String title, String shortDescription, String description, int durationMinutes, MovieGenre genre,
 			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
-			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status) {
+			String trailerUrl, Date releaseDate , String ageRating , Date endDate, MovieStatus status) {
 		super();
 		this.title = title;
 		this.shortDescription = shortDescription;
@@ -153,6 +160,7 @@ public class Movie {
 		this.bannerUrl = bannerUrl;
 		this.trailerUrl = trailerUrl;
 		this.releaseDate = releaseDate;
+		this.ageating = ageRating;
 		this.endDate = endDate;
 		this.status = status;
 	}
@@ -189,7 +197,7 @@ public class Movie {
 	 */
 	public Movie(int id, String title, String shortDescription, String description, int durationMinutes, MovieGenre genre,
 			String language, String format, String director, String cast, String posterUrl, String bannerUrl,
-			String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
+			String trailerUrl, Date releaseDate, String ageRating ,Date endDate, MovieStatus status, Date createdAt) {
 		super();
 		this.id = id;
 		this.title = title;
@@ -205,6 +213,7 @@ public class Movie {
 		this.bannerUrl = bannerUrl;
 		this.trailerUrl = trailerUrl;
 		this.releaseDate = releaseDate;
+		this.ageating = ageRating;
 		this.endDate = endDate;
 		this.status = status;
 		this.createdAt = createdAt;

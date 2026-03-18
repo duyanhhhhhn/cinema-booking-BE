@@ -55,7 +55,7 @@ public class MovieRepository {
             "SELECT " +
             "  m.id, m.title, m.short_description, m.description, m.duration_minutes, " +
             "  m.genre, m.language, m.format, m.director, m.`cast` AS cast, " +
-            "  m.poster_url, m.banner_url, m.trailer_url, " +
+            "  m.poster_url, m.banner_url, m.trailer_url, m.agerating, " +
             "  m.release_date, m.end_date, " +
             "  " + effectiveStatus + " AS status, " +
             "  m.created_at " +
@@ -146,7 +146,7 @@ public class MovieRepository {
         String sql =
             "SELECT " +
             "  id, title, short_description, description, duration_minutes, genre, language, format, " +
-            "  director, `cast` AS cast, poster_url, banner_url, trailer_url, " +
+            "  director, `cast` AS cast, poster_url, banner_url, trailer_url, agerating, " +
             "  release_date, end_date, status, created_at " +
             "FROM movie " +
             "WHERE 1=1 " +
@@ -195,6 +195,7 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
+                    movie.setAgerating(rs.getString("agerating"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
@@ -231,7 +232,7 @@ public class MovieRepository {
         String sql =
             "SELECT " +
             "  m.id, m.title, m.short_description, m.description, m.duration_minutes, m.genre, m.language, m.format, " +
-            "  m.director, m.`cast` AS cast, m.poster_url, m.banner_url, m.trailer_url, " +
+            "  m.director, m.`cast` AS cast, m.poster_url, m.banner_url, m.trailer_url, m.agerating, " +
             "  m.release_date, m.end_date, " +
             "  " + effectiveStatus + " AS status, " +
             "  m.created_at " +
@@ -304,6 +305,7 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
+                    movie.setAgerating(rs.getString("agerating"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
@@ -324,7 +326,7 @@ public class MovieRepository {
 
         String sql =
             "SELECT " +
-            "  m.id, m.title, m.duration_minutes, m.genre, m.poster_url, m.release_date, " +
+            "  m.id, m.title, m.duration_minutes, m.genre, m.poster_url, m.release_date, m.agerating, " +
             "  " + effectiveStatus + " AS status " +
             "FROM movie m " +
             "WHERE (" + effectiveStatus + ") IN ('COMING_SOON', 'NOW_SHOWING') " +
@@ -351,6 +353,7 @@ public class MovieRepository {
                 m.setGenre(parseMovieGenre(rs.getString("genre")));
                 m.setPosterUrl(rs.getString("poster_url"));
                 m.setReleaseDate(rs.getTimestamp("release_date"));
+                m.setAgerating(rs.getString("agerating"));
                 m.setStatus(parseMovieStatus(rs.getString("status")));
                 movies.add(m);
             }
@@ -422,7 +425,7 @@ public class MovieRepository {
             "SELECT " +
             "  m.id, m.title, m.short_description, m.description, m.duration_minutes, " +
             "  m.genre, m.language, m.format, m.director, m.`cast` AS cast, " +
-            "  m.poster_url, m.banner_url, m.trailer_url, " +
+            "  m.poster_url, m.banner_url, m.trailer_url, m.agerating," +
             "  m.release_date, m.end_date, " +
             "  " + effectiveStatus + " AS status, " +
             "  m.created_at " +
@@ -448,8 +451,8 @@ public class MovieRepository {
         String sql =
             "INSERT INTO movie " +
             "(title, short_description, description, duration_minutes, genre, language, format, " +
-            "director, `cast`, poster_url, banner_url, trailer_url, release_date, end_date, status) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "director, `cast`, poster_url, banner_url, trailer_url, agerating, release_date, end_date, status) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -537,6 +540,7 @@ public class MovieRepository {
                 "poster_url = COALESCE(?, poster_url), " +
                 "banner_url = COALESCE(?, banner_url), " +
                 "trailer_url = ?, " +
+                "agerating = ?, " +
                 "release_date = ?, end_date = ?, status = ? " +
             "WHERE id = ?;";
 
@@ -622,6 +626,7 @@ public class MovieRepository {
         movie.setPosterUrl(rs.getString("poster_url"));
         movie.setBannerUrl(rs.getString("banner_url"));
         movie.setTrailerUrl(rs.getString("trailer_url"));
+        movie.setAgerating(rs.getString("agerating"));
         movie.setReleaseDate(rs.getDate("release_date"));
         movie.setEndDate(rs.getDate("end_date"));
         movie.setCreatedAt(rs.getTimestamp("created_at"));
@@ -700,19 +705,25 @@ public class MovieRepository {
             ps.setNull(12, Types.VARCHAR);
         }
 
-        if (movie.getReleaseDate() != null) {
-            ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
+        if (movie.getAgerating() != null && !movie.getAgerating().isBlank()) {
+            ps.setString(13, movie.getAgerating().trim());
         } else {
-            ps.setNull(13, Types.DATE);
+            ps.setNull(13, Types.VARCHAR);
         }
 
-        if (movie.getEndDate() != null) {
-            ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
+        if (movie.getReleaseDate() != null) {
+            ps.setDate(14, new java.sql.Date(movie.getReleaseDate().getTime()));
         } else {
             ps.setNull(14, Types.DATE);
         }
 
-        ps.setString(15,
+        if (movie.getEndDate() != null) {
+            ps.setDate(15, new java.sql.Date(movie.getEndDate().getTime()));
+        } else {
+            ps.setNull(15, Types.DATE);
+        }
+
+        ps.setString(16,
             movie.getStatus() == null ? Movie.MovieStatus.COMING_SOON.name() : movie.getStatus().name()
         );
     }
@@ -747,22 +758,27 @@ public class MovieRepository {
             else
                 ps.setNull(12, Types.VARCHAR);
 
-            if (movie.getReleaseDate() != null)
-                ps.setDate(13, new java.sql.Date(movie.getReleaseDate().getTime()));
+            if (movie.getAgerating() != null && !movie.getAgerating().isBlank())
+                ps.setString(13, movie.getAgerating().trim());
             else
-                ps.setNull(13, Types.DATE);
+                ps.setNull(13, Types.VARCHAR);
 
-            if (movie.getEndDate() != null)
-                ps.setDate(14, new java.sql.Date(movie.getEndDate().getTime()));
+            if (movie.getReleaseDate() != null)
+                ps.setDate(14, new java.sql.Date(movie.getReleaseDate().getTime()));
             else
                 ps.setNull(14, Types.DATE);
 
-            if (movie.getStatus() != null)
-                ps.setString(15, movie.getStatus().name());
+            if (movie.getEndDate() != null)
+                ps.setDate(15, new java.sql.Date(movie.getEndDate().getTime()));
             else
-                ps.setNull(15, Types.VARCHAR);
+                ps.setNull(15, Types.DATE);
 
-            ps.setInt(16, id);
+            if (movie.getStatus() != null)
+                ps.setString(16, movie.getStatus().name());
+            else
+                ps.setNull(16, Types.VARCHAR);
+
+            ps.setInt(17, id);
 
         } catch (SQLException e) {
             throw new RuntimeException("BIND MOVIE FOR UPDATE FAILED (ID=" + id + ")", e);
@@ -788,7 +804,7 @@ public class MovieRepository {
         String sql =
             "SELECT id, title, short_description, description, duration_minutes, " +
             "genre, language, format, director, `cast`, " +
-            "poster_url, banner_url, trailer_url, " +
+            "poster_url, banner_url, trailer_url, agerating, " +
             "release_date, end_date, status, created_at " +
             "FROM movie WHERE id = ?";
 
@@ -817,6 +833,7 @@ public class MovieRepository {
                 m.setPosterUrl(rs.getString("poster_url"));
                 m.setBannerUrl(rs.getString("banner_url"));
                 m.setTrailerUrl(rs.getString("trailer_url"));
+                m.setAgerating(rs.getString("agerating"));
 
                 java.sql.Timestamp releaseTs = rs.getTimestamp("release_date");
                 m.setReleaseDate(releaseTs != null ? new java.util.Date(releaseTs.getTime()) : null);

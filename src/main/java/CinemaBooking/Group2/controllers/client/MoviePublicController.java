@@ -36,7 +36,7 @@ public class MoviePublicController {
 	@GetMapping("/movies")
 	public ResponseEntity<ApiResponse<List<MoviePublicDtos>>> getAllMovieStatus(
 			@RequestParam(defaultValue = "1") int page,
-	        @RequestParam(defaultValue = "12")  int perPage,
+	        @RequestParam(defaultValue = "15")  int perPage,
 	        @RequestParam(required = false) String title,
 	        @RequestParam(required = false) Movie.MovieGenre genre,
 	        @RequestParam(required = false) Movie.MovieStatus status
