@@ -2,8 +2,6 @@ package CinemaBooking.Group2.dtos.concession;
 
 import java.math.BigDecimal;
 
-import org.springframework.web.multipart.MultipartFile;
-
 public class ComboRequestDTO {
 	public String getComboItem() {
 		return comboItem;

@@ -1,7 +1,5 @@
 package CinemaBooking.Group2.dtos.marketing;
 
-import java.time.LocalDateTime;
-
 public class PostRequestDTO {
     private String title;
     private String slug;
@@ -9,8 +7,6 @@ public class PostRequestDTO {
     private String content;
     private String category;
     private String coverUrl;
-    private int published;
-    private LocalDateTime publishedAt;
 	public String getTitle() {
 		return title;
 	}
@@ -46,18 +42,6 @@ public class PostRequestDTO {
 	}
 	public void setCoverUrl(String coverUrl) {
 		this.coverUrl = coverUrl;
-	}
-	public int getPublished() {
-		return published;
-	}
-	public void setPublished(int published) {
-		this.published = published;
-	}
-	public LocalDateTime getPublishedAt() {
-		return publishedAt;
-	}
-	public void setPublishedAt(LocalDateTime publishedAt) {
-		this.publishedAt = publishedAt;
 	}
 	public PostRequestDTO() {
 		

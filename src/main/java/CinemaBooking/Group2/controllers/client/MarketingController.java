@@ -26,7 +26,6 @@ import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.User;
-import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.service.MarketingService;
 import CinemaBooking.Group2.ultis.StringValue;
 

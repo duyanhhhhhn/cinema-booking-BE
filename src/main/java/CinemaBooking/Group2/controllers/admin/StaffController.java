@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
+import CinemaBooking.Group2.dtos.staff.AWeekOfScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.workShiftResponseDTO;
@@ -68,7 +69,7 @@ public class StaffController {
 	}
 	@CrossOrigin
 	@GetMapping("/schedules/week")
-	public List<ScheduleResponseDTO> getThisWeekSchedules(){
+	public List<AWeekOfScheduleResponseDTO> getThisWeekSchedules(){
 		try {
 			return service.getThisWeekSchedule(LocalDate.now());
 		}

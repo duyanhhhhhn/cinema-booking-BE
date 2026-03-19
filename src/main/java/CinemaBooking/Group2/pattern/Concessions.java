@@ -9,9 +9,9 @@ import org.springframework.stereotype.Repository;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.models.Product;
-import CinemaBooking.Group2.repositories.ComboItemRepository;
-import CinemaBooking.Group2.repositories.ComboRepository;
-import CinemaBooking.Group2.repositories.ProductRepository;
+import CinemaBooking.Group2.repositories.concessions.ComboItemRepository;
+import CinemaBooking.Group2.repositories.concessions.ComboRepository;
+import CinemaBooking.Group2.repositories.concessions.ProductRepository;
 
 @Repository
 public class Concessions {

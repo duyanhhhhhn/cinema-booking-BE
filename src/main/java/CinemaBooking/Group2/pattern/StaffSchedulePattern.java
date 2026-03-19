@@ -42,6 +42,15 @@ public class StaffSchedulePattern {
 		}
 		return null;
 	}
+	public List<StaffSchedule> getScheduleByRange(LocalDate startDate,LocalDate endDate) {
+		try {
+			return scheRep.getShedulesByRange(startDate, endDate);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public List<StaffSchedule> getScheduleByStaffId(int staff_id){
 		try {
 			return scheRep.getByStaffId(staff_id);
@@ -88,10 +97,28 @@ public class StaffSchedulePattern {
 		}
 		return null;
 	}
+	public List<WorkShift> findByStaffId(int id, LocalDate date){
+		try {
+			return shiftRep.findByStaffId(id);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	//user
 	public User findStaffById(int id) {
 		try {
 			return userRep.findById(id);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	public WorkShift getWorkShiftByDate(LocalDate date) {
+		try {
+			return shiftRep.getByDate(date);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

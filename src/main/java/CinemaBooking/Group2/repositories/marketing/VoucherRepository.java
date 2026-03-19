@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.repositories;
+package CinemaBooking.Group2.repositories.marketing;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import CinemaBooking.Group2.mappers.VoucherMapper;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
+import CinemaBooking.Group2.repositories.Icrud;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository

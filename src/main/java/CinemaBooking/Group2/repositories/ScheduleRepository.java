@@ -68,6 +68,20 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 		}
 		return null;
 	}
+	public List<StaffSchedule> getShedulesByRange(LocalDate startDate, LocalDate endDate) {
+		List<StaffSchedule> list = new ArrayList<>();
+		try {
+			list = db.query("select * from "+StringValue.tbl_schedule+
+					" where work_date between ? and ? order by staff_id",
+					new StaffMapper(),new Object[] {startDate,endDate});
+			return list;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return null;
+	}
 	@Override
 	public StaffSchedule findById(int id) {
 		// TODO Auto-generated method stub

@@ -30,8 +30,8 @@ import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.models.Product;
-import CinemaBooking.Group2.service.ComboService;
-import CinemaBooking.Group2.service.ProductService;
+import CinemaBooking.Group2.service.concessions.ComboService;
+import CinemaBooking.Group2.service.concessions.ProductService;
 import CinemaBooking.Group2.ultis.FileUltility;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
