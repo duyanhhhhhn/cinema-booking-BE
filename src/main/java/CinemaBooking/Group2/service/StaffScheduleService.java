@@ -40,7 +40,7 @@ public class StaffScheduleService {
 					staffDTO.setFullName(staff.getFullName());
 					staffDTO.setAvatarUrl(staff.getAvatarUrl());
 					staffDTO.setPhone(staff.getPhone());
-					staffDTO.setPosition(staff.getPosition());
+					staffDTO.setRoleName(staff.getRoleName());
 					dto.setStaff(staffDTO);
 					dto.setShift(pattern.findByShiftId(item.getShiftId()));
 					dto.setStatus(item.getStatus());
@@ -71,7 +71,7 @@ public class StaffScheduleService {
 			        staffDTO.setFullName(staff.getFullName());
 			        staffDTO.setAvatarUrl(staff.getAvatarUrl());
 			        staffDTO.setPhone(staff.getPhone());
-			        staffDTO.setPosition(staff.getPosition());
+			        staffDTO.setRoleName(staff.getRoleName());
 			        dto.setStaff(staffDTO);
 			        List<ShiftResponseDTO> week = new ArrayList<>();
 			        for (int i = 0; i < 7; i++) {

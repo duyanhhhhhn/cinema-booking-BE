@@ -7,7 +7,7 @@ public class StaffResponseDTO {
 	private String fullName;
 	private String phone;
 	private String avatar;
-	private UserPosition position;
+	private String roleName;
 	public String getAvatarUrl() {
 		return avatarUrl;
 	}
@@ -33,11 +33,11 @@ public class StaffResponseDTO {
 		this.avatar = avatar;
 	}
 	
-	public UserPosition getPosition() {
-		return position;
+	public String getRoleName() {
+		return roleName;
 	}
-	public void setPosition(UserPosition position) {
-		this.position = position;
+	public void setRoleName(String roleName) {
+		this.roleName = roleName;
 	}
 	public StaffResponseDTO() {
 		
