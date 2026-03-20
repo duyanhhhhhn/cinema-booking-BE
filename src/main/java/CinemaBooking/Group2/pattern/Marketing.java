@@ -115,6 +115,17 @@ public class Marketing {
 		}
 		return rs;
 	}
+	public int updateVoucher(Voucher voucher) {
+		int rs=0;
+		try {
+			rs=vouchRep.update(voucher);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rs;
+	}
 	public int deleteVoucher(int id) {
 		int rs=0;
 		try {

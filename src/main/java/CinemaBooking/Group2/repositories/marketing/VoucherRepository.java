@@ -106,7 +106,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 	public int update(Voucher item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs =  db.update("update "+StringValue.tbl_voucher+"set code=? ,description=?,discount_type=?,discount_value=?,"
+			int rs =  db.update("update "+StringValue.tbl_voucher+" set code=? ,description=?,discount_type=?,discount_value=?,"
 					+ "min_order_amount=?,start_at=?,end_at=?,usage_limit=? where id=? "
 					,new Object[] {item.getCode(),item.getDescription(),
 							item.getDiscountType().name(),item.getDiscountValue(),item.getMinOrderAmount(),

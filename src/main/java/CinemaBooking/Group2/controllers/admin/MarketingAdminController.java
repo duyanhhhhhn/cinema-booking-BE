@@ -157,7 +157,8 @@ public class MarketingAdminController {
 		item.setCreatedAt(LocalDate.now());
 		item.setId(id);
 		try {
-			dto = service.addVoucher(item);
+			dto = service.updateVoucher(item);
+			return ResponseEntity.ok(new ApiResponse<VoucherResponseDTO>("Success", dto));
 		}
 		catch (Exception e) {
 			// TODO: handle exception

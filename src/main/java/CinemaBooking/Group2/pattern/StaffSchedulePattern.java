@@ -116,6 +116,15 @@ public class StaffSchedulePattern {
 		}
 		return null;
 	}
+	public List<User> getAllStaff(){
+		try {
+			return scheRep.getAllStaff();
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public WorkShift getWorkShiftByDate(LocalDate date) {
 		try {
 			return shiftRep.getByDate(date);

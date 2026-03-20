@@ -18,6 +18,7 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.staff.AWeekOfScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
+import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;
 import CinemaBooking.Group2.dtos.staff.staffScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.workShiftResponseDTO;
 import CinemaBooking.Group2.models.StaffSchedule;
@@ -72,6 +73,17 @@ public class StaffController {
 	public List<AWeekOfScheduleResponseDTO> getThisWeekSchedules(){
 		try {
 			return service.getThisWeekSchedule(LocalDate.now());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	@CrossOrigin
+	@GetMapping("/schedules/staff")
+	public List<StaffResponseDTO> getAllStaff(){
+		try {
+			return service.getAllStaff();
 		}
 		catch (Exception e) {
 			// TODO: handle exception

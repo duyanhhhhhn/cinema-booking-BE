@@ -73,6 +73,7 @@ public class StaffScheduleService {
 			        staffDTO.setPhone(staff.getPhone());
 			        staffDTO.setRoleName(staff.getRoleName());
 			        dto.setStaff(staffDTO);
+			        dto.setStatus(item.getStatus());
 			        List<ShiftResponseDTO> week = new ArrayList<>();
 			        for (int i = 0; i < 7; i++) {
 			            LocalDate d = monday.plusDays(i);
@@ -132,6 +133,16 @@ public class StaffScheduleService {
 		try {
 			List<WorkShift> item = pattern.getShift();
 			return item.stream().map(WorkShiftMapper::toResponseDTO).collect(Collectors.toList());
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
+	public List<StaffResponseDTO> getAllStaff(){
+		try {
+			List<StaffResponseDTO>item = pattern.getAllStaff();
+			return item;
 		}
 		catch (Exception e) {
 			// TODO: handle exception

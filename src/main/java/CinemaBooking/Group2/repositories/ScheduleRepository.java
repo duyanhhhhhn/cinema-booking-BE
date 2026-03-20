@@ -9,7 +9,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.StaffMapper;
+import CinemaBooking.Group2.mappers.UserMapper;
 import CinemaBooking.Group2.models.StaffSchedule;
+import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
@@ -156,6 +158,16 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 			System.out.print(e.getMessage());
 		}
 		return 0;
+	}
+	public List<User> getAllStaff() {
+		try {
+			List<User> staff = db.query("select * from user where role_id=3",new UserMapper());
+			return staff;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
 	}
 
 	@Override
