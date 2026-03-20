@@ -1,34 +1,40 @@
 package CinemaBooking.Group2.service;
 
-
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import CinemaBooking.Group2.dtos.ApiResponse;
-import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.RatingSummaryDtos;
-import CinemaBooking.Group2.mappers.MovieReviewMapper;
 import CinemaBooking.Group2.repositories.MovieReviewRepository;
 
 @Service
 public class MovieReviewService {
-	@Autowired
-	private MovieReviewRepository mvRepositories;
-	
 
+    private final MovieReviewRepository movieReviewRepository;
+
+    public MovieReviewService(MovieReviewRepository movieReviewRepository) {
+        this.movieReviewRepository = movieReviewRepository;
+    }
+
+    /**
+     * Lấy toàn bộ review cho admin.
+     */
     public List<MovieReviewDtos> getAllReview() {
         try {
-            return mvRepositories.getAllReview();
+            return movieReviewRepository.getAllReview();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch movie review list. Please check repository/database.", e);
+            throw new RuntimeException(
+                "Failed to fetch movie review list. Please check repository/database.",
+                e
+            );
         }
     }
-    
+
+    /**
+     * Lấy review public cho client có phân trang.
+     */
     public List<MovieReviewClientDtos> getAllReviewClient(int page, int size) {
         try {
             if (page < 1) page = 1;
@@ -36,8 +42,7 @@ public class MovieReviewService {
             if (size > 100) size = 100;
 
             int offset = (page - 1) * size;
-
-            return mvRepositories.getAllRating(size, offset);
+            return movieReviewRepository.getAllRating(size, offset);
 
         } catch (Exception e) {
             throw new RuntimeException(
@@ -47,57 +52,134 @@ public class MovieReviewService {
         }
     }
 
-    
-    // function help map repositorires count average rating services
-    public RatingSummaryDtos countRatingAverage(int movie_id) {
-    	try {
-    		float avg = mvRepositories.countRatingAverage(movie_id);
-    		return new RatingSummaryDtos(movie_id, avg);
-    	}
-    	catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tính trung bình tổng đánh giá hãy kiểm tra repo", e);
-        }
-    	
-    }
-
-    // Create review (atomic): PAID + SUCCESS + has seat + showtime ended + not reviewed.
-    public MovieReviewDtos createReview(int userId, int movieId, int rating, String comment) {
+    /**
+     * Tính rating trung bình của một movie.
+     */
+    public RatingSummaryDtos countRatingAverage(int movieId) {
         try {
-            if (movieId <= 0) throw new IllegalArgumentException("movieId không hợp lệ");
-            if (rating < 1 || rating > 5) throw new IllegalArgumentException("rating phải trong khoảng 1..5");
-            if (comment != null && comment.length() > 2000) throw new IllegalArgumentException("comment tối đa 2000 ký tự");
-
-            Integer newReviewId = mvRepositories.createReviewAtomic(userId, movieId, rating, comment);
-            if (newReviewId != null) {
-                MovieReviewDtos dto = mvRepositories.findAdminDtoByReviewId(newReviewId);
-                if (dto != null) return dto;
-                throw new RuntimeException("Tạo đánh giá thành công nhưng không lấy được dữ liệu trả về");
+            if (movieId <= 0) {
+                throw new IllegalArgumentException("INVALID MOVIE ID.");
             }
 
-            if (mvRepositories.existsByUserAndMovie(userId, movieId)) {
-                throw new IllegalStateException("Bạn đã đánh giá phim này rồi");
-            }
+            float avg = movieReviewRepository.countRatingAverage(movieId);
+            return new RatingSummaryDtos(movieId, avg);
 
-            if (!mvRepositories.canReview(userId, movieId)) {
-                throw new IllegalStateException("Bạn chỉ có thể đánh giá sau khi đã mua vé và xem phim");
-            }
-
-            throw new IllegalStateException("Không thể tạo đánh giá. Vui lòng thử lại");
-
-        } catch (RuntimeException e) {
+        } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create movie review. Please check repository/database.", e);
+            throw new RuntimeException(
+                "Lỗi khi tính trung bình tổng đánh giá, hãy kiểm tra repository.",
+                e
+            );
         }
     }
-    
+
+    /**
+     * Check user có đủ điều kiện review hay không.
+     *
+     * Điều kiện hợp lệ:
+     * - user chưa review phim này
+     * - đã có booking cho đúng movie
+     * - có ghế trong booking
+     * - booking đã PAID hoặc payment SUCCESS
+     * - showtime của booking đã kết thúc
+     */
+    public boolean canReview(int userId, int movieId) {
+        try {
+            if (userId <= 0) {
+                throw new IllegalArgumentException("INVALID USER ID.");
+            }
+            if (movieId <= 0) {
+                throw new IllegalArgumentException("INVALID MOVIE ID.");
+            }
+
+            return movieReviewRepository.canReview(userId, movieId);
+
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                "Failed to check review eligibility: userId=" + userId + ", movieId=" + movieId,
+                e
+            );
+        }
+    }
+
+    /**
+     * Tạo review mới.
+     *
+     * Rule:
+     * - rating phải từ 1..5
+     * - user chưa review movie này
+     * - user phải có booking hợp lệ cho movie đó
+     * - showtime của booking phải đã kết thúc
+     */
+    public MovieReviewDtos createReview(int userId, int movieId, int rating, String comment) {
+        try {
+            if (userId <= 0) {
+                throw new IllegalArgumentException("INVALID USER ID.");
+            }
+            if (movieId <= 0) {
+                throw new IllegalArgumentException("INVALID MOVIE ID.");
+            }
+            if (rating < 1 || rating > 5) {
+                throw new IllegalArgumentException("RATING MUST BE BETWEEN 1 AND 5.");
+            }
+
+            String normalizedComment = comment == null ? "" : comment.trim();
+            if (normalizedComment.length() > 2000) {
+                throw new IllegalArgumentException("COMMENT MUST NOT EXCEED 2000 CHARACTERS.");
+            }
+
+            Integer newReviewId = movieReviewRepository.createReviewAtomic(
+                userId,
+                movieId,
+                rating,
+                normalizedComment
+            );
+
+            if (newReviewId != null) {
+                MovieReviewDtos dto = movieReviewRepository.findAdminDtoByReviewId(newReviewId);
+                if (dto != null) {
+                    return dto;
+                }
+                throw new RuntimeException("Tạo đánh giá thành công nhưng không lấy được dữ liệu trả về.");
+            }
+
+            if (movieReviewRepository.existsByUserAndMovie(userId, movieId)) {
+                throw new IllegalStateException("Bạn đã đánh giá phim này rồi.");
+            }
+
+            if (!movieReviewRepository.canReview(userId, movieId)) {
+                throw new IllegalStateException(
+                    "Bạn chỉ có thể đánh giá sau khi đã mua vé, thanh toán thành công và suất chiếu đã kết thúc."
+                );
+            }
+
+            throw new IllegalStateException("Không thể tạo đánh giá. Vui lòng thử lại.");
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                "Failed to create movie review. Please check repository/database.",
+                e
+            );
+        }
+    }
+
+    /**
+     * Lấy comment theo movieId có phân trang.
+     */
     public List<MovieReviewClientDtos> getAllCommentById(int movieId, int limit, int offset) {
         try {
-            if (movieId <= 0) throw new IllegalArgumentException("INVALID MOVIE ID.");
+            if (movieId <= 0) {
+                throw new IllegalArgumentException("INVALID MOVIE ID.");
+            }
             if (limit < 1) limit = 20;
             if (offset < 0) offset = 0;
 
-            return mvRepositories.getAllCommnetByMovieId(movieId, limit, offset);
+            return movieReviewRepository.getAllCommnetByMovieId(movieId, limit, offset);
 
         } catch (IllegalArgumentException e) {
             throw e;
@@ -108,22 +190,22 @@ public class MovieReviewService {
             );
         }
     }
+
+    /**
+     * Đếm tổng số comment đang hiển thị của movie.
+     */
     public long countAllCommentByMovieId(int movieId) {
         try {
             if (movieId <= 0) {
                 throw new IllegalArgumentException("INVALID MOVIE ID.");
             }
-            return mvRepositories.countAllCommentByMovieId(movieId);
+
+            return movieReviewRepository.countAllCommentByMovieId(movieId);
 
         } catch (IllegalArgumentException e) {
             throw e;
-
         } catch (Exception e) {
-            throw new RuntimeException(
-                "FAILED TO COUNT COMMENTS: movieId=" + movieId,
-                e
-            );
+            throw new RuntimeException("FAILED TO COUNT COMMENTS: movieId=" + movieId, e);
         }
     }
-
 }
