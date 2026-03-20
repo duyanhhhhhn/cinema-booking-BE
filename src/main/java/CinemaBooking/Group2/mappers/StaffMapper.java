@@ -29,7 +29,6 @@ public class StaffMapper implements RowMapper<StaffSchedule>{
 		staffDTO.setFullName(user.getFullName());
 		staffDTO.setAvatarUrl(user.getAvatarUrl());
 		staffDTO.setPhone(user.getPhone());
-		staffDTO.setPosition(user.getPosition());
 		staff.setStaff(staffDTO);
 		staff.setShift(schedule.findByShiftId(item.getShiftId()));
 		staff.setWorkdate(item.getWorkDate());
