@@ -141,8 +141,12 @@ public class StaffScheduleService {
 	}
 	public List<StaffResponseDTO> getAllStaff(){
 		try {
-			List<StaffResponseDTO>item = pattern.getAllStaff();
-			return item;
+			List<User>item = pattern.getAllStaff();
+			List<StaffResponseDTO> staff = new ArrayList<>();
+			for(User user : item) {
+				StaffResponseDTO dto = new StaffResponseDTO();
+			}
+			return staff;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
