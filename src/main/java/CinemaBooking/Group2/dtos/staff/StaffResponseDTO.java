@@ -1,8 +1,13 @@
 package CinemaBooking.Group2.dtos.staff;
 
-import CinemaBooking.Group2.models.User.UserPosition;
-
 public class StaffResponseDTO {
+	private int id;
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
 	private String avatarUrl;
 	private String fullName;
 	private String phone;
