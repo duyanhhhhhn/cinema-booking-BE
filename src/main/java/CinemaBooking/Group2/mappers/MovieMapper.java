@@ -127,6 +127,7 @@ public class MovieMapper {
         dto.setBannerUrl(movie.getBannerUrl());
         dto.setTrailerUrl(movie.getTrailerUrl());
         dto.setReleaseDate(movie.getReleaseDate());
+        dto.setAgerating(movie.getAgerating());
         dto.setEndDate(movie.getEndDate());
         dto.setStatus(movie.getStatus());
         dto.setCreatedAt(movie.getCreatedAt());
