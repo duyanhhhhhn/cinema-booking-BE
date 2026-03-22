@@ -2,6 +2,7 @@ package CinemaBooking.Group2.repositories;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,6 +58,30 @@ public class ShiftRepository implements Icrud<WorkShift>{
 		try {
 			item = db.query("select * from "+ StringValue.tbl_shift+" where id=?", 
 					new ShiftMapper(),new Object[] {id}).get(0);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return item;
+	}
+	public List<WorkShift> findByStaffId(int id){
+		List<WorkShift> list = new ArrayList<>();
+		try {
+			list = db.query("select * from "+StringValue.tbl_shift+" where staff_id=?",
+					new ShiftMapper(),new Object[] {id});
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
+		}
+		return list;
+	}
+	public WorkShift getByDate(LocalDate date) {
+		WorkShift item = new WorkShift();
+		try {
+			item = db.query("select * from "+ StringValue.tbl_shift+" where workdate=?", 
+					new ShiftMapper(),new Object[] {date}).get(0);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

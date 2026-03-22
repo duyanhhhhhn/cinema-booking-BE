@@ -7,6 +7,7 @@ import CinemaBooking.Group2.repositories.MovieRepository;
 import CinemaBooking.Group2.repositories.RoomRepository;
 import CinemaBooking.Group2.repositories.CinemaRepository;
 import CinemaBooking.Group2.repositories.UserRepository;
+import CinemaBooking.Group2.repositories.concessions.ComboRepository;
 import CinemaBooking.Group2.dtos.booking.BookingEmailData;
 import CinemaBooking.Group2.models.BookingSeat;
 import CinemaBooking.Group2.models.BookingConcession;

@@ -20,8 +20,8 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.concession.CnPResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
-import CinemaBooking.Group2.service.ComboService;
-import CinemaBooking.Group2.service.ProductService;
+import CinemaBooking.Group2.service.concessions.ComboService;
+import CinemaBooking.Group2.service.concessions.ProductService;
 @RestController
 @RequestMapping("/api")
 public class ComboController {

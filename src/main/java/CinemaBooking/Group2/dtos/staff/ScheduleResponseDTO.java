@@ -2,13 +2,12 @@ package CinemaBooking.Group2.dtos.staff;
 
 import java.time.LocalDate;
 
-import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.WorkShift;
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 
 public class ScheduleResponseDTO {
 	private int id;
-	private User staff;
+	private StaffResponseDTO staff;
 	private WorkShift shift;
 	private LocalDate workdate;
 	private StaffScheduleStatus status;
@@ -18,10 +17,10 @@ public class ScheduleResponseDTO {
 	public void setId(int id) {
 		this.id = id;
 	}
-	public User getStaff() {
+	public StaffResponseDTO getStaff() {
 		return staff;
 	}
-	public void setStaff(User staff) {
+	public void setStaff(StaffResponseDTO staff) {
 		this.staff = staff;
 	}
 	public WorkShift getShift() {

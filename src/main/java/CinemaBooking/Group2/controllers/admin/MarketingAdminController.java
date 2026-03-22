@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
+import CinemaBooking.Group2.dtos.marketing.PostRequestDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.Voucher;
@@ -54,9 +55,10 @@ public class MarketingAdminController {
 		
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item); 
 	}
-	@PostMapping("/admin/api/posts")
-	public ResponseEntity<ApiResponse<PostResponseDTO>> addPost(@RequestBody PostResponseDTO dto
-			,@RequestParam("Image")MultipartFile file){
+	@PostMapping("/api/public/posts")
+	@CrossOrigin
+	public ResponseEntity<ApiResponse<PostResponseDTO>> addPost(@RequestBody PostRequestDTO dto
+			,@RequestParam("bannerFile")MultipartFile file){
 		try {
 			if(dto==null) {
 				
@@ -72,6 +74,7 @@ public class MarketingAdminController {
 				item.setExcerpt(dto.getExcerpt());
 				item.setPublished(1);
 				item.setCreatedAt(LocalDateTime.now());
+				item.setPublishedAt(LocalDateTime.now());
 				PostResponseDTO res=service.newPost(item);
 				if(res.getIsSuccess()) {
 					return ResponseEntity.ok(new ApiResponse<PostResponseDTO>("Created", res));
@@ -154,7 +157,8 @@ public class MarketingAdminController {
 		item.setCreatedAt(LocalDate.now());
 		item.setId(id);
 		try {
-			dto = service.addVoucher(item);
+			dto = service.updateVoucher(item);
+			return ResponseEntity.ok(new ApiResponse<VoucherResponseDTO>("Success", dto));
 		}
 		catch (Exception e) {
 			// TODO: handle exception

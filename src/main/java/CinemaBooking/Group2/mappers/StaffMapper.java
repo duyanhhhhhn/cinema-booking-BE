@@ -4,16 +4,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
+import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;
 import CinemaBooking.Group2.models.StaffSchedule;
+import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
-import CinemaBooking.Group2.service.AuthService;
+import CinemaBooking.Group2.pattern.StaffSchedulePattern;
 
 public class StaffMapper implements RowMapper<StaffSchedule>{
 	@Autowired
-	private AuthService service;
+	private static StaffSchedulePattern schedule;
 	public static ScheduleResponseDTO toResponseDTO(StaffSchedule item) {
 		if(item==null) {
 			return null;
@@ -21,9 +25,14 @@ public class StaffMapper implements RowMapper<StaffSchedule>{
 		ScheduleResponseDTO staff = new ScheduleResponseDTO();
 		staff.setId(item.getId());
 		staff.setStatus(item.getStatus());
-		staff.setStaff(null);
-		staff.setShift(null);
-		staff.setWorkdate(null);
+		User user = schedule.findStaffById(item.getStaffId());
+		StaffResponseDTO staffDTO = new StaffResponseDTO();
+		staffDTO.setFullName(user.getFullName());
+		staffDTO.setAvatarUrl(user.getAvatarUrl());
+		staffDTO.setPhone(user.getPhone());
+		staff.setStaff(staffDTO);
+		staff.setShift(schedule.findByShiftId(item.getShiftId()));
+		staff.setWorkdate(item.getWorkDate());
 		return staff;
 	}
 	@Override

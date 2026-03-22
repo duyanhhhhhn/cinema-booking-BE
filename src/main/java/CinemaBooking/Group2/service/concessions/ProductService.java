@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.service;
+package CinemaBooking.Group2.service.concessions;
 
 import java.util.List;
 import java.util.stream.Collectors;

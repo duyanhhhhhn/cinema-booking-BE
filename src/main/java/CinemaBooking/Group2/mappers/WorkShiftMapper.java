@@ -13,7 +13,6 @@ public class WorkShiftMapper {
 		item.setName(shift.getName());
 		item.setStartTime(shift.getStartTime());
 		item.setEndTime(shift.getEndTime());
-		item.setCreatedAt(shift.getCreatedAt());
 		return item;
 	}
 }
