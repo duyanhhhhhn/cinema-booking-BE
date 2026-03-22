@@ -7,7 +7,6 @@ import CinemaBooking.Group2.repositories.MovieRepository;
 import CinemaBooking.Group2.repositories.RoomRepository;
 import CinemaBooking.Group2.repositories.CinemaRepository;
 import CinemaBooking.Group2.repositories.UserRepository;
-import CinemaBooking.Group2.repositories.concessions.ComboRepository;
 import CinemaBooking.Group2.dtos.booking.BookingEmailData;
 import CinemaBooking.Group2.models.BookingSeat;
 import CinemaBooking.Group2.models.BookingConcession;
@@ -17,7 +16,8 @@ import CinemaBooking.Group2.models.Room;
 import CinemaBooking.Group2.models.Cinema;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.Combo;
-
+import CinemaBooking.Group2.repositories.ComboRepository;
+import CinemaBooking.Group2.repositories.SeatHoldRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +100,9 @@ public class PaymentService {
     private ComboRepository comboRepository;
 
     @Autowired
+    private SeatHoldRepository seatHoldRepository;
+
+    @Autowired
     private CinemaBooking.Group2.repositories.SeatRepository seatRepository;
 
     // =========================
@@ -113,6 +116,8 @@ public class PaymentService {
         Booking booking = bookingRepository.findById(bookingId);
         if (booking == null) throw new RuntimeException("Booking not found: " + bookingId);
         
+        validateBookingHold(booking);
+
         if ("VNPAY".equalsIgnoreCase(provider)) {
             return buildVnPayUrl(booking, null);
         } else if ("MOMO".equalsIgnoreCase(provider)) {
@@ -127,6 +132,8 @@ public class PaymentService {
         Booking booking = bookingRepository.findById(bookingId);
         if (booking == null) throw new RuntimeException("Booking not found: " + bookingId);
         
+        validateBookingHold(booking);
+
         if ("VNPAY".equalsIgnoreCase(provider)) {
             return buildVnPayUrl(booking, null);
         } else if ("MOMO".equalsIgnoreCase(provider)) {
@@ -142,6 +149,8 @@ public class PaymentService {
     public String createPaymentUrlForBooking(Booking booking, String provider) throws Exception {
         if (booking == null) throw new RuntimeException("Booking is null");
         
+        validateBookingHold(booking);
+
         if ("VNPAY".equalsIgnoreCase(provider)) {
             return buildVnPayUrl(booking, null);
         } else if ("MOMO".equalsIgnoreCase(provider)) {
@@ -155,6 +164,8 @@ public class PaymentService {
     public String createPaymentUrlForBooking(Booking booking, String provider, String channel) throws Exception {
         if (booking == null) throw new RuntimeException("Booking is null");
         
+        validateBookingHold(booking);
+
         if ("VNPAY".equalsIgnoreCase(provider)) {
             return buildVnPayUrl(booking, null);
         } else if ("MOMO".equalsIgnoreCase(provider)) {
@@ -164,12 +175,61 @@ public class PaymentService {
         }
     }
 
+    private void validateBookingHold(Booking booking) {
+        // Find seats associated with this booking
+        List<BookingSeat> seats = bookingRepository.findBookingSeats(booking.getId());
+        boolean hasExpired = false;
+        
+        LocalDateTime now = LocalDateTime.now();
+
+        for (BookingSeat seat : seats) {
+            // Check hold expiration for each seat
+            LocalDateTime expiresAt = seatHoldRepository.getHoldExpiration(booking.getShowtimeId(), seat.getSeatId());
+            
+            // If expiry is null (no hold) or in the past (expired)
+            if (expiresAt == null || expiresAt.isBefore(now)) {
+                // Delete the seat hold record
+                seatHoldRepository.deleteSeatHold(booking.getShowtimeId(), seat.getSeatId());
+                hasExpired = true;
+                logger.info("Seat hold expired for seat {} in booking {}", seat.getSeatId(), booking.getId());
+            }
+        }
+        
+        if (hasExpired) {
+            // Optional: You could update booking status to FAILED/CANCELLED here if desired
+            // bookingRepository.updateBookingPaymentStatus(booking.getId(), Booking.PaymentStatus.CANCELLED.name(), null, null);
+            throw new RuntimeException("Thời gian giữ ghế đã hết. Vui lòng đặt lại vé.");
+        }
+    }
+
+    /**
+     * Retry payment using booking code.
+     */
+    public String retryPayment(String bookingCode, String provider) throws Exception {
+        return retryPayment(bookingCode, provider, null);
+    }
+
+    public String retryPayment(String bookingCode, String provider, String bankCode) throws Exception {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode);
+        if (booking == null) {
+            throw new RuntimeException("Booking not found with code: " + bookingCode);
+        }
+        
+        if (booking.getPaymentStatus() == Booking.PaymentStatus.PAID) {
+            throw new RuntimeException("Booking is already paid.");
+        }
+
+        return createPaymentUrlForBooking(booking, provider, bankCode);
+    }
+
     /**
      * Tạo URL thanh toán cho 1 booking (VNPAY) với HttpServletRequest.
      */
     public String createVnPayPaymentUrl(int bookingId, HttpServletRequest request) throws Exception {
         Booking booking = bookingRepository.findById(bookingId);
         if (booking == null) throw new RuntimeException("Booking not found: " + bookingId);
+
+        validateBookingHold(booking);
 
         return buildVnPayUrl(booking, request);
     }

@@ -60,14 +60,42 @@ public class PaymentController {
         }
     }
     
+    public static class RetryPaymentRequest {
+        private String bookingCode;
+        private String paymentMethod; // VNPAY | MOMO
+        private String bankCode; // Add bankCode for ATM payment
+        
+        public String getBookingCode() { return bookingCode; }
+        public void setBookingCode(String bookingCode) { this.bookingCode = bookingCode; }
+        public String getPaymentMethod() { return paymentMethod; }
+        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+        public String getBankCode() { return bankCode; }
+        public void setBankCode(String bankCode) { this.bankCode = bankCode; }
+    }
+
+    @PostMapping("/retry")
+    @Operation(summary = "Retry payment for pending booking (if still valid)")
+    public ResponseEntity<?> retryPayment(@RequestBody RetryPaymentRequest req) {
+        try {
+            // Pass bankCode to service
+            String url = paymentService.retryPayment(req.getBookingCode(), req.getPaymentMethod(), req.getBankCode());
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("url", url);
+            return ResponseEntity.ok(resp);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+    
     @GetMapping("/vnpay/return")
-    public ResponseEntity<?> vnpayReturn(HttpServletRequest request, HttpServletResponse response) {
+    public void vnpayReturn(HttpServletRequest request, HttpServletResponse response) throws java.io.IOException {
         // Build flat map of all parameters returned by VNPay
         Map<String, String> params = new HashMap<>();
         request.getParameterMap().forEach((k, v) -> { if (v != null && v.length > 0) params.put(k, v[0]); });
 
         // Let PaymentService verify signature and update booking (server-to-server verification)
         String result = paymentService.handleIpn(params); // expects "OK" on success
+        boolean isSuccess = "OK".equalsIgnoreCase(result);
 
         // Frontend URL (React chạy port 3000)
         String frontendUrl = "http://localhost:3000/payment-result";
@@ -81,30 +109,38 @@ public class PaymentController {
         // Resolve bookingCode from txnRef for redirect
         int vnpBookingId = parseBookingId(txnRef);
         String vnpBookingCode = null;
+        BookingDetailResponse dto = null;
+        
         if (vnpBookingId > 0) {
             var vnpBooking = bookingRepository.findById(vnpBookingId);
             if (vnpBooking != null) {
                 vnpBookingCode = vnpBooking.getBookingCode();
                 logger.info("VNPay return: bookingId={}, bookingCode={}", vnpBookingId, vnpBookingCode);
+                
+                // Load details
+                try {
+                     ApiResponse<BookingDetailResponse> dtoResp = bookingRepository.getBookingByCodeAdmin(vnpBookingCode);
+                     if (dtoResp != null) dto = dtoResp.getData();
+                } catch (Exception e) {
+                     logger.warn("Failed to load booking detail for {}: {}", vnpBookingCode, e.getMessage());
+                }
             } else {
                 logger.warn("VNPay return: booking not found for id={}", vnpBookingId);
             }
         }
 
-        if ("OK".equalsIgnoreCase(result)) {
+        if (isSuccess) {
             if (wantJson) {
-                int bookingId = parseBookingId(txnRef);
-                if (bookingId <= 0) return ResponseEntity.badRequest().body(Map.of("error", "Invalid txnRef"));
-
-                var booking = bookingRepository.findById(bookingId);
-                if (booking == null) return ResponseEntity.status(404).body(Map.of("error", "Booking not found"));
-
-                String bookingCode = booking.getBookingCode();
-                ApiResponse<BookingDetailResponse> dtoResp = bookingRepository.getBookingByCodeAdmin(bookingCode);
-                if (dtoResp == null || dtoResp.getData() == null) return ResponseEntity.status(404).body(Map.of("error", "Booking detail not found"));
-                BookingDetailResponse dto = dtoResp.getData();
+                if (dto == null) {
+                    response.setStatus(404);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Booking detail not found\"}");
+                    return;
+                }
 
                 Map<String, Object> out = new HashMap<>();
+                out.put("status", "success");
+                out.put("method", "vnpay");
                 out.put("movieName", dto.getMovieTitle());
                 out.put("posterUrl", dto.getPosterUrl());
                 out.put("format", dto.getFormat());
@@ -119,24 +155,41 @@ public class PaymentController {
                 out.put("bookingCode", dto.getBookingCode());
                 out.put("qrData", dto.getQrData());
 
-                return ResponseEntity.ok(out);
+                response.setContentType("application/json");
+                response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(out));
             } else {
-                try {
-                    StringBuilder redirectUrl = new StringBuilder(frontendUrl);
-                    redirectUrl.append("?status=success&method=vnpay");
-                    redirectUrl.append("&txnRef=").append(txnRef != null ? txnRef : "");
-                    if (vnpBookingCode != null) {
-                        redirectUrl.append("&bookingCode=").append(urlEncode(vnpBookingCode));
-                    }
-                    response.sendRedirect(redirectUrl.toString());
-                } catch (java.io.IOException e) {
-                    // ignore
+                StringBuilder redirectUrl = new StringBuilder(frontendUrl);
+                redirectUrl.append("?status=success&method=vnpay");
+                redirectUrl.append("&txnRef=").append(txnRef != null ? txnRef : "");
+                if (vnpBookingCode != null) {
+                    redirectUrl.append("&bookingCode=").append(urlEncode(vnpBookingCode));
                 }
-                return ResponseEntity.ok().build();
+                
+                // Append additional booking details if available
+                if (dto != null) {
+                    redirectUrl.append("&movieName=").append(urlEncode(dto.getMovieTitle()));
+                    redirectUrl.append("&cinemaName=").append(urlEncode(dto.getCinemaName()));
+                    redirectUrl.append("&screenName=").append(urlEncode(dto.getRoomName()));
+                    redirectUrl.append("&seatList=").append(urlEncode(dto.getSeatCodes()));
+                    if (dto.getTotalPrice() != null) redirectUrl.append("&totalPrice=").append(dto.getTotalPrice().toPlainString());
+                    if (dto.getStartTime() != null) redirectUrl.append("&showTime=").append(urlEncode(dto.getStartTime().toString()));
+                }
+                
+                response.sendRedirect(redirectUrl.toString());
             }
         } else {
             if (wantJson) {
-                return ResponseEntity.ok(Map.of("status", "failed", "method", "vnpay", "txnRef", txnRef));
+                Map<String, Object> resultJson = new HashMap<>();
+                resultJson.put("status", "failed");
+                resultJson.put("method", "vnpay");
+                resultJson.put("txnRef", txnRef);
+                if (vnpBookingCode != null) {
+                    resultJson.put("bookingCode", vnpBookingCode);
+                } else if (dto != null && dto.getBookingCode() != null) {
+                    resultJson.put("bookingCode", dto.getBookingCode());
+                }
+                response.setContentType("application/json");
+                response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(resultJson));
             } else {
                 try {
                     StringBuilder redirectUrl = new StringBuilder(frontendUrl);
@@ -144,12 +197,13 @@ public class PaymentController {
                     redirectUrl.append("&txnRef=").append(txnRef != null ? txnRef : "");
                     if (vnpBookingCode != null) {
                         redirectUrl.append("&bookingCode=").append(urlEncode(vnpBookingCode));
+                    } else if (dto != null && dto.getBookingCode() != null) {
+                        redirectUrl.append("&bookingCode=").append(urlEncode(dto.getBookingCode()));
                     }
                     response.sendRedirect(redirectUrl.toString());
                 } catch (java.io.IOException e) {
                     // ignore
                 }
-                return ResponseEntity.ok().build();
             }
         }
     }

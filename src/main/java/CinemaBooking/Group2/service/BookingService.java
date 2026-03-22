@@ -50,6 +50,13 @@ import CinemaBooking.Group2.repositories.marketing.VoucherRepository;
 import CinemaBooking.Group2.service.PaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import CinemaBooking.Group2.dtos.booking.BookingHoldDetailResponse;
+import CinemaBooking.Group2.repositories.SeatHoldRepository;
+import CinemaBooking.Group2.models.Room;
+import CinemaBooking.Group2.models.Cinema;
+import CinemaBooking.Group2.models.Movie;
+import java.time.LocalDateTime;
+import java.time.Duration;
 
 @Service
 public class BookingService {
@@ -92,6 +99,9 @@ public class BookingService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SeatHoldRepository seatHoldRepository;
 
     public BookingCalculateResponse calculateBooking(BookingCalculateRequest request) {
         Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
@@ -779,6 +789,72 @@ public class BookingService {
         logger.info("Walk-in booking created successfully: {} by staff: {}", 
             booking.getBookingCode(), request.getStaffId());
 
+        return response;
+    }
+
+    public BookingHoldDetailResponse getBookingHoldDetail(String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode);
+        if (booking == null) {
+            throw new RuntimeException("Booking not found");
+        }
+
+        BookingHoldDetailResponse response = new BookingHoldDetailResponse();
+        response.setBookingId(booking.getId());
+        response.setBookingCode(booking.getBookingCode());
+        response.setTotalPrice(booking.getTotalPrice());
+        response.setPaymentStatus(booking.getPaymentStatus().name());
+
+        // Fill Movie, Cinema, Room info
+        Showtime showtime = showtimeRepository.findById(booking.getShowtimeId());
+        if (showtime != null) {
+            // Get Movie Title
+            Movie movie = movieRepository.findById(showtime.getMovieId());
+            if (movie != null) {
+                response.setMovieTitle(movie.getTitle());
+            }
+
+            // Get Room & Cinema Name
+            Room room = roomRepository.findById(showtime.getRoomId());
+            if (room != null) {
+                response.setRoomName(room.getName());
+                
+                Cinema cinema = cinemaRepository.findById(room.getCinemaId());
+                if (cinema != null) {
+                    response.setCinemaName(cinema.getName());
+                }
+            }
+        }
+
+        // Fetch Booking Seats to get Seat Codes and find Expiration
+        List<BookingSeat> bookingSeats = bookingRepository.findBookingSeats(booking.getId());
+        List<String> seatCodes = new ArrayList<>();
+        LocalDateTime minExpiresAt = null;
+
+        for (BookingSeat bs : bookingSeats) {
+             Seat seat = seatRepository.findById(bs.getSeatId());
+             if (seat != null) {
+                 seatCodes.add(seat.getSeatCode());
+                 
+                 // Get hold expiration for this seat
+                 LocalDateTime expiresAt = seatHoldRepository.getHoldExpiration(booking.getShowtimeId(), seat.getId());
+                 if (expiresAt != null) {
+                     if (minExpiresAt == null || expiresAt.isBefore(minExpiresAt)) {
+                         minExpiresAt = expiresAt;
+                     }
+                 }
+             }
+        }
+        
+        response.setSeatCodes(String.join(", ", seatCodes));
+        
+        if (minExpiresAt != null) {
+            response.setHoldExpiresAt(minExpiresAt);
+            long diff = Duration.between(LocalDateTime.now(), minExpiresAt).getSeconds();
+            response.setRemainingSeconds(diff > 0 ? diff : 0);
+        } else {
+            response.setRemainingSeconds(0);
+        }
+        
         return response;
     }
 }

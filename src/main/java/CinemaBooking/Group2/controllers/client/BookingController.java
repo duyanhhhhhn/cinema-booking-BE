@@ -18,6 +18,7 @@ import CinemaBooking.Group2.dtos.booking.BookingCalculateResponse;
 import CinemaBooking.Group2.dtos.booking.BookingCreateRequest;
 import CinemaBooking.Group2.dtos.booking.BookingCreateResponse;
 import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
+import CinemaBooking.Group2.dtos.booking.BookingHoldDetailResponse;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.BookingService;
@@ -74,6 +75,20 @@ public class BookingController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("An error occurred while fetching booking: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/hold-detail/{bookingCode}")
+    @Operation(summary = "Get booking hold detail & timer", description = "Lấy chi tiết đơn hàng & thời gian giữ ghế (cho trang thanh toán thất bại/chờ).")
+    public ResponseEntity<?> getBookingHoldDetail(@PathVariable String bookingCode) {
+        try {
+            BookingHoldDetailResponse response = bookingService.getBookingHoldDetail(bookingCode);
+            return ResponseEntity.ok(new ApiResponse<>("Success", response));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error fetching booking hold detail: " + e.getMessage()));
         }
     }
 

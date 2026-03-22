@@ -31,6 +31,9 @@ public class MovieCreateDtos {
 
     private Movie.MovieStatus status;
 
+    // Added ageRating to carry Movie.ageRating
+    private String ageRating;
+
 	public String getTitle() {
 		return title;
 	}
@@ -150,12 +153,19 @@ public class MovieCreateDtos {
 	public void setStatus(Movie.MovieStatus status) {
 		this.status = status;
 	}
-	
+
+	public String getAgeRating() {
+		return ageRating;
+	}
+
+	public void setAgeRating(String ageRating) {
+		this.ageRating = ageRating;
+	}
 
 	public MovieCreateDtos(Integer id, String title, String shortDescription, String description,
-			int durationMinutes, MovieGenre genre, String language, String format, String director, String cast,
-			MultipartFile posterFile, MultipartFile bannerFile, String trailerUrl,
-			Date releaseDate, Date endDate, MovieStatus status) {
+				int durationMinutes, MovieGenre genre, String language, String format, String director, String cast,
+				MultipartFile posterFile, MultipartFile bannerFile, String trailerUrl,
+				Date releaseDate, Date endDate, MovieStatus status) {
 		super();
 		this.title = title;
 		this.shortDescription = shortDescription;

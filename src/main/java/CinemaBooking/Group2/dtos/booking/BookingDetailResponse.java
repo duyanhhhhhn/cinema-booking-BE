@@ -49,6 +49,8 @@ public class BookingDetailResponse {
     // ==========================================
     // 4. CHI TIẾT THANH TOÁN (Phần dưới cùng)
     // ==========================================
+    private Long remainingSeconds;   // Thời gian giữ ghế còn lại (giây)
+    
     @JsonFormat(pattern = "HH:mm - dd/MM/yyyy")
     private LocalDateTime createdAt; // "14:22 - 18/12/2023"
     private String paymentMethod;    // "Thanh toán Ví MoMo"
@@ -182,6 +184,14 @@ public class BookingDetailResponse {
 
     public String getSeatCodes() { return seatCodes; }
     public void setSeatCodes(String seatCodes) { this.seatCodes = seatCodes; }
+
+    public Long getRemainingSeconds() {
+        return remainingSeconds;
+    }
+
+    public void setRemainingSeconds(Long remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
