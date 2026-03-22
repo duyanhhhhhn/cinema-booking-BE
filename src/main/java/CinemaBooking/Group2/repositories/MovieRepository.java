@@ -195,7 +195,7 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
-                    movie.setAgerating(rs.getString("agerating"));
+                    movie.setAgeRating(rs.getString("agerating"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
@@ -305,7 +305,7 @@ public class MovieRepository {
                     movie.setPosterUrl(rs.getString("poster_url"));
                     movie.setBannerUrl(rs.getString("banner_url"));
                     movie.setTrailerUrl(rs.getString("trailer_url"));
-                    movie.setAgerating(rs.getString("agerating"));
+                    movie.setAgeRating(rs.getString("agerating"));
                     movie.setReleaseDate(rs.getTimestamp("release_date"));
                     movie.setEndDate(rs.getTimestamp("end_date"));
                     movie.setStatus(parseMovieStatus(rs.getString("status")));
@@ -353,7 +353,7 @@ public class MovieRepository {
                 m.setGenre(parseMovieGenre(rs.getString("genre")));
                 m.setPosterUrl(rs.getString("poster_url"));
                 m.setReleaseDate(rs.getTimestamp("release_date"));
-                m.setAgerating(rs.getString("agerating"));
+                m.setAgeRating(rs.getString("agerating"));
                 m.setStatus(parseMovieStatus(rs.getString("status")));
                 movies.add(m);
             }
@@ -626,7 +626,7 @@ public class MovieRepository {
         movie.setPosterUrl(rs.getString("poster_url"));
         movie.setBannerUrl(rs.getString("banner_url"));
         movie.setTrailerUrl(rs.getString("trailer_url"));
-        movie.setAgerating(rs.getString("agerating"));
+        movie.setAgeRating(rs.getString("agerating"));
         movie.setReleaseDate(rs.getDate("release_date"));
         movie.setEndDate(rs.getDate("end_date"));
         movie.setCreatedAt(rs.getTimestamp("created_at"));
@@ -705,8 +705,8 @@ public class MovieRepository {
             ps.setNull(12, Types.VARCHAR);
         }
 
-        if (movie.getAgerating() != null && !movie.getAgerating().isBlank()) {
-            ps.setString(13, movie.getAgerating().trim());
+        if (movie.getAgeRating() != null && !movie.getAgeRating().isBlank()) {
+            ps.setString(13, movie.getAgeRating().trim());
         } else {
             ps.setNull(13, Types.VARCHAR);
         }
@@ -758,8 +758,8 @@ public class MovieRepository {
             else
                 ps.setNull(12, Types.VARCHAR);
 
-            if (movie.getAgerating() != null && !movie.getAgerating().isBlank())
-                ps.setString(13, movie.getAgerating().trim());
+            if (movie.getAgeRating() != null && !movie.getAgeRating().isBlank())
+                ps.setString(13, movie.getAgeRating().trim());
             else
                 ps.setNull(13, Types.VARCHAR);
 
@@ -833,7 +833,7 @@ public class MovieRepository {
                 m.setPosterUrl(rs.getString("poster_url"));
                 m.setBannerUrl(rs.getString("banner_url"));
                 m.setTrailerUrl(rs.getString("trailer_url"));
-                m.setAgerating(rs.getString("agerating"));
+                m.setAgeRating(rs.getString("agerating"));
 
                 java.sql.Timestamp releaseTs = rs.getTimestamp("release_date");
                 m.setReleaseDate(releaseTs != null ? new java.util.Date(releaseTs.getTime()) : null);

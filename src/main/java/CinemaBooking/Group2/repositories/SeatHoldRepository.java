@@ -176,4 +176,35 @@ public class SeatHoldRepository {
             throw new RuntimeException("Failed to fetch user's seat holds", e);
         }
     }
+
+    /**
+     * Delete seat hold regardless of expiration (e.g. forced cleanup)
+     */
+    public void deleteSeatHold(int showtimeId, int seatId) {
+        String sql = "DELETE FROM seat_hold WHERE showtime_id = ? AND seat_id = ?";
+        try {
+            jdbc.update(sql, showtimeId, seatId);
+        } catch (Exception e) {
+            // Log or ignore
+        }
+    }
+
+    /**
+     * Get hold expiration for a specific seat in a showtime
+     */
+    public LocalDateTime getHoldExpiration(int showtimeId, int seatId) {
+        String sql = """
+            SELECT hold_expires_at 
+            FROM seat_hold 
+            WHERE showtime_id = ? 
+            AND seat_id = ? 
+            ORDER BY hold_expires_at DESC 
+            LIMIT 1
+        """;
+        try {
+            return jdbc.queryForObject(sql, LocalDateTime.class, showtimeId, seatId);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
 }

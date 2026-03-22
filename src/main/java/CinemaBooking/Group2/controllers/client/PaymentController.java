@@ -60,6 +60,33 @@ public class PaymentController {
         }
     }
     
+    public static class RetryPaymentRequest {
+        private String bookingCode;
+        private String paymentMethod; // VNPAY | MOMO
+        private String bankCode; // Add bankCode for ATM payment
+        
+        public String getBookingCode() { return bookingCode; }
+        public void setBookingCode(String bookingCode) { this.bookingCode = bookingCode; }
+        public String getPaymentMethod() { return paymentMethod; }
+        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+        public String getBankCode() { return bankCode; }
+        public void setBankCode(String bankCode) { this.bankCode = bankCode; }
+    }
+
+    @PostMapping("/retry")
+    @Operation(summary = "Retry payment for pending booking (if still valid)")
+    public ResponseEntity<?> retryPayment(@RequestBody RetryPaymentRequest req) {
+        try {
+            // Pass bankCode to service
+            String url = paymentService.retryPayment(req.getBookingCode(), req.getPaymentMethod(), req.getBankCode());
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("url", url);
+            return ResponseEntity.ok(resp);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+    
     @GetMapping("/vnpay/return")
     public void vnpayReturn(HttpServletRequest request, HttpServletResponse response) throws java.io.IOException {
         // Build flat map of all parameters returned by VNPay
@@ -156,6 +183,11 @@ public class PaymentController {
                 resultJson.put("status", "failed");
                 resultJson.put("method", "vnpay");
                 resultJson.put("txnRef", txnRef);
+                if (vnpBookingCode != null) {
+                    resultJson.put("bookingCode", vnpBookingCode);
+                } else if (dto != null && dto.getBookingCode() != null) {
+                    resultJson.put("bookingCode", dto.getBookingCode());
+                }
                 response.setContentType("application/json");
                 response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(resultJson));
             } else {
@@ -165,6 +197,8 @@ public class PaymentController {
                     redirectUrl.append("&txnRef=").append(txnRef != null ? txnRef : "");
                     if (vnpBookingCode != null) {
                         redirectUrl.append("&bookingCode=").append(urlEncode(vnpBookingCode));
+                    } else if (dto != null && dto.getBookingCode() != null) {
+                        redirectUrl.append("&bookingCode=").append(urlEncode(dto.getBookingCode()));
                     }
                     response.sendRedirect(redirectUrl.toString());
                 } catch (java.io.IOException e) {
