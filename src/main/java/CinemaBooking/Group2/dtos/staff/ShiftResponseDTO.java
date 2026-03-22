@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
+
 public class ShiftResponseDTO {
 	private int id;
     private String name;
@@ -11,6 +13,13 @@ public class ShiftResponseDTO {
     private LocalTime endTime;
     private LocalDateTime createdAt;
     private LocalDate WorkDate;
+    private StaffScheduleStatus status;
+	public StaffScheduleStatus getStatus() {
+		return status;
+	}
+	public void setStatus(StaffScheduleStatus status) {
+		this.status = status;
+	}
 	public LocalDate getWorkDate() {
 		return WorkDate;
 	}

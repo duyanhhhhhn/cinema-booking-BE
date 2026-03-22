@@ -9,14 +9,11 @@ import CinemaBooking.Group2.repositories.CinemaRepository;
 import CinemaBooking.Group2.repositories.UserRepository;
 import CinemaBooking.Group2.dtos.booking.BookingEmailData;
 import CinemaBooking.Group2.models.BookingSeat;
-import CinemaBooking.Group2.models.BookingConcession;
 import CinemaBooking.Group2.models.Showtime;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Room;
 import CinemaBooking.Group2.models.Cinema;
 import CinemaBooking.Group2.models.User;
-import CinemaBooking.Group2.models.Combo;
-import CinemaBooking.Group2.repositories.ComboRepository;
 import CinemaBooking.Group2.repositories.SeatHoldRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +94,7 @@ public class PaymentService {
     private UserRepository userRepository;
 
     @Autowired
-    private ComboRepository comboRepository;
+    private CinemaBooking.Group2.repositories.concessions.ComboRepository comboRepository;
 
     @Autowired
     private SeatHoldRepository seatHoldRepository;
