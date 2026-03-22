@@ -31,6 +31,9 @@ public class MovieDetailDtos {
     private Movie.MovieStatus status;
     private Date createdAt;
 
+    // Added ageRating to carry Movie.ageRating
+    private String ageRating;
+
 	
 	public MovieDetailDtos(int id, String title, String shortDescription, String description, int durationMinutes,
 			MovieGenre genre, String language, String format, String director, String cast, String posterUrl,
@@ -225,6 +228,13 @@ public class MovieDetailDtos {
 		this.createdAt = createdAt;
 	}
 
+	public String getAgeRating() {
+		return ageRating;
+	}
+
+	public void setAgeRating(String ageRating) {
+		this.ageRating = ageRating;
+	}
 
 	public MovieDetailDtos() {
 		super();

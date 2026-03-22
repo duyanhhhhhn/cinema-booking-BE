@@ -31,6 +31,9 @@ public class MovieDtos {
     private Movie.MovieStatus status;
     private Date createdAt;
 
+    // Added ageRating to carry Movie.ageRating through DTO
+    private String ageRating;
+
 	public int getId() {
 		return id;
 	}
@@ -133,9 +136,18 @@ public class MovieDtos {
 	public void setCreatedAt(Date createdAt) {
 		this.createdAt = createdAt;
 	}
+
+	public String getAgeRating() {
+		return ageRating;
+	}
+
+	public void setAgeRating(String ageRating) {
+		this.ageRating = ageRating;
+	}
+
 	public MovieDtos(int id, String title, String shortDescription, String description, int durationMinutes,
-			MovieGenre genre, String language, String format, String director, String cast, String posterUrl,
-			String bannerUrl, String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
+				MovieGenre genre, String language, String format, String director, String cast, String posterUrl,
+				String bannerUrl, String trailerUrl, Date releaseDate, Date endDate, MovieStatus status, Date createdAt) {
 		super();
 		this.id = id;
 		this.title = title;
