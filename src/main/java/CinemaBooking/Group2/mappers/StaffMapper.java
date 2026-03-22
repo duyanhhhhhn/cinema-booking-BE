@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Service;
 
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;

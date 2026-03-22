@@ -16,7 +16,6 @@ import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.ShiftResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;
 import CinemaBooking.Group2.dtos.staff.workShiftResponseDTO;
-import CinemaBooking.Group2.mappers.StaffMapper;
 import CinemaBooking.Group2.mappers.WorkShiftMapper;
 import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.User;
@@ -106,10 +105,51 @@ public class StaffScheduleService {
 		}
 		return null;
 	}
-	public List<ScheduleResponseDTO> getScheduleByStaffId(int id){
+	public List<AWeekOfScheduleResponseDTO> getScheduleByStaffId(int id,int week){
 		try {
-			List<StaffSchedule> item = pattern.getScheduleByStaffId(id);
-			return item.stream().map(StaffMapper::toResponseDTO).collect(Collectors.toList());
+			Map<Integer,AWeekOfScheduleResponseDTO>map = new HashMap<>();
+			LocalDate date = LocalDate.now();
+			LocalDate monday = date.with(DayOfWeek.MONDAY);
+			LocalDate startDay = monday.minusDays(7*week);
+			LocalDate endDay = startDay.plusDays(6);
+			List<StaffSchedule> item = pattern.getScheduleByStaffId(id,startDay,endDay);
+			for(StaffSchedule schedule : item) {
+				int staffId = schedule.getStaffId();
+				if(!map.containsKey(staffId)) {
+					AWeekOfScheduleResponseDTO dto = new AWeekOfScheduleResponseDTO();
+					User staff = pattern.findStaffById(staffId);
+			        StaffResponseDTO staffDTO = new StaffResponseDTO();
+			        staffDTO.setFullName(staff.getFullName());
+			        staffDTO.setAvatarUrl(staff.getAvatarUrl());
+			        staffDTO.setPhone(staff.getPhone());
+			        staffDTO.setRoleName(staff.getRoleName());
+			        dto.setStaff(staffDTO);
+			        dto.setStatus(schedule.getStatus());
+			        List<ShiftResponseDTO> weeks = new ArrayList<>();
+			        for (int i = 0; i < 7; i++) {
+			            LocalDate d = monday.plusDays(i);
+			            ShiftResponseDTO empty = new ShiftResponseDTO();
+			            empty.setWorkDate(d);
+			            empty.setId(0);
+			            weeks.add(empty);
+			        }
+			        dto.setShift(weeks);
+			        map.put(staffId, dto);
+				}
+				List<ShiftResponseDTO> weeks = map.get(staffId).getShift();
+				   for(ShiftResponseDTO day :weeks) {
+					   if(day.getWorkDate().equals(schedule.getWorkDate())) {
+						   day.setWorkDate(schedule.getWorkDate());
+						    WorkShift shift = pattern.findByShiftId(schedule.getShiftId());
+						    day.setId(shift.getId());
+						    day.setName(shift.getName());
+						    day.setStartTime(shift.getStartTime());
+						    day.setEndTime(shift.getEndTime());
+						    break;
+					   }
+				   }
+			}
+			return new ArrayList<>(map.values());
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -145,6 +185,12 @@ public class StaffScheduleService {
 			List<StaffResponseDTO> staff = new ArrayList<>();
 			for(User user : item) {
 				StaffResponseDTO dto = new StaffResponseDTO();
+				dto.setId(user.getId());
+				dto.setFullName(user.getFullName());
+				dto.setAvatarUrl(user.getAvatarUrl());
+				dto.setRoleName(user.getRoleName());
+				dto.setPhone(user.getPhone());
+				staff.add(dto);
 			}
 			return staff;
 		}

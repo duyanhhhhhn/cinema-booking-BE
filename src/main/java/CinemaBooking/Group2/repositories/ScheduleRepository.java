@@ -98,14 +98,16 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 				}
 				return item;
 	}
-	public List<StaffSchedule> getByStaffId(int staff_id){
+	public List<StaffSchedule> getByStaffId(int staff_id,LocalDate startDate,LocalDate endDate){
 		List<StaffSchedule> item = new ArrayList<>();
 		try {
-			item = db.query("select * from "+StringValue.tbl_schedule+" where staff_id=?",
-					new StaffMapper(),new Object[] {staff_id});
+			item = db.query("select * from "+StringValue.tbl_schedule+" where staff_id=?"
+					+ " and work_date between ? and ?",
+					new StaffMapper(),new Object[] {staff_id,startDate,endDate});
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return item;
 	}
@@ -161,11 +163,22 @@ public class ScheduleRepository implements Icrud<StaffSchedule>{
 	}
 	public List<User> getAllStaff() {
 		try {
-			List<User> staff = db.query("select * from user where role_id=3",new UserMapper());
+			List<User> staff = db.query("select u.*,r.name as role_name from user u inner join role r on u.role_id = r.id  where role_id=3",new UserMapper());
 			return staff;
 		}
 		catch (Exception e) {
 			// TODO: handle exception
+		}
+		return null;
+	}
+	public User findStaffById(int id) {
+		try {
+			User staff = db.query("select u.*,r.name as role_name from user u inner join role r on u.role_id = r.id  where u.id = ?",new UserMapper(),new Object[] {id}).get(0);
+			return staff;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return null;
 	}

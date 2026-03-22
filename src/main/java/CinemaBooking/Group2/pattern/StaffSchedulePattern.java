@@ -51,9 +51,9 @@ public class StaffSchedulePattern {
 		}
 		return null;
 	}
-	public List<StaffSchedule> getScheduleByStaffId(int staff_id){
+	public List<StaffSchedule> getScheduleByStaffId(int staff_id,LocalDate startDate,LocalDate endDate){
 		try {
-			return scheRep.getByStaffId(staff_id);
+			return scheRep.getByStaffId(staff_id,startDate,endDate);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -109,7 +109,7 @@ public class StaffSchedulePattern {
 	//user
 	public User findStaffById(int id) {
 		try {
-			return userRep.findById(id);
+			return scheRep.findStaffById(id);
 		}
 		catch (Exception e) {
 			// TODO: handle exception

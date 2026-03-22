@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
-import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.staff.AWeekOfScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.ScheduleResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;
@@ -80,7 +79,7 @@ public class StaffController {
 		return null;
 	}
 	@CrossOrigin
-	@GetMapping("/schedules/staff")
+	@GetMapping("/schedules/getstaff")
 	public List<StaffResponseDTO> getAllStaff(){
 		try {
 			return service.getAllStaff();
@@ -103,13 +102,10 @@ public class StaffController {
 	}
 	@CrossOrigin
 	@GetMapping("/shifts")
-	public PageResponse<workShiftResponseDTO> getShift(){
+	public ResponseEntity<List<workShiftResponseDTO>> getShift(){
 		try {
 			List<workShiftResponseDTO> list = service.getShift();
-			PageResponse<workShiftResponseDTO> response = new PageResponse<workShiftResponseDTO>();
-			if(list!=null) {
-				response.setData(list);
-			}
+			return ResponseEntity.ok(list);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
@@ -117,10 +113,10 @@ public class StaffController {
 		return null;
 	}
 	@CrossOrigin
-	@GetMapping("/schedule/my")
-	public List<ScheduleResponseDTO> getMySchedules(@RequestParam("id")int id){
+	@GetMapping("/schedules/my")
+	public List<AWeekOfScheduleResponseDTO> getMySchedules(@RequestParam("id")int id,@RequestParam(name="week",defaultValue = "0")int week){
 		try {
-			return service.getScheduleByStaffId(id);
+			return service.getScheduleByStaffId(id,week);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
