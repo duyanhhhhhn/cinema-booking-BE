@@ -17,7 +17,6 @@ import CinemaBooking.Group2.models.Room;
 import CinemaBooking.Group2.models.Cinema;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.Combo;
-import CinemaBooking.Group2.repositories.ComboRepository;
 import CinemaBooking.Group2.repositories.SeatHoldRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
