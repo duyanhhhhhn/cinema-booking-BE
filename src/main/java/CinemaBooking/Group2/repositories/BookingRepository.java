@@ -622,6 +622,29 @@ public class BookingRepository {
         dto.setItems(items);
         dto.setShowDate(dto.getStartTime());
 
+        // --- ADDED: Calculate remaining hold time ---
+        // Query seat_hold to find the latest expiration time for seats in this booking
+        String holdSql = """
+            SELECT MAX(sh.hold_expires_at)
+            FROM seat_hold sh
+            JOIN booking_seat bs ON sh.seat_id = bs.seat_id
+            JOIN booking b ON bs.booking_id = b.id
+            WHERE b.id = ? AND sh.showtime_id = b.showtime_id
+        """;
+        try {
+            LocalDateTime expiresAt = jdbc.queryForObject(holdSql, LocalDateTime.class, bookingId);
+            if (expiresAt != null) {
+                long diff = java.time.Duration.between(LocalDateTime.now(), expiresAt).getSeconds();
+                dto.setRemainingSeconds(diff > 0 ? diff : 0);
+            } else {
+                dto.setRemainingSeconds(0L);
+            }
+        } catch (Exception e) {
+            // If no hold record found (e.g. already expired and cleaned up, or booking confirmed), 0
+            dto.setRemainingSeconds(0L);
+        }
+        // --------------------------------------------
+
         return new ApiResponse<>("Success", dto);
     }
     
@@ -760,6 +783,27 @@ public class BookingRepository {
 
         dto.setItems(items);
         dto.setShowDate(dto.getStartTime());
+        
+        // --- ADDED: Calculate remaining hold time ---
+        String holdSql = """
+            SELECT MAX(sh.hold_expires_at)
+            FROM seat_hold sh
+            JOIN booking_seat bs ON sh.seat_id = bs.seat_id
+            JOIN booking b ON bs.booking_id = b.id
+            WHERE b.id = ? AND sh.showtime_id = b.showtime_id
+        """;
+        try {
+            LocalDateTime expiresAt = jdbc.queryForObject(holdSql, LocalDateTime.class, bookingId);
+            if (expiresAt != null) {
+                long diff = java.time.Duration.between(LocalDateTime.now(), expiresAt).getSeconds();
+                dto.setRemainingSeconds(diff > 0 ? diff : 0);
+            } else {
+                dto.setRemainingSeconds(0L);
+            }
+        } catch (Exception e) {
+            dto.setRemainingSeconds(0L);
+        }
+        // --------------------------------------------
 
         return new ApiResponse<>("Success", dto);
     }
@@ -914,5 +958,24 @@ public class BookingRepository {
          }
         
         return canceledCount;
+    }
+
+    /**
+     * Get the expiration time of the seats held for this booking.
+     * Returns null if no active hold found.
+     */
+    public LocalDateTime getBookingExpirationTime(int bookingId) {
+        String holdSql = """
+            SELECT MAX(sh.hold_expires_at)
+            FROM seat_hold sh
+            JOIN booking_seat bs ON sh.seat_id = bs.seat_id
+            JOIN booking b ON bs.booking_id = b.id
+            WHERE b.id = ? AND sh.showtime_id = b.showtime_id
+        """;
+        try {
+            return jdbc.queryForObject(holdSql, LocalDateTime.class, bookingId);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.repositories;
+package CinemaBooking.Group2.repositories.concessions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.ComboItemMapper;
 import CinemaBooking.Group2.models.ComboItem;
+import CinemaBooking.Group2.repositories.Icrud;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository

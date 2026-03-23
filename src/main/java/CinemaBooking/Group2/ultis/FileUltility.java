@@ -39,6 +39,7 @@ public class FileUltility {
 		try {
 			FileInputStream fin = new FileInputStream(folderName+"/"+imageName);
 			byte[] data = fin.readAllBytes();
+			fin.close();
 			return Base64.getEncoder().encodeToString(data);
 		}
 		catch (FileNotFoundException e) {

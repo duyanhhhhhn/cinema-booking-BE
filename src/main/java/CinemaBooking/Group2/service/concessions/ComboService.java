@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.service;
+package CinemaBooking.Group2.service.concessions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,6 @@ import CinemaBooking.Group2.dtos.concession.CnPResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboItemResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
-import CinemaBooking.Group2.mappers.ComboItemMapper;
 import CinemaBooking.Group2.mappers.ComboMapper;
 import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.models.ComboItem;
@@ -27,8 +26,6 @@ public class ComboService {
 	private UserRepository rep;
 	@Autowired
 	private Concessions con;
-	@Autowired
-	private ComboItemMapper mapper;
 
 	public List<ComboResponseDTO> getCombo() {
 		try {
@@ -93,7 +90,8 @@ public class ComboService {
 										item.getProductId(),
 										product.getName(),
 										item.getQuantity(),
-										product.getPrice()
+										product.getPrice(),
+										product.getImageUrl()
 									);
 									itemList.add(itemDTO);
 								}

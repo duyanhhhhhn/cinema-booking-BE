@@ -31,6 +31,9 @@ public class MovieEditDtos {
 
 	    private Movie.MovieStatus status;
 
+	    // Added ageRating field with getter/setter to fix missing method error
+	    private String ageRating;
+
 		public String getTitle() {
 			return title;
 		}
@@ -151,6 +154,14 @@ public class MovieEditDtos {
 			this.status = status;
 		}
 
+		public String getAgeRating() {
+			return ageRating;
+		}
+
+		public void setAgeRating(String ageRating) {
+			this.ageRating = ageRating;
+		}
+
 		public MovieEditDtos(String title, String shortDescription, String description, int durationMinutes,
 				MovieGenre genre, String language, String format, String director, String cast, MultipartFile posterFile,
 				MultipartFile bannerFile, String trailerUrl, Date releaseDate, Date endDate, MovieStatus status) {
@@ -168,6 +179,29 @@ public class MovieEditDtos {
 			this.bannerFile = bannerFile;
 			this.trailerUrl = trailerUrl;
 			this.releaseDate = releaseDate;
+			this.endDate = endDate;
+			this.status = status;
+		}
+
+		// Overloaded constructor that accepts ageRating without changing existing constructor signature
+		public MovieEditDtos(String title, String shortDescription, String description, int durationMinutes,
+				MovieGenre genre, String language, String format, String director, String cast, MultipartFile posterFile,
+				MultipartFile bannerFile, String trailerUrl, Date releaseDate, String ageRating, Date endDate, MovieStatus status) {
+			super();
+			this.title = title;
+			this.shortDescription = shortDescription;
+			this.description = description;
+			this.durationMinutes = durationMinutes;
+			this.genre = genre;
+			this.language = language;
+			this.format = format;
+			this.director = director;
+			this.cast = cast;
+			this.posterFile = posterFile;
+			this.bannerFile = bannerFile;
+			this.trailerUrl = trailerUrl;
+			this.releaseDate = releaseDate;
+			this.ageRating = ageRating;
 			this.endDate = endDate;
 			this.status = status;
 		}

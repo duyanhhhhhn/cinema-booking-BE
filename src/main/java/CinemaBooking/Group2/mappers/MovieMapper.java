@@ -31,6 +31,8 @@ public class MovieMapper {
         dto.setEndDate(movie.getEndDate());
         dto.setStatus(movie.getStatus());
         dto.setCreatedAt(movie.getCreatedAt());
+        // Added ageRating mapping
+        dto.setAgeRating(movie.getAgeRating());
         return dto;
     }
 
@@ -55,6 +57,8 @@ public class MovieMapper {
         dto.setEndDate(movie.getEndDate());
         dto.setStatus(movie.getStatus());
         dto.setCreatedAt(movie.getCreatedAt());
+        // Added ageRating mapping
+        dto.setAgeRating(movie.getAgeRating());
         return dto;
     }
 
@@ -75,6 +79,11 @@ public class MovieMapper {
         movie.setTrailerUrl(dto.getTrailerUrl());
         movie.setReleaseDate(dto.getReleaseDate());
         movie.setEndDate(dto.getEndDate());
+        
+        // Added ageRating mapping
+        if (dto.getAgeRating() != null) {
+            movie.setAgeRating(dto.getAgeRating());
+        }
 
         if (dto.getStatus() != null) {
             movie.setStatus(dto.getStatus());
@@ -105,6 +114,11 @@ public class MovieMapper {
         movie.setReleaseDate(data.getReleaseDate());
         movie.setEndDate(data.getEndDate());
         movie.setStatus(data.getStatus());
+        
+        // Added ageRating mapping
+        if (data.getAgeRating() != null) {
+            movie.setAgeRating(data.getAgeRating());
+        }
 
         return movie;
     }
@@ -127,7 +141,8 @@ public class MovieMapper {
         dto.setBannerUrl(movie.getBannerUrl());
         dto.setTrailerUrl(movie.getTrailerUrl());
         dto.setReleaseDate(movie.getReleaseDate());
-        dto.setAgerating(movie.getAgerating());
+        // Corrected method name
+        dto.setAgerating(movie.getAgeRating());
         dto.setEndDate(movie.getEndDate());
         dto.setStatus(movie.getStatus());
         dto.setCreatedAt(movie.getCreatedAt());

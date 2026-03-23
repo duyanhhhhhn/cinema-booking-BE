@@ -6,7 +6,6 @@ import java.sql.Timestamp;
 
 import org.springframework.jdbc.core.RowMapper;
 
-import CinemaBooking.Group2.dtos.dashboardnreports.revenueResponseDTO;
 import CinemaBooking.Group2.models.User;
 
 public class UserMapper implements RowMapper<User> {

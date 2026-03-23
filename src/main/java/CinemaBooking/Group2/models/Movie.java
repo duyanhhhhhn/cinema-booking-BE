@@ -42,7 +42,7 @@ public class Movie {
     private String posterUrl;
     private String bannerUrl;
     private String trailerUrl;
-    private String ageating;
+    private String ageRating; // Corrected field name
     private Date releaseDate;
     private Date endDate;
     private MovieStatus status; 
@@ -53,11 +53,11 @@ public class Movie {
 	public void setId(int id) {
 		this.id = id;
 	}
-	public String getAgerating() {
-		return ageating;
+	public String getAgeRating() {
+		return ageRating;
 	}
-	public void setAgerating(String ageRating) {
-		this.ageating = ageRating;
+	public void setAgeRating(String ageRating) {
+		this.ageRating = ageRating;
 	}
 	public String getTitle() {
 		return title;
@@ -160,7 +160,7 @@ public class Movie {
 		this.bannerUrl = bannerUrl;
 		this.trailerUrl = trailerUrl;
 		this.releaseDate = releaseDate;
-		this.ageating = ageRating;
+		this.ageRating = ageRating;
 		this.endDate = endDate;
 		this.status = status;
 	}
@@ -213,7 +213,7 @@ public class Movie {
 		this.bannerUrl = bannerUrl;
 		this.trailerUrl = trailerUrl;
 		this.releaseDate = releaseDate;
-		this.ageating = ageRating;
+		this.ageRating = ageRating;
 		this.endDate = endDate;
 		this.status = status;
 		this.createdAt = createdAt;

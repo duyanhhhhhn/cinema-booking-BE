@@ -1,4 +1,4 @@
-package CinemaBooking.Group2.repositories;
+package CinemaBooking.Group2.repositories.marketing;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import CinemaBooking.Group2.mappers.VoucherMapper;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
+import CinemaBooking.Group2.repositories.Icrud;
 import CinemaBooking.Group2.ultis.StringValue;
 
 @Repository
@@ -105,7 +106,7 @@ public class VoucherRepository implements Icrud<Voucher>{
 	public int update(Voucher item) {
 		// TODO Auto-generated method stub
 		try {
-			int rs =  db.update("update "+StringValue.tbl_voucher+"set code=? ,description=?,discount_type=?,discount_value=?,"
+			int rs =  db.update("update "+StringValue.tbl_voucher+" set code=? ,description=?,discount_type=?,discount_value=?,"
 					+ "min_order_amount=?,start_at=?,end_at=?,usage_limit=? where id=? "
 					,new Object[] {item.getCode(),item.getDescription(),
 							item.getDiscountType().name(),item.getDiscountValue(),item.getMinOrderAmount(),

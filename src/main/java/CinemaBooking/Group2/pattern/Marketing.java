@@ -9,8 +9,8 @@ import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.Voucher;
-import CinemaBooking.Group2.repositories.PostRepository;
-import CinemaBooking.Group2.repositories.VoucherRepository;
+import CinemaBooking.Group2.repositories.marketing.PostRepository;
+import CinemaBooking.Group2.repositories.marketing.VoucherRepository;
 
 @Repository
 public class Marketing {
@@ -108,6 +108,17 @@ public class Marketing {
 		int rs=0;
 		try {
 			rs = vouchRep.create(voucher);
+			return rs;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rs;
+	}
+	public int updateVoucher(Voucher voucher) {
+		int rs=0;
+		try {
+			rs=vouchRep.update(voucher);
 			return rs;
 		}
 		catch (Exception e) {

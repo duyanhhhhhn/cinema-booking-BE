@@ -1,6 +1,5 @@
 package CinemaBooking.Group2.dtos.staff;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class workShiftResponseDTO {
@@ -8,15 +7,12 @@ public class workShiftResponseDTO {
 	    private String name;
 	    private LocalTime startTime;
 	    private LocalTime endTime;
-	    private LocalDateTime createdAt;
-		public workShiftResponseDTO(int id, String name, LocalTime startTime, LocalTime endTime,
-				LocalDateTime createdAt) {
+		public workShiftResponseDTO(int id, String name, LocalTime startTime, LocalTime endTime) {
 			super();
 			this.id = id;
 			this.name = name;
 			this.startTime = startTime;
 			this.endTime = endTime;
-			this.createdAt = createdAt;
 		}
 		public workShiftResponseDTO () {}
 		public int getId() {
@@ -42,12 +38,6 @@ public class workShiftResponseDTO {
 		}
 		public void setEndTime(LocalTime endTime) {
 			this.endTime = endTime;
-		}
-		public LocalDateTime getCreatedAt() {
-			return createdAt;
-		}
-		public void setCreatedAt(LocalDateTime createdAt) {
-			this.createdAt = createdAt;
 		}
 		/**
 		 * @param id
