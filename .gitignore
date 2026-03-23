@@ -36,3 +36,4 @@ application.properties
 
 # Upload images
 /uploads/
+hs_err_pid*.log
