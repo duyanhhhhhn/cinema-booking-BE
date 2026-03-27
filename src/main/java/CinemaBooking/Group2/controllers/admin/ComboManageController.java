@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,7 +34,6 @@ import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.service.concessions.ComboService;
 import CinemaBooking.Group2.service.concessions.ProductService;
 import CinemaBooking.Group2.ultis.FileUltility;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @RestController
 @ResponseBody
@@ -62,6 +62,7 @@ public class ComboManageController {
 			}
 		} catch (Exception e) {
 			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
@@ -79,10 +80,12 @@ public class ComboManageController {
 			combo.setPrice(entity.getPrice());
 			combo.setIsActive(1);
 			System.out.print(combo);
-			if (bannerFile != null) {
+
+			if (bannerFile != null && !bannerFile.isEmpty()) {
 				combo.setImageUrl(
 						FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo", "concessions/combo"));
 			}
+
 			ObjectMapper mapper = new ObjectMapper();
 			List<ComboItem> comboItems = mapper.readValue(
 					entity.getItem(),
@@ -107,17 +110,23 @@ public class ComboManageController {
 			item.setName(combo.getName());
 			item.setDescription("");
 			item.setPrice(combo.getPrice());
-			String imageName = FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo",
-					"concessions/combo");
-			item.setImageUrl(imageName);
+
+			if (bannerFile != null && !bannerFile.isEmpty()) {
+				String imageName = FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo",
+						"concessions/combo");
+				item.setImageUrl(imageName);
+			}
+
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
 			res = service.AddCombo(item);
+
 			ObjectMapper mapper = new ObjectMapper();
 			List<ComboItem> comboItems = mapper.readValue(
 					combo.getItem(),
 					new TypeReference<List<ComboItem>>() {
 					});
+
 			if (combo.getItem() != null) {
 				for (ComboItem items : comboItems) {
 					items.setComboId(res.getCombo().getId());
@@ -136,14 +145,15 @@ public class ComboManageController {
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("name") String name,
 			@RequestParam("description") String description, @RequestParam("price") BigDecimal price,
-			@RequestParam("bannerFile") MultipartFile image, @RequestParam("stock") int stock) {
+			@RequestParam(name = "bannerFile", required = false) MultipartFile image, @RequestParam("stock") int stock) {
 		// TODO: process POST request
 		try {
 			Product item = new Product();
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
-			if (image != null) {
+
+			if (image != null && !image.isEmpty()) {
 				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product",
 						"concessions/product");
 				item.setImageUrl(imageName);
@@ -155,7 +165,6 @@ public class ComboManageController {
 			String a = pro_service.createProduct(item);
 			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
 		} catch (Exception e) {
-			// TODO: handle exception
 			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.ok(null);
@@ -166,17 +175,19 @@ public class ComboManageController {
 	public ResponseEntity<ApiResponse<Product>> editProduct(@PathVariable("id") int id,
 			@RequestParam("name") String name, @RequestParam("description") String description,
 			@RequestParam("price") BigDecimal price,
-			@RequestParam("bannerFile") MultipartFile image, @RequestParam("stock") int stock) {
+			@RequestParam(name = "bannerFile", required = false) MultipartFile image, @RequestParam("stock") int stock) {
 		try {
 			Product item = new Product();
 			item.setName(name);
 			item.setDescription(description);
 			item.setPrice(price);
-			if (image != null) {
+
+			if (image != null && !image.isEmpty()) {
 				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product",
 						"concessions/product");
 				item.setImageUrl(imageName);
 			}
+
 			item.setStock(stock);
 			item.setCreatedAt(LocalDateTime.now());
 			item.setIsActive(1);
@@ -184,7 +195,7 @@ public class ComboManageController {
 			String a = pro_service.editProduct(item);
 			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
 		} catch (Exception e) {
-			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return ResponseEntity.ok(null);
 	}
@@ -201,7 +212,7 @@ public class ComboManageController {
 						.body(new ApiResponse<Combo>("Success", null));
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return null;
 	}
@@ -218,7 +229,7 @@ public class ComboManageController {
 						.body(new ApiResponse<Product>("Success", null));
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
+			System.out.print(e.getMessage());
 		}
 		return null;
 	}

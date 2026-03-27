@@ -96,7 +96,7 @@ public class SecurityConfig {
 
 						)
 						.authenticated()
-
+						.requestMatchers("/api/admin/dashboard/**").hasAnyAuthority("ADMIN", "MANAGER")
 						// ===== ROLE BASE =====
 						.requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "MANAGER")
 						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")
