@@ -94,6 +94,17 @@ public class Marketing {
 		}
 		return null;
 	}
+	public Voucher voucherInfoByCode(String code) {
+		Voucher item = new Voucher();
+		try {
+			item = vouchRep.findByCode(code);
+			return item;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		return null;
+	}
 	public List<Voucher> getVoucher(int page,int size){
 		List<Voucher> item = new ArrayList<>();
 		try {

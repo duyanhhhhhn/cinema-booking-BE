@@ -23,6 +23,7 @@ public class VoucherMapper implements RowMapper<Voucher>{
 		res.setEndAt(item.getEndAt());
 		res.setMinOrderAmount(item.getMinOrderAmount());
 		res.setUsageLimit(item.getUsageLimit());
+		res.setUsedCount(item.getUsedCount());
 		res.setId(item.getId());
 		return res;
 	}

@@ -16,6 +16,7 @@ import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostRequestDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
+import CinemaBooking.Group2.dtos.marketing.VoucherCheckDataDTO;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.Voucher;
 import CinemaBooking.Group2.models.Enum.DiscountType;
@@ -103,15 +104,14 @@ public class MarketingAdminController {
 		}
 	@GetMapping("/api/vouchers/check")
 	@CrossOrigin
-	public ResponseEntity<VoucherResponseDTO> checkVoucher(@RequestParam("id") int id,@RequestParam("price")BigDecimal price) {
-		VoucherResponseDTO rs = new VoucherResponseDTO();
+	public ResponseEntity<ApiResponse<VoucherCheckDataDTO>> checkVoucher(@RequestParam("code") String code,@RequestParam("price")BigDecimal price) {
 		try {
-			 rs = service.checkDiscount(id, price);
+			VoucherCheckDataDTO data = service.checkDiscountByCode(code, price);
+			return ResponseEntity.ok(new ApiResponse<>("Áp dụng mã giảm giá thành công", data));
 		}
 		catch (Exception e) {
-			// TODO: handle exception
+			return ResponseEntity.badRequest().body(new ApiResponse<>(e.getMessage(), null));
 		}
-		return ResponseEntity.ok(rs);
 	}
 	@PostMapping("/api/vouchers")
 	@CrossOrigin
@@ -132,6 +132,9 @@ public class MarketingAdminController {
 		item.setCreatedAt(LocalDate.now());
 		try {
 			dto = service.addVoucher(item);
+			if(!dto.getIsSuccess()) {
+				return ResponseEntity.badRequest().body(new ApiResponse<VoucherResponseDTO>(dto.getMessage(), dto));
+			}
 		}
 		catch (Exception e) {
 			// TODO: handle exception

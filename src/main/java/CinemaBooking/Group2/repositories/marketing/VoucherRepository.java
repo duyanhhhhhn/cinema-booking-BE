@@ -138,8 +138,8 @@ public class VoucherRepository implements Icrud<Voucher>{
 			Voucher item = findById(id);
 			LocalDate date = LocalDate.now();
 			if(item!=null) {
-				if(date.isAfter(item.getStartAt())&&
-						date.isBefore(item.getEndAt())) {
+				// Sửa lại logic so sánh ngày: bao gồm cả ngày bắt đầu và ngày kết thúc
+				if(!date.isBefore(item.getStartAt()) && !date.isAfter(item.getEndAt())) {
 					if(item.getUsageLimit()>item.getUsedCount()) {
 						return true;
 					}
@@ -152,6 +152,16 @@ public class VoucherRepository implements Icrud<Voucher>{
 		}
 		return false;
 	}
+	
+	public void incrementUsageCount(int id) {
+		try {
+			String sql = "UPDATE " + StringValue.tbl_voucher + " SET used_count = used_count + 1 WHERE id = ?";
+			db.update(sql, id);
+		} catch (Exception e) {
+			System.out.println("Error incrementing voucher usage: " + e.getMessage());
+		}
+	}
+
 	public BigDecimal checkDiscount(int id,BigDecimal price) {
 		BigDecimal rs = BigDecimal.valueOf(0);
 		try {
