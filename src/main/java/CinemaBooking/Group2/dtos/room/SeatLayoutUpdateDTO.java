@@ -1,14 +1,15 @@
 package CinemaBooking.Group2.dtos.room;
 
 public class SeatLayoutUpdateDTO {
-	private Object layout;
+
+    private String layout; // JSON string từ FE
     private int totalSeats;
 
-    public Object getLayout() {
+    public String getLayout() {
         return layout;
     }
 
-    public void setLayout(Object layout) {
+    public void setLayout(String layout) {
         this.layout = layout;
     }
 
