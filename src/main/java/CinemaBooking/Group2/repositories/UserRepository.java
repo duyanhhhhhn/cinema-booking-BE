@@ -148,40 +148,65 @@ public class UserRepository {
         }
     }
 
-    // ===================== UPDATE =====================
+
+ // ===================== UPDATE =====================
     public void updateUser(int id, UpdateUserRequestDTO req) {
-        StringBuilder sql = new StringBuilder("UPDATE user SET ");
-        List<Object> params = new ArrayList<>();
+    StringBuilder sql = new StringBuilder("UPDATE user SET ");
+    List<Object> params = new ArrayList<>();
 
-        if (req.getFullName() != null) {
-            sql.append("full_name = ?, ");
-            params.add(req.getFullName());
-        }
-        if (req.getPhone() != null) {
-            sql.append("phone = ?, ");
-            params.add(req.getPhone());
-        }
-        if (req.getAvatarUrl() != null) {
-            sql.append("avatar_url = ?, ");
-            params.add(req.getAvatarUrl());
-        }
-        if (req.getIsActive() != null) {
-            sql.append("is_active = ?, ");
-            params.add(req.getIsActive()); 
-        }
-
-        if (params.isEmpty()) return;
-
-        sql.setLength(sql.length() - 2); // remove last ", "
-        sql.append(" WHERE id = ?");
-        params.add(id);
-
-        try {
-            jdbc.update(sql.toString(), params.toArray());
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi cập nhật user: " + e.getMessage());
-        }
+    if (req.getFullName() != null) {
+        sql.append("full_name = ?, ");
+        params.add(req.getFullName());
     }
+
+    if (req.getPhone() != null) {
+        sql.append("phone = ?, ");
+        params.add(req.getPhone());
+    }
+
+    if (req.getAvatarUrl() != null) {
+        sql.append("avatar_url = ?, ");
+        params.add(req.getAvatarUrl());
+    }
+
+    if (req.getIsActive() != null) {
+        sql.append("is_active = ?, ");
+        params.add(req.getIsActive());
+    }
+
+    // ✅ ADD
+    if (req.getRoleId() != null) {
+        sql.append("role_id = ?, ");
+        params.add(req.getRoleId());
+    }
+
+    if (req.getCinemaId() != null) {
+        sql.append("cinema_id = ?, ");
+        params.add(req.getCinemaId());
+    }
+
+    if (req.getPosition() != null) {
+        sql.append("position = ?, ");
+        params.add(req.getPosition());
+    }
+
+    if (req.getPassword() != null) {
+        sql.append("password = ?, ");
+        params.add(req.getPassword());
+    }
+
+    if (params.isEmpty()) return;
+
+    sql.setLength(sql.length() - 2); // remove ", "
+    sql.append(" WHERE id = ?");
+    params.add(id);
+
+    try {
+        jdbc.update(sql.toString(), params.toArray());
+    } catch (Exception e) {
+        throw new RuntimeException("Lỗi khi cập nhật user: " + e.getMessage());
+    }
+}
 
     public int updatePassword(int userId, String hashedPassword) {
         String sql = "UPDATE user SET password = ? WHERE id = ?";

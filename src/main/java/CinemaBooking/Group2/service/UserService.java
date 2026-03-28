@@ -414,7 +414,7 @@ public class UserService {
     // ================= UPDATE MANAGER/STAFF =================
     public void updateManageUser(int id, UpdateUserRequestDTO req,MultipartFile avatar) {
         AuthUserPrincipal principal = (AuthUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
+        
         User target = userRepo.findById(id);
         if (target == null)
             throw new RuntimeException("User không tồn tại");
@@ -428,14 +428,19 @@ public class UserService {
         // Chỉ ADMIN có thể chỉnh MANAGER
         if ("MANAGER".equals(principal.role()) && target.getRoleId() == 2)
             throw new RuntimeException("MANAGER không được chỉnh MANAGER");
+        
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            String hashedPassword = encoder.encode(req.getPassword());
+            req.setPassword(hashedPassword);
+        }
         if (avatar != null && !avatar.isEmpty()) {
             Path newAvatarPath = null;
+            
             try {
                 newAvatarPath = saveAvatarToFolder(avatar);
                 String newAvatarRel = toRelativePath(newAvatarPath);
                 // store relative path (same as createUser/updateUser)
                 req.setAvatarUrl(newAvatarRel);
-
                 // delete old avatar file of the target user
                 if (target.getAvatarUrl() != null && !target.getAvatarUrl().isBlank()) {
                     Files.deleteIfExists(resolveUploadPath(target.getAvatarUrl()));
@@ -450,7 +455,7 @@ public class UserService {
                 throw new RuntimeException("Upload avatar thất bại: " + e.getMessage(), e);
             }
         }
-
+        System.out.println("REQ POSITION: [" + req.getPosition() + "]");
         userRepo.updateUser(id, req);
     }
 
