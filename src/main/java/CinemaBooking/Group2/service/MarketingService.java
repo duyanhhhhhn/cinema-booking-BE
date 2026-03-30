@@ -10,10 +10,12 @@ import org.springframework.stereotype.Service;
 import CinemaBooking.Group2.dtos.concession.VoucherResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.ListPostResponseDTO;
 import CinemaBooking.Group2.dtos.marketing.PostResponseDTO;
+import CinemaBooking.Group2.dtos.marketing.VoucherCheckDataDTO;
 import CinemaBooking.Group2.mappers.PostMapper;
 import CinemaBooking.Group2.mappers.VoucherMapper;
 import CinemaBooking.Group2.models.Post;
 import CinemaBooking.Group2.models.Voucher;
+import CinemaBooking.Group2.models.Enum.DiscountType;
 import CinemaBooking.Group2.pattern.Marketing;
 
 @Service
@@ -127,6 +129,16 @@ public class MarketingService {
 	public VoucherResponseDTO addVoucher(Voucher item) {
 		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {
+			if(item.getStartAt().isAfter(item.getEndAt())) {
+				dto.setMessage("Ngày bắt đầu không được sau ngày kết thúc");
+				dto.setIsSuccess(false);
+				return dto;
+			}
+			if(mk.voucherInfoByCode(item.getCode())!=null) {
+				dto.setMessage("Mã voucher đã tồn tại");
+				dto.setIsSuccess(false);
+				return dto;
+			}
 			int rs = mk.createVoucher(item);
 			if(rs==1) {
 				dto = VoucherMapper.toResponseDTO(item);
@@ -188,6 +200,54 @@ public class MarketingService {
 		}
 		return null;
 	}
+	
+	public VoucherCheckDataDTO checkDiscountByCode(String code, BigDecimal price) {
+		try {
+			Voucher voucher = mk.voucherInfoByCode(code);
+			if (voucher == null) {
+				throw new RuntimeException("Mã giảm giá không tồn tại");
+			}
+			
+			// Check if voucher is active and valid
+			int available = mk.checkVoucher(voucher.getId());
+			if (available == 0) {
+				throw new RuntimeException("Mã giảm giá không hợp lệ hoặc đã hết hạn");
+			}
+
+			// Validate min order amount
+			if (price.compareTo(voucher.getMinOrderAmount()) < 0) {
+				throw new RuntimeException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã này");
+			}
+			
+			BigDecimal discountAmount = BigDecimal.ZERO;
+			
+			if (voucher.getDiscountType() == DiscountType.AMOUNT) {
+				discountAmount = voucher.getDiscountValue();
+			} else if (voucher.getDiscountType() == DiscountType.PERCENT) {
+				discountAmount = price.multiply(voucher.getDiscountValue()).divide(BigDecimal.valueOf(100));
+			}
+			
+			// Final price calculation
+			BigDecimal finalPrice = price.subtract(discountAmount);
+			if (finalPrice.compareTo(BigDecimal.ZERO) < 0) {
+				finalPrice = BigDecimal.ZERO;
+				discountAmount = price;
+			}
+			
+			VoucherCheckDataDTO data = new VoucherCheckDataDTO();
+			data.setVoucherId(voucher.getId());
+			data.setVoucherCode(voucher.getCode());
+			data.setDiscountAmount(discountAmount);
+			data.setFinalPrice(finalPrice);
+			data.setDiscountType(voucher.getDiscountType().toString());
+			data.setDiscountValue(voucher.getDiscountValue());
+			
+			return data;
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage());
+		}
+	}
+
 	public VoucherResponseDTO checkDiscount(int id,BigDecimal price) {
 		VoucherResponseDTO dto = new VoucherResponseDTO();
 		try {

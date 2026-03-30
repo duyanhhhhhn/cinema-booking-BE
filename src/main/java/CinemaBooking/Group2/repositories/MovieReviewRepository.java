@@ -4,38 +4,63 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.dtos.movie_review.admin.MovieReviewDtos;
 import CinemaBooking.Group2.dtos.movie_review.client.MovieReviewClientDtos;
-import CinemaBooking.Group2.models.Movie;
-import CinemaBooking.Group2.models.MovieReview;
-import CinemaBooking.Group2.models.User;
 
 @Repository
-public class MovieReviewRepository { 
+public class MovieReviewRepository {
+
     private final DataSource dataSource;
 
-	public MovieReviewRepository(DataSource dataSouce) {
-		this.dataSource = dataSouce;
-	}
-	
-	// This function help get all movies review by id movie (movie detail) -> role admin 
+    public MovieReviewRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    /**
+     * Điều kiện đủ để user được review:
+     * - booking thuộc user
+     * - booking gắn với showtime của đúng movie
+     * - booking đã thanh toán thành công
+     * - booking có thời điểm paid_at
+     * - có ghế trong booking_seat
+     * - showtime đã kết thúc
+     */
+    private static final String ELIGIBLE_REVIEW_SUBQUERY =
+        "SELECT 1 " +
+        "FROM booking b " +
+        "JOIN showtime st ON st.id = b.showtime_id " +
+        "WHERE b.user_id = ? " +
+        "  AND st.movie_id = ? " +
+        "  AND b.payment_status = 'PAID' " +
+        "  AND b.paid_at IS NOT NULL " +
+        "  AND EXISTS ( " +
+        "    SELECT 1 " +
+        "    FROM booking_seat bs " +
+        "    WHERE bs.booking_id = b.id " +
+        "  ) " +
+        "  AND st.end_time IS NOT NULL " +
+        "  AND st.end_time <= NOW() " +
+        "LIMIT 1";
+
     public List<MovieReviewDtos> getAllReview() {
-        String sql = "SELECT " +
-		             "  u.email, u.full_name, " +
-		             "  m.title, m.short_description, m.duration_minutes, m.genre, " +
-		             "  mr.id AS review_id, mr.rating, mr.comment, mr.created_at " +
-		             "FROM movie_review AS mr " +
-		             "JOIN movie AS m ON m.id = mr.movie_id " +
-		             "JOIN `user` AS u ON u.id = mr.user_id " +
-		             "ORDER BY mr.created_at DESC, mr.id DESC";
+        String sql =
+            "SELECT " +
+            "  u.email, u.full_name, " +
+            "  m.title, m.short_description, m.duration_minutes, m.genre, " +
+            "  mr.id AS review_id, mr.rating, mr.comment, mr.created_at " +
+            "FROM movie_review AS mr " +
+            "JOIN movie AS m ON m.id = mr.movie_id " +
+            "JOIN `user` AS u ON u.id = mr.user_id " +
+            "ORDER BY mr.created_at DESC, mr.id DESC";
 
         List<MovieReviewDtos> movieReviews = new ArrayList<>();
 
@@ -57,15 +82,14 @@ public class MovieReviewRepository {
                 dto.setCreated_at(rs.getTimestamp("created_at"));
                 movieReviews.add(dto);
             }
-        } 
-        catch (SQLException e) {
+
+        } catch (SQLException e) {
             throw new RuntimeException("Lỗi khi lấy danh sách movie review từ database role -> admin", e);
         }
 
         return movieReviews;
     }
-    
-    // functin help me count role by id
+
     public long countByRoleId() {
         String sql =
             "SELECT COUNT(*) " +
@@ -84,43 +108,47 @@ public class MovieReviewRepository {
         }
     }
 
-    // This function get all review show on frontend -> role: client
     public List<MovieReviewClientDtos> getAllRating(int limit, int offset) {
-    	String sql =
-    		    "SELECT mr.*, u.full_name, u.role_id " +
-    		    "FROM movie_review AS mr " +
-    		    "JOIN `user` AS u ON u.id = mr.user_id " +
-    		    "WHERE u.role_id = 2 " +
-    		    "ORDER BY mr.created_at DESC, mr.id DESC " +
-    		    "LIMIT ? OFFSET ?";
+        String sql =
+            "SELECT mr.*, u.full_name, u.role_id " +
+            "FROM movie_review AS mr " +
+            "JOIN `user` AS u ON u.id = mr.user_id " +
+            "WHERE u.role_id = 2 " +
+            "  AND mr.is_hidden = 0 " +
+            "ORDER BY mr.created_at DESC, mr.id DESC " +
+            "LIMIT ? OFFSET ?";
 
-    	List<MovieReviewClientDtos> list_mr = new ArrayList<>();
-    	try(Connection conn = dataSource.getConnection();
-    		PreparedStatement ps = conn.prepareStatement(sql)) {
+        List<MovieReviewClientDtos> listMr = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setInt(1, limit);
             ps.setInt(2, offset);
-    		try(ResultSet rs = ps.executeQuery()) {
-	    		while(rs.next()) {
-	    			MovieReviewClientDtos dtos = new MovieReviewClientDtos();
-	    			dtos.setId(rs.getInt("id"));
-	    			dtos.setUserId(rs.getInt("user_id"));
-	    			dtos.setMovieId(rs.getInt("movie_id"));
-	    			dtos.setRating(rs.getInt("rating"));
-	    			dtos.setComment(rs.getString("comment"));
-	    			dtos.setCreatedAt(rs.getDate("created_at"));
-	    			dtos.setFull_name(rs.getString("full_name"));
-	    			dtos.setRole_id(rs.getInt("role_id"));
-	    			list_mr.add(dtos);
-	    		}
-    		}
-    	} 
-    	catch(SQLException e) {
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    MovieReviewClientDtos dto = new MovieReviewClientDtos();
+                    dto.setId(rs.getInt("id"));
+                    dto.setUserId(rs.getInt("user_id"));
+                    dto.setMovieId(rs.getInt("movie_id"));
+                    dto.setRating(rs.getInt("rating"));
+                    dto.setComment(rs.getString("comment"));
+                    dto.setCreatedAt(rs.getTimestamp("created_at"));
+                    dto.setFull_name(rs.getString("full_name"));
+                    dto.setRole_id(rs.getInt("role_id"));
+                    listMr.add(dto);
+                }
+            }
+
+        } catch (SQLException e) {
             throw new RuntimeException("Lỗi khi lấy danh sách movie review từ database role -> users", e);
-    	}
-    	return list_mr;
+        }
+
+        return listMr;
     }
 
-    public float countRatingAverage(int id) {
+    public float countRatingAverage(int movieId) {
         String sql =
             "SELECT COALESCE(ROUND(AVG(rating), 1), 0) AS avg_rating " +
             "FROM movie_review " +
@@ -129,7 +157,7 @@ public class MovieReviewRepository {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, id);
+            ps.setInt(1, movieId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getFloat("avg_rating") : 0f;
@@ -141,14 +169,14 @@ public class MovieReviewRepository {
             );
         }
     }
-    
-    // Check user đã review movie này chưa.
+
     public boolean existsByUserAndMovie(int userId, int movieId) {
         String sql =
-            "SELECT EXISTS( " +
+            "SELECT EXISTS ( " +
             "  SELECT 1 " +
             "  FROM movie_review " +
-            "  WHERE user_id = ? AND movie_id = ? " +
+            "  WHERE user_id = ? " +
+            "    AND movie_id = ? " +
             "  LIMIT 1 " +
             ") AS existed";
 
@@ -159,7 +187,7 @@ public class MovieReviewRepository {
             ps.setInt(2, movieId);
 
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && rs.getInt("existed") == 1;
+                return rs.next() && rs.getBoolean("existed");
             }
 
         } catch (SQLException e) {
@@ -167,73 +195,55 @@ public class MovieReviewRepository {
         }
     }
 
-    // Check đủ điều kiện review: PAID + SUCCESS payment + có ghế + showtime kết thúc + đúng movie.
     public boolean canReview(int userId, int movieId) {
         String sql =
-            "SELECT EXISTS ( " +
-            "  SELECT 1 " +
-            "  FROM booking b " +
-            "  WHERE b.user_id = ? " +
-            "    AND b.payment_status = 'PAID' " +
-            "    AND EXISTS (SELECT 1 FROM booking_seat bs WHERE bs.booking_id = b.id) " +
-            "    AND EXISTS (SELECT 1 FROM payment p WHERE p.booking_id = b.id AND p.status = 'SUCCESS') " +
-            "    AND EXISTS ( " +
-            "      SELECT 1 " +
-            "      FROM showtime st " +
-            "      WHERE st.id = b.showtime_id " +
-            "        AND st.movie_id = ? " +
-            "        AND st.end_time <= NOW() " +
-            "    ) " +
-            "  LIMIT 1 " +
-            ") AS eligible";
+            "SELECT CASE " +
+            "  WHEN EXISTS ( " + ELIGIBLE_REVIEW_SUBQUERY + " ) " +
+            "   AND NOT EXISTS ( " +
+            "     SELECT 1 " +
+            "     FROM movie_review mr " +
+            "     WHERE mr.user_id = ? " +
+            "       AND mr.movie_id = ? " +
+            "     LIMIT 1 " +
+            "   ) " +
+            "  THEN 1 ELSE 0 " +
+            "END AS eligible";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, userId);
-            ps.setInt(2, movieId);
+            int i = 1;
+            ps.setInt(i++, userId);
+            ps.setInt(i++, movieId);
+            ps.setInt(i++, userId);
+            ps.setInt(i++, movieId);
 
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && rs.getInt("eligible") == 1;
+                return rs.next() && rs.getBoolean("eligible");
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi kiểm tra điều kiện được review (mua + đã xem)", e);
+            throw new RuntimeException("Lỗi khi kiểm tra điều kiện được review", e);
         }
     }
 
-    // Insert review atomic (chống race): chỉ insert nếu đủ điều kiện và chưa review; trả reviewId hoặc null.
     public Integer createReviewAtomic(int userId, int movieId, int rating, String comment) {
-    	String sql =
-    		    "INSERT INTO movie_review (user_id, movie_id, rating, comment) " +
-    		    "SELECT ?, ?, ?, ? " +
-    		    "WHERE ? BETWEEN 1 AND 5 " +
-    		    "  AND NOT EXISTS ( " +
-    		    "    SELECT 1 " +
-    		    "    FROM movie_review mr " +
-    		    "    WHERE mr.user_id = ? " +
-    		    "      AND mr.movie_id = ? " +
-    		    "    LIMIT 1 " +
-    		    "  ) " +
-    		    "  AND EXISTS ( " +
-    		    "    SELECT 1 " +
-    		    "    FROM booking b " +
-    		    "    WHERE b.user_id = ? " +
-    		    "      AND b.payment_status = 'PAID' " +
-    		    "      AND EXISTS (SELECT 1 FROM booking_seat bs WHERE bs.booking_id = b.id) " +
-    		    "      AND EXISTS (SELECT 1 FROM payment p WHERE p.booking_id = b.id AND p.status = 'SUCCESS') " +
-    		    "      AND EXISTS ( " +
-    		    "        SELECT 1 " +
-    		    "        FROM showtime st " +
-    		    "        WHERE st.id = b.showtime_id " +
-    		    "          AND st.movie_id = ? " +
-    		    "          AND st.end_time <= NOW() " +
-    		    "      ) " +
-    		    "    LIMIT 1 " +
-    		    "  )";
+        String sql =
+            "INSERT INTO movie_review (user_id, movie_id, rating, comment) " +
+            "SELECT ?, ?, ?, ? " +
+            "FROM DUAL " +
+            "WHERE ? BETWEEN 1 AND 5 " +
+            "  AND NOT EXISTS ( " +
+            "    SELECT 1 " +
+            "    FROM movie_review mr " +
+            "    WHERE mr.user_id = ? " +
+            "      AND mr.movie_id = ? " +
+            "    LIMIT 1 " +
+            "  ) " +
+            "  AND EXISTS ( " + ELIGIBLE_REVIEW_SUBQUERY + " )";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             int i = 1;
             ps.setInt(i++, userId);
@@ -250,20 +260,25 @@ public class MovieReviewRepository {
             ps.setInt(i++, movieId);
 
             int rows = ps.executeUpdate();
-            if (rows != 1) return null;
+            if (rows != 1) {
+                return null;
+            }
 
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) return keys.getInt(1);
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
 
             return null;
 
+        } catch (SQLIntegrityConstraintViolationException e) {
+            return null;
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi khi tạo review (atomic insert)", e);
         }
     }
 
-    // Lấy DTO admin theo reviewId (join user + movie) để trả về sau khi insert.
     public MovieReviewDtos findAdminDtoByReviewId(int reviewId) {
         String sql =
             "SELECT " +
@@ -282,7 +297,9 @@ public class MovieReviewRepository {
             ps.setInt(1, reviewId);
 
             try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return null;
+                if (!rs.next()) {
+                    return null;
+                }
 
                 MovieReviewDtos dto = new MovieReviewDtos();
                 dto.setEmail(rs.getString("email"));
@@ -303,18 +320,18 @@ public class MovieReviewRepository {
         }
     }
 
- // Lấy comment theo movieId có phân trang (chỉ lấy comment đang HIỆN)
     public List<MovieReviewClientDtos> getAllCommnetByMovieId(int movieId, int limit, int offset) {
         if (limit < 1) limit = 20;
         if (offset < 0) offset = 0;
 
         String sql =
-        	    "SELECT mr.id, mr.user_id, mr.movie_id, u.full_name, mr.rating, mr.comment, mr.created_at " +
-        	    "FROM movie_review mr " +
-        	    "JOIN `user` u ON mr.user_id = u.id " +
-        	    "WHERE mr.movie_id = ? AND mr.is_hidden = 0 " +
-        	    "ORDER BY mr.rating DESC, mr.created_at DESC, mr.id DESC " +
-        	    "LIMIT ? OFFSET ?";
+            "SELECT mr.id, mr.user_id, mr.movie_id, u.full_name, mr.rating, mr.comment, mr.created_at " +
+            "FROM movie_review mr " +
+            "JOIN `user` u ON mr.user_id = u.id " +
+            "WHERE mr.movie_id = ? " +
+            "  AND mr.is_hidden = 0 " +
+            "ORDER BY mr.created_at DESC, mr.id DESC " +
+            "LIMIT ? OFFSET ?";
 
         List<MovieReviewClientDtos> out = new ArrayList<>();
 
@@ -345,11 +362,13 @@ public class MovieReviewRepository {
             throw new RuntimeException("Failed to fetch reviews by movieId with pagination.", e);
         }
     }
+
     public long countAllCommentByMovieId(int movieId) {
         String sql =
             "SELECT COUNT(*) AS total " +
             "FROM movie_review " +
-            "WHERE movie_id = ? AND is_hidden = 0";
+            "WHERE movie_id = ? " +
+            "  AND is_hidden = 0";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

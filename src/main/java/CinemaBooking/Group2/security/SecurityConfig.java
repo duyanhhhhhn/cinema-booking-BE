@@ -61,6 +61,7 @@ public class SecurityConfig {
 								"/api/payment/**",
 								"/media/**",
 								"/api/public/**",
+								"/api/vouchers/check",
 								"/swagger-ui/index.html#/")
 						.permitAll()
 

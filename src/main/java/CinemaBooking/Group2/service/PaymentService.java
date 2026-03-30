@@ -7,14 +7,19 @@ import CinemaBooking.Group2.repositories.MovieRepository;
 import CinemaBooking.Group2.repositories.RoomRepository;
 import CinemaBooking.Group2.repositories.CinemaRepository;
 import CinemaBooking.Group2.repositories.UserRepository;
+import CinemaBooking.Group2.repositories.concessions.ComboRepository;
 import CinemaBooking.Group2.dtos.booking.BookingEmailData;
 import CinemaBooking.Group2.models.BookingSeat;
+import CinemaBooking.Group2.models.BookingConcession;
 import CinemaBooking.Group2.models.Showtime;
 import CinemaBooking.Group2.models.Movie;
 import CinemaBooking.Group2.models.Room;
 import CinemaBooking.Group2.models.Cinema;
 import CinemaBooking.Group2.models.User;
+import CinemaBooking.Group2.models.Combo;
 import CinemaBooking.Group2.repositories.SeatHoldRepository;
+import CinemaBooking.Group2.repositories.marketing.VoucherRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,7 +99,10 @@ public class PaymentService {
     private UserRepository userRepository;
 
     @Autowired
-    private CinemaBooking.Group2.repositories.concessions.ComboRepository comboRepository;
+    private ComboRepository comboRepository;
+
+    @Autowired
+    private VoucherRepository voucherRepository;
 
     @Autowired
     private SeatHoldRepository seatHoldRepository;
@@ -346,6 +354,18 @@ public class PaymentService {
             return "INVALID_ORDERID";
         }
 
+        // Fetch booking to check status (Idempotency) and voucher
+        Booking booking = bookingRepository.findById(bookingId);
+        if (booking == null) {
+            logger.warn("MOMO IPN booking not found for id {}", bookingId);
+            return "BOOKING_NOT_FOUND";
+        }
+
+        if (booking.getPaymentStatus() == Booking.PaymentStatus.PAID) {
+            logger.info("Booking {} is already PAID. Ignoring MOMO IPN.", bookingId);
+            return "OK";
+        }
+
         // 3) Update booking status: resultCode "0" = success in MoMo
         if ("0".equals(resultCode)) {
             LocalDateTime now = LocalDateTime.now();
@@ -355,6 +375,16 @@ public class PaymentService {
                     now,
                     Booking.PaymentMethod.MOMO.name()
             );
+
+            // Increment voucher usage if applicable
+            if (booking.getVoucherId() > 0) {
+                try {
+                    voucherRepository.incrementUsageCount(booking.getVoucherId());
+                } catch (Exception e) {
+                    logger.error("Failed to increment voucher usage for booking {}", bookingId, e);
+                }
+            }
+
             logger.info("MOMO Payment SUCCESS for booking {} (orderId={})", bookingId, orderId);
 
             // ✅ Send detailed booking confirmation email after successful payment
@@ -509,6 +539,13 @@ public class PaymentService {
         int bookingId = parseBookingIdFromTxnRef(txnRef);
 
         if ("00".equals(responseCode)) {
+            // Fetch booking to check status (Idempotency) and voucher
+            Booking booking = bookingRepository.findById(bookingId);
+             if (booking != null && booking.getPaymentStatus() == Booking.PaymentStatus.PAID) {
+                logger.info("Booking {} is already PAID. Ignoring VNPAY IPN.", bookingId);
+                return "OK";
+            }
+
             LocalDateTime now = LocalDateTime.now();
             bookingRepository.updateBookingPaymentStatus(
                     bookingId,
@@ -516,6 +553,16 @@ public class PaymentService {
                     now,
                     Booking.PaymentMethod.VNPAY.name()
             );
+
+            // Increment voucher usage if applicable
+            if (booking != null && booking.getVoucherId() > 0) {
+                try {
+                    voucherRepository.incrementUsageCount(booking.getVoucherId());
+                } catch (Exception e) {
+                    logger.error("Failed to increment voucher usage for booking {}", bookingId, e);
+                }
+            }
+            
             logger.info("VNPAY Payment SUCCESS for booking {}", bookingId);
 
             // ✅ Send detailed booking confirmation email after successful payment
