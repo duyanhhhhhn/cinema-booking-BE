@@ -2,25 +2,23 @@ package CinemaBooking.Group2.dtos.concession;
 
 import java.util.List;
 
-import CinemaBooking.Group2.models.Combo;
-
 public class ComboListResponseDTO {
-	private List<Combo> combo;
+	private List<ComboResponseDTO> combo;
 	private String message;
 	private boolean isSuccess;
 	public ComboListResponseDTO() {
 		
 	}
-	public ComboListResponseDTO(List<Combo> combo, String message, boolean isSuccess) {
+	public ComboListResponseDTO(List<ComboResponseDTO> combo, String message, boolean isSuccess) {
 		super();
 		this.combo = combo;
 		this.message = message;
 		this.isSuccess = isSuccess;
 	}
-	public List<Combo> getCombo() {
+	public List<ComboResponseDTO> getCombo() {
 		return combo;
 	}
-	public void setCombo(List<Combo> combo) {
+	public void setCombo(List<ComboResponseDTO> combo) {
 		this.combo = combo;
 	}
 	public String getMessage() {

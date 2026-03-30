@@ -1,6 +1,5 @@
 package CinemaBooking.Group2.controllers.client;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,107 +21,68 @@ import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.service.concessions.ComboService;
 import CinemaBooking.Group2.service.concessions.ProductService;
+
 @RestController
 @RequestMapping("/api")
 public class ComboController {
 
-	@Autowired
-	private ComboService service;
-	@Autowired
-	private ProductService pro;
-	@GetMapping("/public/combo")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<List<CnPResponseDTO>>> getCombo(
-			@RequestParam(value = "page", required = false) Integer page,
-		    @RequestParam(value = "size", required = false) Integer size,
-		    @RequestParam(value = "filterType", required = false) String filterType) {
-		ApiResponse<List<CnPResponseDTO>> response;
-		if(page == null || size == null) {
-			page = 1;
-			size = 10;
-		}
-		// String message = "Error";
-		try {
-			int totalItem = service.countActiveItems();
-			Map<String, Object> meta = new HashMap<>();
-			List<CnPResponseDTO> item = new ArrayList<>();
-			item = service.getCombo(page, size, filterType);
-			if (item == null) {
-				response = new ApiResponse<List<CnPResponseDTO>>("Not found", null);
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-			} else {
-				meta.put("perPage", size);
-				meta.put("page",page);
-				meta.put("total", totalItem);
-				response = new ApiResponse<List<CnPResponseDTO>>("Success",item,meta);
-				return ResponseEntity.ok(response);
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
+    @Autowired
+    private ComboService comboService;
 
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-	}
+    @Autowired
+    private ProductService productService;
 
-	@GetMapping("/public/combo/{id}")
-	@CrossOrigin
-	public ResponseEntity<ComboResponseDTO> comboInfo(@Validated @PathVariable("id") int id) {
-		ComboResponseDTO item = null;
-		try {
-			item = service.comboInfo(id);
-			if (item == null) {
-				item = new ComboResponseDTO("We don't have any combo with this id", false);
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(item);
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
+    @GetMapping({"/concessions", "/public/combo"})
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<List<CnPResponseDTO>>> getConcessions(
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(required = false) Integer perPage,
+        @RequestParam(required = false) Integer size,
+        @RequestParam(required = false) String filterType
+    ) {
+        int effectivePerPage = perPage != null ? perPage : (size != null ? size : 10);
+        page = Math.max(page, 1);
+        effectivePerPage = Math.max(effectivePerPage, 1);
 
-		return ResponseEntity.ok(item);
-	}
+        List<CnPResponseDTO> items = comboService.getCombo(page, effectivePerPage, filterType);
+        int totalItem = comboService.countActiveItems(filterType);
 
-	@GetMapping("/products")
-	@CrossOrigin
-	public ResponseEntity<List<ProductResponseDTO>> getProduct() {
-		List<ProductResponseDTO> item = null;
-		try {
-			item = pro.getProducts();
-			if (item == null) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(item);
-			}
-			return ResponseEntity.ok(item);
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(item);
-	}
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("page", page);
+        meta.put("perPage", effectivePerPage);
+        meta.put("total", totalItem);
 
-	public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getProduct(@RequestParam("page") int page,
-			@RequestParam("size") int size) {
-		ApiResponse<List<ProductResponseDTO>> res;
-		try {
-			List<ProductResponseDTO> item = null;
-			float totalItem = pro.getProducts().size();
-			item = pro.getProducts(page, size);
-			Map<String, Object> meta = new HashMap<>();
-			meta.put("perPage", size);
-			meta.put("page",page);
-			meta.put("total", totalItem);
-			res = new ApiResponse<List<ProductResponseDTO>>("success", item);
-			return ResponseEntity.ok(res);
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-	}
+        return ResponseEntity.ok(new ApiResponse<>("Success", items, meta));
+    }
 
-	@GetMapping("/products/{id}")
-	@CrossOrigin
-	public ResponseEntity<ProductResponseDTO> productInfo(@PathVariable("id") int id) {
-		ProductResponseDTO item = pro.productInfo(id);
-		return ResponseEntity.ok(item);
-	}
+    @GetMapping("/public/combo/{id}")
+    @CrossOrigin
+    public ResponseEntity<ComboResponseDTO> comboInfo(@Validated @PathVariable("id") int id) {
+        ComboResponseDTO item = comboService.comboInfo(id);
+        if (item == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ComboResponseDTO("We don't have any combo with this id", false));
+        }
+
+        return ResponseEntity.ok(item);
+    }
+
+    @GetMapping("/products")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getProduct() {
+        List<ProductResponseDTO> items = productService.getProducts();
+        String message = items.isEmpty() ? "No products found" : "Success";
+        return ResponseEntity.ok(new ApiResponse<>(message, items));
+    }
+
+    @GetMapping("/products/{id}")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> productInfo(@PathVariable("id") int id) {
+        ProductResponseDTO item = productService.productInfo(id);
+        if (item == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse<>("Product not found", null));
+        }
+        return ResponseEntity.ok(new ApiResponse<>("Success", item));
+    }
 }

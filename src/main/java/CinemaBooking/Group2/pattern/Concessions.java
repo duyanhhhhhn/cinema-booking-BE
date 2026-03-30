@@ -169,6 +169,14 @@ public class Concessions {
 		}
 		return 0;
 	}
+	public int updateComboPartial(Combo combo) {
+		try {
+			return comboRep.updateComboPartial(combo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
 	public int deleteProduct(int id) {
 		try {
 			int rs = proRep.delete(id);

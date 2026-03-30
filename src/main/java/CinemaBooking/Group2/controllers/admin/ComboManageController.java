@@ -1,236 +1,316 @@
 package CinemaBooking.Group2.controllers.admin;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.beans.PropertyEditorSupport;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import CinemaBooking.Group2.dtos.ApiResponse;
-import CinemaBooking.Group2.dtos.concession.ComboCRUDResponseDTO;
+import CinemaBooking.Group2.dtos.concession.CnPResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboListResponseDTO;
 import CinemaBooking.Group2.dtos.concession.ComboRequestDTO;
 import CinemaBooking.Group2.dtos.concession.ComboResponseDTO;
+import CinemaBooking.Group2.dtos.concession.ProductRequestDTO;
+import CinemaBooking.Group2.dtos.concession.ProductResponseDTO;
 import CinemaBooking.Group2.models.Combo;
-import CinemaBooking.Group2.models.ComboItem;
 import CinemaBooking.Group2.models.Product;
 import CinemaBooking.Group2.service.concessions.ComboService;
 import CinemaBooking.Group2.service.concessions.ProductService;
-import CinemaBooking.Group2.ultis.FileUltility;
 
 @RestController
 @ResponseBody
 public class ComboManageController {
-	@Autowired
-	ComboService service;
-	@Autowired
-	ProductService pro_service;
 
-	@GetMapping("/public/combo")
-	@CrossOrigin
-	public ResponseEntity<ComboListResponseDTO> getCombo() {
-		ComboListResponseDTO list = new ComboListResponseDTO();
-		// String message = "Error";
-		try {
-			List<ComboResponseDTO> item = new ArrayList<>();
-			item = service.getCombo();
-			if (item == null) {
-				list.setMessage("Not found any Combo");
-				list.setSuccess(false);
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(list);
-			} else {
-				list.setMessage("Success");
-				list.setSuccess(true);
-				return ResponseEntity.ok(list);
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
+    @Autowired
+    private ComboService comboService;
 
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(list);
-	}
+    @Autowired
+    private ProductService productService;
 
-	@PutMapping("/api/public/combo/{id}")
-	@CrossOrigin
-	public ResponseEntity<String> edit(@RequestBody ComboRequestDTO entity, @PathVariable("id") int id,
-			@RequestParam(name = "bannerFile", required = false) MultipartFile bannerFile) {
-		String m = "Error";
-		try {
-			Combo combo = new Combo();
-			combo.setId(id);
-			combo.setName(entity.getName());
-			combo.setPrice(entity.getPrice());
-			combo.setIsActive(1);
-			System.out.print(combo);
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(MultipartFile.class, new PropertyEditorSupport() {
+            @Override
+            public void setAsText(String text) {
+                setValue(null);
+            }
+        });
+    }
 
-			if (bannerFile != null && !bannerFile.isEmpty()) {
-				combo.setImageUrl(
-						FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo", "concessions/combo"));
-			}
+    @GetMapping("/public/combo")
+    @CrossOrigin
+    public ResponseEntity<ComboListResponseDTO> getCombo() {
+        ComboListResponseDTO list = new ComboListResponseDTO();
+        List<ComboResponseDTO> items = comboService.getCombo();
 
-			ObjectMapper mapper = new ObjectMapper();
-			List<ComboItem> comboItems = mapper.readValue(
-					entity.getItem(),
-					new TypeReference<List<ComboItem>>() {
-					});
-			m = service.EditCombo(combo, comboItems);
-			return ResponseEntity.status(HttpStatus.CREATED).body(m);
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e);
-		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(m);
-	}
+        list.setCombo(items);
+        list.setMessage(items.isEmpty() ? "Not found any Combo" : "Success");
+        list.setSuccess(!items.isEmpty());
 
-	@CrossOrigin
-	@PostMapping("/api/public/combo/add")
-	public ResponseEntity<ComboCRUDResponseDTO> add(@RequestBody ComboRequestDTO combo,
-			@RequestParam(name = "bannerFile", required = false) MultipartFile bannerFile) {
-		ComboCRUDResponseDTO res = new ComboCRUDResponseDTO();
-		try {
-			Combo item = new Combo();
-			item.setName(combo.getName());
-			item.setDescription("");
-			item.setPrice(combo.getPrice());
+        return items.isEmpty()
+            ? ResponseEntity.status(HttpStatus.NOT_FOUND).body(list)
+            : ResponseEntity.ok(list);
+    }
 
-			if (bannerFile != null && !bannerFile.isEmpty()) {
-				String imageName = FileUltility.uploadFileImage(bannerFile, "uploads/concessions/combo",
-						"concessions/combo");
-				item.setImageUrl(imageName);
-			}
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @GetMapping("/api/combos")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<List<CnPResponseDTO>>> getAdminCombos(
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(required = false) Integer perPage,
+        @RequestParam(required = false) Integer size,
+        @RequestParam(required = false) String filterType
+    ) {
+        int effectivePerPage = perPage != null ? perPage : (size != null ? size : 10);
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.max(effectivePerPage, 1);
 
-			item.setCreatedAt(LocalDateTime.now());
-			item.setIsActive(1);
-			res = service.AddCombo(item);
+        List<CnPResponseDTO> allItems = comboService.getAllConcessionsIncludingInactive(filterType);
+        int fromIndex = Math.min((safePage - 1) * safeSize, allItems.size());
+        int toIndex = Math.min(fromIndex + safeSize, allItems.size());
+        List<CnPResponseDTO> pageItems = new ArrayList<>(allItems.subList(fromIndex, toIndex));
 
-			ObjectMapper mapper = new ObjectMapper();
-			List<ComboItem> comboItems = mapper.readValue(
-					combo.getItem(),
-					new TypeReference<List<ComboItem>>() {
-					});
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("page", safePage);
+        meta.put("perPage", safeSize);
+        meta.put("total", allItems.size());
 
-			if (combo.getItem() != null) {
-				for (ComboItem items : comboItems) {
-					items.setComboId(res.getCombo().getId());
-					service.AddComboItem(items);
-				}
-			}
-			return ResponseEntity.status(HttpStatus.CREATED).body(res);
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
-	}
+        return ResponseEntity.ok(new ApiResponse<>("Success", pageItems, meta));
+    }
 
-	@PostMapping("/api/product/add")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("name") String name,
-			@RequestParam("description") String description, @RequestParam("price") BigDecimal price,
-			@RequestParam(name = "bannerFile", required = false) MultipartFile image, @RequestParam("stock") int stock) {
-		// TODO: process POST request
-		try {
-			Product item = new Product();
-			item.setName(name);
-			item.setDescription(description);
-			item.setPrice(price);
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @GetMapping("/api/combos/{id}")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> getAdminComboById(@PathVariable("id") int id) {
+        ComboResponseDTO item = comboService.comboInfoIncludingInactive(id);
+        if (item == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse<>("Combo not found", null));
+        }
 
-			if (image != null && !image.isEmpty()) {
-				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product",
-						"concessions/product");
-				item.setImageUrl(imageName);
-			}
+        return ResponseEntity.ok(new ApiResponse<>("Success", item));
+    }
 
-			item.setStock(stock);
-			item.setCreatedAt(LocalDateTime.now());
-			item.setIsActive(1);
-			String a = pro_service.createProduct(item);
-			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
-		} catch (Exception e) {
-			System.out.print(e.getMessage());
-		}
-		return ResponseEntity.ok(null);
-	}
+    @PutMapping(
+        value = "/api/public/combo/{id}",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> edit(
+        @PathVariable("id") int id,
+        @ModelAttribute ComboRequestDTO dto
+    ) {
+        return updateCombo(id, dto);
+    }
 
-	@PutMapping("/api/public/product/{id}")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<Product>> editProduct(@PathVariable("id") int id,
-			@RequestParam("name") String name, @RequestParam("description") String description,
-			@RequestParam("price") BigDecimal price,
-			@RequestParam(name = "bannerFile", required = false) MultipartFile image, @RequestParam("stock") int stock) {
-		try {
-			Product item = new Product();
-			item.setName(name);
-			item.setDescription(description);
-			item.setPrice(price);
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping(
+        value = "/api/combos/{id}",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> editAdmin(
+        @PathVariable("id") int id,
+        @ModelAttribute ComboRequestDTO dto
+    ) {
+        return updateCombo(id, dto);
+    }
 
-			if (image != null && !image.isEmpty()) {
-				String imageName = FileUltility.uploadFileImage(image, "uploads/concessions/product",
-						"concessions/product");
-				item.setImageUrl(imageName);
-			}
+    private ResponseEntity<ApiResponse<ComboResponseDTO>> updateCombo(int id, ComboRequestDTO dto) {
+        ComboResponseDTO updated = comboService.updateCombo(id, dto);
+        return ResponseEntity.ok(new ApiResponse<>("Combo updated", updated));
+    }
 
-			item.setStock(stock);
-			item.setCreatedAt(LocalDateTime.now());
-			item.setIsActive(1);
-			item.setId(id);
-			String a = pro_service.editProduct(item);
-			return ResponseEntity.ok(new ApiResponse<Product>(a, item));
-		} catch (Exception e) {
-			System.out.print(e.getMessage());
-		}
-		return ResponseEntity.ok(null);
-	}
+    @PatchMapping("/api/public/combo/{id}/toggle-active")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> toggleComboActive(@PathVariable("id") int id) {
+        ComboResponseDTO updated = comboService.toggleComboActive(id);
+        return ResponseEntity.ok(new ApiResponse<>("Combo status updated", updated));
+    }
 
-	@DeleteMapping("/api/public/combo/{id}")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<Combo>> deleteCombo(@PathVariable("id") int id) {
-		try {
-			int rs = service.DeleteCombo(id);
-			if (rs == 1) {
-				return ResponseEntity.ok(new ApiResponse<Combo>("Success", null));
-			} else {
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(new ApiResponse<Combo>("Success", null));
-			}
-		} catch (Exception e) {
-			System.out.print(e.getMessage());
-		}
-		return null;
-	}
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PatchMapping("/api/combos/{id}/toggle-active")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> toggleComboActiveAdmin(@PathVariable("id") int id) {
+        ComboResponseDTO updated = comboService.toggleComboActive(id);
+        return ResponseEntity.ok(new ApiResponse<>("Combo status updated", updated));
+    }
 
-	@DeleteMapping("/api/public/product/{id}")
-	@CrossOrigin
-	public ResponseEntity<ApiResponse<Product>> deleteProduct(@PathVariable("id") int id) {
-		try {
-			int rs = service.DeleteProduct(id);
-			if (rs == 1) {
-				return ResponseEntity.ok(new ApiResponse<Product>("Success", null));
-			} else {
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(new ApiResponse<Product>("Success", null));
-			}
-		} catch (Exception e) {
-			System.out.print(e.getMessage());
-		}
-		return null;
-	}
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/api/combos/{id}/activate")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> activateComboAdmin(@PathVariable("id") int id) {
+        ComboResponseDTO updated = comboService.activateCombo(id);
+        return ResponseEntity.ok(new ApiResponse<>("Combo activated", updated));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/api/combos/{id}/deactivate")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> deactivateComboAdmin(@PathVariable("id") int id) {
+        ComboResponseDTO updated = comboService.deactivateCombo(id);
+        return ResponseEntity.ok(new ApiResponse<>("Combo deactivated", updated));
+    }
+
+    @PostMapping(
+        value = "/api/public/combo/add",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> add(@ModelAttribute ComboRequestDTO dto) {
+        return createCombo(dto);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PostMapping(
+        value = "/api/combos",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ComboResponseDTO>> addAdmin(@ModelAttribute ComboRequestDTO dto) {
+        return createCombo(dto);
+    }
+
+    private ResponseEntity<ApiResponse<ComboResponseDTO>> createCombo(ComboRequestDTO dto) {
+        ComboResponseDTO created = comboService.createCombo(dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new ApiResponse<>("Combo created", created));
+    }
+
+    @PostMapping(
+        value = {"/api/product/add", "/api/public/product/add"},
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> addProduct(@ModelAttribute ProductRequestDTO dto) {
+        return createProduct(dto);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PostMapping(
+        value = "/api/products",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> addProductAdmin(@ModelAttribute ProductRequestDTO dto) {
+        return createProduct(dto);
+    }
+
+    private ResponseEntity<ApiResponse<ProductResponseDTO>> createProduct(ProductRequestDTO dto) {
+        ProductResponseDTO created = productService.createProduct(dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new ApiResponse<>("Product created", created));
+    }
+
+    @PutMapping(
+        value = "/api/public/product/{id}",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> editProduct(
+        @PathVariable("id") int id,
+        @ModelAttribute ProductRequestDTO dto
+    ) {
+        return updateProduct(id, dto);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping(
+        value = "/api/products/{id}",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> editProductAdmin(
+        @PathVariable("id") int id,
+        @ModelAttribute ProductRequestDTO dto
+    ) {
+        return updateProduct(id, dto);
+    }
+
+    private ResponseEntity<ApiResponse<ProductResponseDTO>> updateProduct(int id, ProductRequestDTO dto) {
+        ProductResponseDTO updated = productService.updateProduct(id, dto);
+        return ResponseEntity.ok(new ApiResponse<>("Product updated", updated));
+    }
+
+    @PatchMapping({
+        "/api/public/product/{id}/toggle-active",
+        "/api/product/{id}/toggle-active"
+    })
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> toggleProductActive(@PathVariable("id") int id) {
+        ProductResponseDTO updated = productService.toggleProductActive(id);
+        return ResponseEntity.ok(new ApiResponse<>("Product status updated", updated));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PatchMapping({
+        "/api/products/{id}/toggle-active",
+        "/api/product/{id}/admin/toggle-active"
+    })
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> toggleProductActiveAdmin(@PathVariable("id") int id) {
+        ProductResponseDTO updated = productService.toggleProductActive(id);
+        return ResponseEntity.ok(new ApiResponse<>("Product status updated", updated));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/api/products/{id}/activate")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> activateProductAdmin(@PathVariable("id") int id) {
+        ProductResponseDTO updated = productService.activateProduct(id);
+        return ResponseEntity.ok(new ApiResponse<>("Product activated", updated));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/api/products/{id}/deactivate")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> deactivateProductAdmin(@PathVariable("id") int id) {
+        ProductResponseDTO updated = productService.deactivateProduct(id);
+        return ResponseEntity.ok(new ApiResponse<>("Product deactivated", updated));
+    }
+
+    @DeleteMapping("/api/public/combo/{id}")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<Combo>> deleteCombo(@PathVariable("id") int id) {
+        int rs = comboService.DeleteCombo(id);
+        if (rs == 1) {
+            return ResponseEntity.ok(new ApiResponse<>("Success", null));
+        }
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ApiResponse<>("Error", null));
+    }
+
+    @DeleteMapping("/api/public/product/{id}")
+    @CrossOrigin
+    public ResponseEntity<ApiResponse<Product>> deleteProduct(@PathVariable("id") int id) {
+        int rs = comboService.DeleteProduct(id);
+        if (rs == 1) {
+            return ResponseEntity.ok(new ApiResponse<>("Success", null));
+        }
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ApiResponse<>("Error", null));
+    }
 }
