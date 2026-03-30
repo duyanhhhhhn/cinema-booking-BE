@@ -85,6 +85,7 @@ public class SecurityConfig {
 
 						// ==== PUBLIC showtimes =====
 						.requestMatchers("/api/showtimes/public/**").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/concessions").permitAll()
 
 						// ===== AUTHENTICATED =====
 						.requestMatchers(

@@ -11,7 +11,7 @@ public class Combo {
     private String name;
     private String description;  // text, có thể null
     private BigDecimal price;
-    private String imageUrl="no_img.jpg";
+    private String imageUrl;
     private int isActive = 0;
     private LocalDateTime createdAt;
     private List<ComboItem> comboItems = new ArrayList<>();
