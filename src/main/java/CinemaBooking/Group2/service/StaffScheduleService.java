@@ -20,6 +20,7 @@ import CinemaBooking.Group2.mappers.WorkShiftMapper;
 import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.WorkShift;
+import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 import CinemaBooking.Group2.pattern.StaffSchedulePattern;
 
 @Service
@@ -79,6 +80,9 @@ public class StaffScheduleService {
 			            ShiftResponseDTO empty = new ShiftResponseDTO();
 			            empty.setWorkDate(d);
 			            empty.setId(0);
+			            if(item.getStatus()!=null) {
+			            	empty.setStatus(item.getStatus());
+			            }
 			            week.add(empty);
 			        }
 			        dto.setShift(week);
@@ -93,6 +97,7 @@ public class StaffScheduleService {
 						    day.setName(shift.getName());
 						    day.setStartTime(shift.getStartTime());
 						    day.setEndTime(shift.getEndTime());
+						    day.setStatus(item.getStatus());
 						    break;
 					   }
 				   }
@@ -131,6 +136,7 @@ public class StaffScheduleService {
 			            ShiftResponseDTO empty = new ShiftResponseDTO();
 			            empty.setWorkDate(d);
 			            empty.setId(0);
+			            empty.setStatus(StaffScheduleStatus.CANCELLED);
 			            weeks.add(empty);
 			        }
 			        dto.setShift(weeks);
@@ -145,6 +151,7 @@ public class StaffScheduleService {
 						    day.setName(shift.getName());
 						    day.setStartTime(shift.getStartTime());
 						    day.setEndTime(shift.getEndTime());
+						    day.setStatus(schedule.getStatus());
 						    break;
 					   }
 				   }

@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.repositories.marketing;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,6 +71,7 @@ public class PostRepository implements Icrud<Post>{
 	}
 	public int newPost(Post post) {
 		try {
+			post.setPublishedAt(LocalDateTime.now());
 			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"
 					,new Object[] {post.getTitle(),post.getSlug(),post.getExcerpt(),post.getContent(),
 							post.getCoverUrl(),post.getPublished()});
