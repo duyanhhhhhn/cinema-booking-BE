@@ -206,9 +206,9 @@ public class UserController {
             @PathVariable int id,
             @RequestPart("data") UpdateUserRequestDTO req,
             @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
-
         userService.updateManageUser(id, req, avatar);
-        return ResponseEntity.ok(new ApiResponse<>("Cập nhật user thành công", null));
+        return
+        		ResponseEntity.ok(new ApiResponse<>("Cập nhật user thành công", null));
     }
 
     // ================= LOCK MANAGER/STAFF =================

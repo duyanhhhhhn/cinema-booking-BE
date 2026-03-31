@@ -1,93 +1,80 @@
 package CinemaBooking.Group2.dtos.admin;
 
 public class UpdateUserRequestDTO {
-	private String fullName;
+
+    private String fullName;
     private String phone;
     private String avatarUrl;
-
-    /**
-     * 1 = ACTIVE
-     * 0 = LOCKED
-     */
     private Integer isActive;
 
-	/**
-	 * @return the fullName
-	 */
-	public String getFullName() {
-		return fullName;
-	}
+    // ✅ ADD
+    private Integer roleId;
+    private Integer cinemaId;
+    private String position;
+    private String password;
 
-	/**
-	 * @param fullName the fullName to set
-	 */
-	public void setFullName(String fullName) {
-		this.fullName = fullName;
-	}
+    public String getFullName() {
+        return fullName;
+    }
 
-	/**
-	 * @return the phone
-	 */
-	public String getPhone() {
-		return phone;
-	}
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
 
-	/**
-	 * @param phone the phone to set
-	 */
-	public void setPhone(String phone) {
-		this.phone = phone;
-	}
+    public String getPhone() {
+        return phone;
+    }
 
-	/**
-	 * @return the avatarUrl
-	 */
-	public String getAvatarUrl() {
-		return avatarUrl;
-	}
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
 
-	/**
-	 * @param avatarUrl the avatarUrl to set
-	 */
-	public void setAvatarUrl(String avatarUrl) {
-		this.avatarUrl = avatarUrl;
-	}
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
 
-	/**
-	 * @return the isActive
-	 */
-	public Integer getIsActive() {
-		return isActive;
-	}
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
 
-	/**
-	 * @param isActive the isActive to set
-	 */
-	public void setIsActive(Integer isActive) {
-		this.isActive = isActive;
-	}
+    public Integer getIsActive() {
+        return isActive;
+    }
 
-	/**
-	 * @param fullName
-	 * @param phone
-	 * @param avatarUrl
-	 * @param isActive
-	 */
-	public UpdateUserRequestDTO(String fullName, String phone, String avatarUrl, Integer isActive) {
-		super();
-		this.fullName = fullName;
-		this.phone = phone;
-		this.avatarUrl = avatarUrl;
-		this.isActive = isActive;
-	}
+    public void setIsActive(Integer isActive) {
+        this.isActive = isActive;
+    }
 
-	/**
-	 * 
-	 */
-	public UpdateUserRequestDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-    
-    
+    // ===== NEW =====
+    public Integer getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Integer roleId) {
+        this.roleId = roleId;
+    }
+
+    public Integer getCinemaId() {
+        return cinemaId;
+    }
+
+    public void setCinemaId(Integer cinemaId) {
+        this.cinemaId = cinemaId;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }
