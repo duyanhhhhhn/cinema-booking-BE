@@ -260,7 +260,7 @@ public class ComboManageController {
     @CrossOrigin
     public ResponseEntity<ApiResponse<ProductResponseDTO>> toggleProductActive(@PathVariable("id") int id) {
         ProductResponseDTO updated = productService.toggleProductActive(id);
-        return ResponseEntity.ok(new ApiResponse<>("Product status updated", updated));
+        return ResponseEntity.ok(new ApiResponse<>(buildProductToggleMessage(updated), updated));
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
@@ -271,7 +271,7 @@ public class ComboManageController {
     @CrossOrigin
     public ResponseEntity<ApiResponse<ProductResponseDTO>> toggleProductActiveAdmin(@PathVariable("id") int id) {
         ProductResponseDTO updated = productService.toggleProductActive(id);
-        return ResponseEntity.ok(new ApiResponse<>("Product status updated", updated));
+        return ResponseEntity.ok(new ApiResponse<>(buildProductToggleMessage(updated), updated));
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
@@ -279,7 +279,7 @@ public class ComboManageController {
     @CrossOrigin
     public ResponseEntity<ApiResponse<ProductResponseDTO>> activateProductAdmin(@PathVariable("id") int id) {
         ProductResponseDTO updated = productService.activateProduct(id);
-        return ResponseEntity.ok(new ApiResponse<>("Product activated", updated));
+        return ResponseEntity.ok(new ApiResponse<>("Da bat san pham", updated));
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
@@ -287,7 +287,13 @@ public class ComboManageController {
     @CrossOrigin
     public ResponseEntity<ApiResponse<ProductResponseDTO>> deactivateProductAdmin(@PathVariable("id") int id) {
         ProductResponseDTO updated = productService.deactivateProduct(id);
-        return ResponseEntity.ok(new ApiResponse<>("Product deactivated", updated));
+        return ResponseEntity.ok(new ApiResponse<>("Da tat san pham", updated));
+    }
+
+    private String buildProductToggleMessage(ProductResponseDTO updated) {
+        return updated != null && updated.getIsActive() == 1
+            ? "Da bat san pham"
+            : "Da tat san pham";
     }
 
     @DeleteMapping("/api/public/combo/{id}")

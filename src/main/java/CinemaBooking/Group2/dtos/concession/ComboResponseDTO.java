@@ -15,6 +15,7 @@ public class ComboResponseDTO {
     private String description;  // text, có thể null
     private BigDecimal price;
     private String imageUrl;
+    private int stock;
     private int isActive;
     private LocalDateTime createdAt;
     private List<ComboItem> comboItems;
@@ -48,6 +49,12 @@ public class ComboResponseDTO {
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
 	}
+	public int getStock() {
+		return stock;
+	}
+	public void setStock(int stock) {
+		this.stock = stock;
+	}
 	public int getIsActive() {
 		return isActive;
 	}
@@ -66,7 +73,7 @@ public class ComboResponseDTO {
 	public void setComboItems(List<ComboItem> comboItems) {
 		this.comboItems = comboItems;
 	}
-	public ComboResponseDTO(int id, String name, String description, BigDecimal price, String imageUrl, int isActive,
+	public ComboResponseDTO(int id, String name, String description, BigDecimal price, String imageUrl, int stock, int isActive,
 			LocalDateTime createdAt, List<ComboItem> comboItems) {
 		super();
 		this.id = id;
@@ -74,6 +81,7 @@ public class ComboResponseDTO {
 		this.description = description;
 		this.price = price;
 		this.imageUrl = imageUrl;
+		this.stock = stock;
 		this.isActive = isActive;
 		this.createdAt = createdAt;
 		this.comboItems = comboItems;

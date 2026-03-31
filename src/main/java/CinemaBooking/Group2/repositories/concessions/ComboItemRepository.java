@@ -99,6 +99,33 @@ public class ComboItemRepository implements Icrud<ComboItem> {
         }
     }
 
+    public List<String> findComboNamesByProductId(int productId) {
+        String sql =
+            "SELECT DISTINCT c.name " +
+            "FROM " + StringValue.tbl_comboItem + " ci " +
+            "JOIN " + StringValue.tbl_combo + " c ON c.id = ci.combo_id " +
+            "WHERE ci.product_id = ? " +
+            "ORDER BY c.created_at DESC, c.id DESC";
+
+        List<String> comboNames = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, productId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    comboNames.add(rs.getString("name"));
+                }
+            }
+
+            return comboNames;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to fetch combo names by product id.", e);
+        }
+    }
+
     public int deleteByCombo(int idCombo) {
         String sql = "DELETE FROM " + StringValue.tbl_comboItem + " WHERE combo_id = ?";
 

@@ -61,14 +61,17 @@ public class ComboService {
     }
 
     public List<ComboResponseDTO> getCombo() {
+        Map<Integer, Product> productMap = getProductMap(true);
         return comboRepository.findAllActive().stream()
-            .map(combo -> toComboResponse(combo, true))
+            .map(combo -> toComboResponse(combo, true, productMap))
+            .filter(dto -> dto != null && dto.getIsActive() == 1)
             .collect(Collectors.toList());
     }
 
     public List<ComboResponseDTO> getAllCombosIncludingInactive() {
+        Map<Integer, Product> productMap = getProductMap(false);
         return comboRepository.findAllIncludingInactive().stream()
-            .map(combo -> toComboResponse(combo, true))
+            .map(combo -> toComboResponse(combo, true, productMap))
             .collect(Collectors.toList());
     }
 
@@ -122,7 +125,7 @@ public class ComboService {
         if (combo == null) {
             return null;
         }
-        return toComboResponse(combo, true);
+        return toComboResponse(combo, true, getProductMap(true));
     }
 
     public ComboResponseDTO comboInfoIncludingInactive(int id) {
@@ -130,7 +133,7 @@ public class ComboService {
         if (combo == null) {
             return null;
         }
-        return toComboResponse(combo, true);
+        return toComboResponse(combo, true, getProductMap(false));
     }
 
     public long countAllCombos() {
@@ -142,17 +145,7 @@ public class ComboService {
     }
 
     public int countActiveItems(String filterType) {
-        String normalized = normalizeFilterType(filterType);
-
-        if ("COMBO".equals(normalized)) {
-            return (int) comboRepository.countActive();
-        }
-
-        if ("SINGLE".equals(normalized) || "PRODUCT".equals(normalized)) {
-            return (int) productRepository.countActive();
-        }
-
-        return (int) (comboRepository.countActive() + productRepository.countActive());
+        return buildConcessionList(filterType).size();
     }
 
     public int calculateComboStock(int id) {
@@ -259,7 +252,7 @@ public class ComboService {
         }
 
         ComboCRUDResponseDTO created = addComboWithItems(combo, items);
-        return toComboResponse(created.getCombo(), true);
+        return toComboResponse(created.getCombo(), true, getProductMap(false));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -315,6 +308,24 @@ public class ComboService {
     }
 
     public int DeleteProduct(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Product id is invalid");
+        }
+
+        Product existing = productRepository.findById(id);
+        if (existing == null) {
+            throw new IllegalArgumentException("Product not found");
+        }
+
+        List<String> comboNames = comboItemRepository.findComboNamesByProductId(id);
+        if (!comboNames.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Khong the xoa san pham \"" + existing.getName() +
+                "\" vi san pham nay dang nam trong combo: " +
+                String.join(", ", comboNames)
+            );
+        }
+
         return productRepository.delete(id);
     }
 
@@ -434,7 +445,10 @@ public class ComboService {
         if (!"SINGLE".equals(normalized) && !"PRODUCT".equals(normalized)) {
             List<Combo> combos = comboRepository.findAllActive();
             for (Combo combo : combos) {
-                list.add(toConcessionResponse(combo, productMap));
+                CnPResponseDTO dto = toConcessionResponse(combo, productMap);
+                if (dto.getIsActive() == 1) {
+                    list.add(dto);
+                }
             }
         }
 
@@ -451,10 +465,13 @@ public class ComboService {
         return list;
     }
 
-    private ComboResponseDTO toComboResponse(Combo combo, boolean includeItems) {
+    private ComboResponseDTO toComboResponse(Combo combo, boolean includeItems, Map<Integer, Product> productMap) {
         if (combo == null) {
             return null;
         }
+
+        List<ComboItem> comboItems = comboItemRepository.getByCombo(combo.getId());
+        int comboStock = calculateComboStock(comboItems, productMap);
 
         ComboResponseDTO dto = new ComboResponseDTO();
         dto.setId(combo.getId());
@@ -462,11 +479,12 @@ public class ComboService {
         dto.setDescription(combo.getDescription());
         dto.setPrice(combo.getPrice());
         dto.setImageUrl(formatImageUrl(combo.getImageUrl()));
-        dto.setIsActive(combo.getIsActive());
+        dto.setStock(comboStock);
+        dto.setIsActive(resolveComboActiveState(combo.getIsActive(), comboStock));
         dto.setCreatedAt(combo.getCreatedAt());
 
         if (includeItems) {
-            dto.setComboItems(comboItemRepository.getByCombo(combo.getId()));
+            dto.setComboItems(comboItems);
         }
 
         return dto;
@@ -494,7 +512,6 @@ public class ComboService {
         dto.setDescription(combo.getDescription());
         dto.setPrice(combo.getPrice());
         dto.setImageUrl(formatImageUrl(combo.getImageUrl()));
-        dto.setIsActive(combo.getIsActive());
         dto.setCreatedAt(combo.getCreatedAt());
         dto.setType("COMBO");
 
@@ -518,8 +535,20 @@ public class ComboService {
         }
 
         dto.setItemList(itemList);
-        dto.setStock(calculateComboStock(comboItems, productMap));
+        int comboStock = calculateComboStock(comboItems, productMap);
+        dto.setStock(comboStock);
+        dto.setIsActive(resolveComboActiveState(combo.getIsActive(), comboStock));
         return dto;
+    }
+
+    private Map<Integer, Product> getProductMap(boolean activeOnly) {
+        List<Product> products = activeOnly ? productRepository.getAllActive() : productRepository.getAll();
+        return products.stream()
+            .collect(Collectors.toMap(Product::getId, product -> product, (left, right) -> left, HashMap::new));
+    }
+
+    private int resolveComboActiveState(int originalActive, int stock) {
+        return stock > 0 ? originalActive : 0;
     }
 
     private int calculateComboStock(List<ComboItem> items, Map<Integer, Product> productMap) {
@@ -610,10 +639,13 @@ public class ComboService {
         }
     }
 
-    private void ensureProductExists(int productId) {
-        if (productRepository.findById(productId) == null) {
+    private Product ensureProductExists(int productId) {
+        Product product = productRepository.findById(productId);
+        if (product == null) {
             throw new IllegalArgumentException("Product not found: " + productId);
         }
+
+        return product;
     }
 
     private String normalizeCreateText(String value) {
