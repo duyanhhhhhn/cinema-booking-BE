@@ -23,6 +23,20 @@ public class ShowtimeSchedulerAdminRepository {
         this.jdbc = jdbc;
     }
 
+    private String effectiveMovieStatusExpr(String alias) {
+        String p = (alias == null || alias.isBlank()) ? "" : alias + ".";
+        return "CASE " +
+               " WHEN " + p + "status = 'ENDED' THEN 'ENDED' " +
+               " WHEN " + p + "status = 'HIDDEN' THEN 'HIDDEN' " +
+               " WHEN " + p + "end_date IS NOT NULL AND DATE(" + p + "end_date) < CURDATE() THEN 'ENDED' " +
+               " WHEN " + p + "release_date IS NOT NULL AND DATE(" + p + "release_date) > CURDATE() THEN 'COMING_SOON' " +
+               " WHEN " + p + "release_date IS NOT NULL AND DATE(" + p + "release_date) <= CURDATE() " +
+               "      AND (" + p + "end_date IS NULL OR DATE(" + p + "end_date) >= CURDATE()) THEN 'NOW_SHOWING' " +
+               " WHEN " + p + "status IS NOT NULL THEN " + p + "status " +
+               " ELSE 'COMING_SOON' " +
+               "END";
+    }
+
     public static class RoomRow {
         public int id;
         public String name;
@@ -308,36 +322,37 @@ public class ShowtimeSchedulerAdminRepository {
     }
 
     public List<AdminMovieOptionDto> findMovieOptions(String keyword, String roomType) {
-        String baseSql = """
-            SELECT id, title, duration_minutes, poster_url, status, format
-            FROM movie
-            WHERE (status IS NULL OR status <> 'ENDED')
-        """;
+        String effectiveStatus = effectiveMovieStatusExpr("m");
+        String baseSql =
+            "SELECT m.id, m.title, m.duration_minutes, m.poster_url, " +
+            effectiveStatus + " AS status, m.format " +
+            "FROM movie m " +
+            "WHERE (" + effectiveStatus + ") <> 'ENDED' ";
 
         java.util.ArrayList<Object> args = new java.util.ArrayList<>();
 
         if (keyword != null && !keyword.trim().isBlank()) {
-            baseSql += " AND title LIKE ? ";
+            baseSql += " AND m.title LIKE ? ";
             args.add("%" + keyword.trim() + "%");
         }
 
         String rt = roomType == null ? "" : roomType.trim().toUpperCase();
         if (!rt.isBlank()) {
             if ("3D".equals(rt)) {
-                baseSql += " AND UPPER(COALESCE(format,'')) LIKE '%3D%' ";
+                baseSql += " AND UPPER(COALESCE(m.format,'')) LIKE '%3D%' ";
             } else if ("IMAX".equals(rt)) {
-                baseSql += " AND UPPER(COALESCE(format,'')) LIKE '%IMAX%' ";
+                baseSql += " AND UPPER(COALESCE(m.format,'')) LIKE '%IMAX%' ";
             } else if ("2D".equals(rt)) {
-                baseSql += " AND UPPER(COALESCE(format,'')) LIKE '%2D%' ";
-                baseSql += " AND UPPER(COALESCE(format,'')) NOT LIKE '%3D%' ";
-                baseSql += " AND UPPER(COALESCE(format,'')) NOT LIKE '%IMAX%' ";
+                baseSql += " AND UPPER(COALESCE(m.format,'')) LIKE '%2D%' ";
+                baseSql += " AND UPPER(COALESCE(m.format,'')) NOT LIKE '%3D%' ";
+                baseSql += " AND UPPER(COALESCE(m.format,'')) NOT LIKE '%IMAX%' ";
             } else {
-                baseSql += " AND UPPER(COALESCE(format,'')) LIKE ? ";
+                baseSql += " AND UPPER(COALESCE(m.format,'')) LIKE ? ";
                 args.add("%" + rt + "%");
             }
         }
 
-        baseSql += " ORDER BY created_at DESC, id DESC LIMIT 200";
+        baseSql += " ORDER BY m.created_at DESC, m.id DESC LIMIT 200";
 
         return jdbc.query(baseSql, (rs, i) -> {
             AdminMovieOptionDto dto = new AdminMovieOptionDto();

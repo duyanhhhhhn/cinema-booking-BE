@@ -142,23 +142,26 @@ public class MovieRepository {
 
         String q = (keyword == null) ? null : keyword.trim();
         boolean hasKeyword = (q != null && !q.isEmpty());
+        String effectiveStatus = effectiveStatusExpr("m");
 
         String sql =
             "SELECT " +
-            "  id, title, short_description, description, duration_minutes, genre, language, format, " +
-            "  director, `cast` AS cast, poster_url, banner_url, trailer_url, agerating, " +
-            "  release_date, end_date, status, created_at " +
-            "FROM movie " +
+            "  m.id, m.title, m.short_description, m.description, m.duration_minutes, m.genre, m.language, m.format, " +
+            "  m.director, m.`cast` AS cast, m.poster_url, m.banner_url, m.trailer_url, m.agerating, " +
+            "  m.release_date, m.end_date, " +
+            "  " + effectiveStatus + " AS status, " +
+            "  m.created_at " +
+            "FROM movie m " +
             "WHERE 1=1 " +
             (hasKeyword
                 ? "  AND ( " +
-                  "    title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci " +
+                  "    m.title LIKE CONCAT(?, '%') COLLATE utf8mb4_0900_ai_ci " +
                   "  ) "
                 : "") +
             (genre != null
-                ? "  AND REPLACE(UPPER(genre), '-', '_') = ? "
+                ? "  AND REPLACE(UPPER(m.genre), '-', '_') = ? "
                 : "") +
-            "ORDER BY created_at DESC, id DESC " +
+            "ORDER BY m.created_at DESC, m.id DESC " +
             "LIMIT ? OFFSET ?;";
 
         List<Movie> movies = new ArrayList<>();
