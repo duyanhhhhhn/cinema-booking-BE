@@ -69,9 +69,13 @@ public class StaffController {
 	}
 	@CrossOrigin
 	@GetMapping("/schedules/week")
-	public List<AWeekOfScheduleResponseDTO> getThisWeekSchedules(){
+	public List<AWeekOfScheduleResponseDTO> getThisWeekSchedules(@RequestParam(name="week",required = false)int week){
 		try {
-			return service.getThisWeekSchedule(LocalDate.now());
+			LocalDate date = LocalDate.now();
+			if(week!=1) {
+				date = date.plusWeeks(week-1);
+			}
+			return service.getThisWeekSchedule(date);
 		}
 		catch (Exception e) {
 			// TODO: handle exception
