@@ -13,6 +13,7 @@ public class StaffResponseDTO {
 	private String phone;
 	private String avatar;
 	private String roleName;
+	private String position;
 	public String getAvatarUrl() {
 		return avatarUrl;
 	}
@@ -43,6 +44,12 @@ public class StaffResponseDTO {
 	}
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
+	}
+	public String getPosition() {
+		return position;
+	}
+	public void setPosition(String position) {
+		this.position = position;
 	}
 	public StaffResponseDTO() {
 		

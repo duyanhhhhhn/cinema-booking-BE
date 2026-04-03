@@ -20,6 +20,13 @@ public class UserMapper implements RowMapper<User> {
 		user.setPhone(rs.getString("phone"));
 		user.setIsActive(rs.getInt("is_active"));
 		user.setCinemaId(rs.getInt("cinema_id"));
+		try {
+			String position = rs.getString("position");
+			if (position != null && !position.isBlank()) {
+				user.setPosition(User.UserPosition.valueOf(position));
+			}
+		} catch (Exception ignored) {
+		}
 		Timestamp ts = rs.getTimestamp("created_at");
 		user.setAvatarUrl(rs.getString("avatar_url"));
 		if (ts != null) {
@@ -35,5 +42,4 @@ public class UserMapper implements RowMapper<User> {
 		return user;
 	}
 }
-
 
