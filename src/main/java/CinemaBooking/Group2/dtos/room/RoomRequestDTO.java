@@ -6,6 +6,19 @@ public class RoomRequestDTO {
     private String type;
     private Integer totalSeats;
     private String seatLayout;
+    private Integer status;
+	/**
+	 * @return the status
+	 */
+	public Integer getStatus() {
+		return status;
+	}
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
 	/**
 	 * @return the cinemaId
 	 */
@@ -72,14 +85,17 @@ public class RoomRequestDTO {
 	 * @param type
 	 * @param totalSeats
 	 * @param seatLayout
+	 * @param status
 	 */
-	public RoomRequestDTO(Integer cinemaId, String name, String type, Integer totalSeats, String seatLayout) {
+	public RoomRequestDTO(Integer cinemaId, String name, String type, Integer totalSeats, String seatLayout,
+			Integer status) {
 		super();
 		this.cinemaId = cinemaId;
 		this.name = name;
 		this.type = type;
 		this.totalSeats = totalSeats;
 		this.seatLayout = seatLayout;
+		this.status = status;
 	}
 	/**
 	 * 
@@ -88,5 +104,5 @@ public class RoomRequestDTO {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-    
+	
 }

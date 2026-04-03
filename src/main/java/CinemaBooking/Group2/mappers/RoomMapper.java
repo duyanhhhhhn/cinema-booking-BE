@@ -20,6 +20,7 @@ public class RoomMapper implements RowMapper<Room> {
         r.setType(rs.getString("type"));
         r.setTotalSeats(rs.getInt("total_seats"));
         r.setSeatLayout(rs.getString("seat_layout"));
+        r.setStatus(rs.getInt("status"));
 
         if (rs.getTimestamp("created_at") != null) {
             r.setCreatedAt(
