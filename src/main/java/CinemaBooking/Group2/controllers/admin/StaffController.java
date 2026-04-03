@@ -31,104 +31,91 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/staff")
 @Validated
 public class StaffController {
-	@Autowired
-	private StaffScheduleService service;
-	@CrossOrigin
-	@PostMapping("/assign")
-	public String staffAssign(@RequestParam("staff_id") int staff_id,
-			@RequestParam("shift_id")int shift_id,
-			@RequestParam("work_date")LocalDate work_date,
-			@RequestParam("status") StaffScheduleStatus status) {
-		String m="error";
-		try {
-			StaffSchedule item = new StaffSchedule();
-			item.setStaffId(staff_id);
-			item.setShiftId(shift_id);
-			item.setWorkDate(work_date);
-			item.setStatus(status);
-			if(service.assignStaff(item)==1) {
-				m="success";
-			}
-			else {
-				m="error";
-			}
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-			System.out.print(e.getMessage());
-		}
-		return m;
-	}
-	@CrossOrigin
-	@GetMapping("/schedules")
-	public ResponseEntity<ApiResponse<List<ScheduleResponseDTO>>> getSchedules(@RequestParam(name="page",defaultValue = "1") int page,@RequestParam(name="pageSize",defaultValue = "6") int size){
-		try {
-			List<ScheduleResponseDTO> schedule=service.getSchedule(page,size);
-			return ResponseEntity.ok(new ApiResponse<List<ScheduleResponseDTO>>("success", schedule));
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
-	}
-	@CrossOrigin
-	@GetMapping("/schedules/week")
-	public List<AWeekOfScheduleResponseDTO> getThisWeekSchedules(@RequestParam(name="week",required = false)int week){
-		try {
-			LocalDate date = LocalDate.now();
-			if(week!=1) {
-				date = date.plusWeeks(week-1);
-			}
-			return service.getThisWeekSchedule(date);
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
-	}
-	@CrossOrigin
-	@GetMapping("/schedules/getstaff")
-	public List<StaffResponseDTO> getAllStaff(){
-		try {
-			return service.getAllStaff();
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
-	}
-	@CrossOrigin
-	@PutMapping("/schedules/{id}")
-	public List<staffScheduleResponseDTO> editSchedules(@PathVariable("id")int id,@RequestParam("data") StaffSchedule data){
-		try {
-			
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
-	}
-	@CrossOrigin
-	@GetMapping("/shifts")
-	public ResponseEntity<List<workShiftResponseDTO>> getShift(){
-		try {
-			List<workShiftResponseDTO> list = service.getShift();
-			return ResponseEntity.ok(list);
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
-	}
-	@CrossOrigin
-	@GetMapping("/schedules/my")
-	public List<AWeekOfScheduleResponseDTO> getMySchedules(@RequestParam("id")int id,@RequestParam(name="week",defaultValue = "0")int week){
-		try {
-			return service.getScheduleByStaffId(id,week);
-		}
-		catch (Exception e) {
-			// TODO: handle exception
-		}
-		return null;
-	}
+
+    private final StaffScheduleService staffScheduleService;
+
+    public StaffController(StaffScheduleService staffScheduleService) {
+        this.staffScheduleService = staffScheduleService;
+    }
+
+    @GetMapping("/shifts")
+    public ResponseEntity<ApiResponse<List<ShiftTemplateResponseDTO>>> getShiftTemplates() {
+        List<ShiftTemplateResponseDTO> data = staffScheduleService.getShiftTemplates();
+        return ResponseEntity.ok(new ApiResponse<>("Lấy danh sách ca làm thành công", data));
+    }
+
+    @GetMapping("/work_shift/{id}")
+    public ResponseEntity<ApiResponse<ShiftTemplateResponseDTO>> getWorkShift(@PathVariable int id) {
+        ShiftTemplateResponseDTO data = staffScheduleService.getWorkShift(id);
+        return ResponseEntity.ok(new ApiResponse<>("Lấy chi tiết ca làm thành công", data));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PostMapping("/work_shift")
+    public ResponseEntity<ApiResponse<ShiftTemplateResponseDTO>> createWorkShift(
+            @Valid @RequestBody CreateWorkShiftRequestDTO request) {
+
+        ShiftTemplateResponseDTO data = staffScheduleService.createWorkShift(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Tạo ca mẫu thành công", data));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @PutMapping("/work_shift/{id}")
+    public ResponseEntity<ApiResponse<ShiftTemplateResponseDTO>> updateWorkShift(
+            @PathVariable int id,
+            @Valid @RequestBody CreateWorkShiftRequestDTO request) {
+
+        ShiftTemplateResponseDTO data = staffScheduleService.updateWorkShift(id, request);
+        return ResponseEntity.ok(new ApiResponse<>("Cập nhật ca mẫu thành công", data));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER')")
+    @DeleteMapping("/work_shift/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteWorkShift(@PathVariable int id) {
+        staffScheduleService.deleteWorkShift(id);
+        return ResponseEntity.ok(new ApiResponse<>("Xóa ca mẫu thành công", "OK"));
+    }
+
+    @PostMapping("/schedule")
+    public ResponseEntity<ApiResponse<StaffScheduleDetailResponseDTO>> upsertSchedule(
+            @Valid @RequestBody StaffScheduleRequestDTO request) {
+
+        StaffScheduleDetailResponseDTO data = staffScheduleService.upsertSchedule(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Xử lý lịch làm thành công", data));
+    }
+
+    @GetMapping("/schedule/my")
+    public ResponseEntity<ApiResponse<List<StaffScheduleDetailResponseDTO>>> getMySchedule(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate,
+            @RequestParam(required = false) StaffScheduleStatus status) {
+
+        List<StaffScheduleDetailResponseDTO> data =
+                staffScheduleService.getMySchedule(startDate, endDate, status);
+        return ResponseEntity.ok(new ApiResponse<>("Lấy lịch làm việc cá nhân thành công", data));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','STAFF')")
+    @GetMapping("/schedule/cinema")
+    public ResponseEntity<ApiResponse<List<StaffScheduleDetailResponseDTO>>> getCinemaSchedule(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate,
+            @RequestParam(required = false) StaffScheduleStatus status,
+            @RequestParam(required = false) Integer staffId,
+            @RequestParam(required = false) Integer cinemaId) {
+
+        List<StaffScheduleDetailResponseDTO> data =
+                staffScheduleService.getCinemaSchedule(startDate, endDate, status, staffId, cinemaId);
+        return ResponseEntity.ok(new ApiResponse<>("Lấy lịch làm việc toàn rạp thành công", data));
+    }
 }
