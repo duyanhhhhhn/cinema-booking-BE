@@ -9,6 +9,7 @@ public class StaffScheduleDetailResponseDTO {
     private int id;
     private LocalDate workDate;
     private StaffScheduleStatus status;
+    private String requestedByRole;
     private StaffResponseDTO staff;
     private ShiftTemplateResponseDTO shift;
 
@@ -34,6 +35,14 @@ public class StaffScheduleDetailResponseDTO {
 
     public void setStatus(StaffScheduleStatus status) {
         this.status = status;
+    }
+
+    public String getRequestedByRole() {
+        return requestedByRole;
+    }
+
+    public void setRequestedByRole(String requestedByRole) {
+        this.requestedByRole = requestedByRole;
     }
 
     public StaffResponseDTO getStaff() {

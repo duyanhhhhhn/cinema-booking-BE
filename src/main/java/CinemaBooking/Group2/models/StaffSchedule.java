@@ -11,6 +11,7 @@ public class StaffSchedule {
 	private int shiftId;
 	private LocalDate workDate;
 	private StaffScheduleStatus status;
+	private String requestedByRole;
 	private LocalDateTime createdAt;
 	public int getId() {
 		return id;
@@ -42,6 +43,12 @@ public class StaffSchedule {
 	public void setStatus(StaffScheduleStatus status) {
 		this.status = status;
 	}
+	public String getRequestedByRole() {
+		return requestedByRole;
+	}
+	public void setRequestedByRole(String requestedByRole) {
+		this.requestedByRole = requestedByRole;
+	}
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
@@ -57,6 +64,7 @@ public class StaffSchedule {
 	 * @param createdAt
 	 */
 	public StaffSchedule(int id, int staffId, int shiftId, LocalDate workDate, StaffScheduleStatus status,
+			String requestedByRole,
 			LocalDateTime createdAt) {
 		super();
 		this.id = id;
@@ -64,6 +72,7 @@ public class StaffSchedule {
 		this.shiftId = shiftId;
 		this.workDate = workDate;
 		this.status = status;
+		this.requestedByRole = requestedByRole;
 		this.createdAt = createdAt;
 	}
 	/**

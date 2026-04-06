@@ -193,40 +193,28 @@ public class StaffScheduleService {
             StaffScheduleRequestDTO request,
             WorkShift targetShift) {
 
-        // Current DB enum has no REQUESTED state, so ASSIGNED is used as the staff preference/pending state.
         if (request.getStaffId() != null && request.getStaffId() != actor.getId()) {
             forbidden("Nhân viên chỉ được đăng ký lịch cho chính mình");
         }
 
-        if (request.getStatus() != null && request.getStatus() != StaffScheduleStatus.ASSIGNED) {
-            badRequest("Nhân viên chỉ được tạo đăng ký ca ở trạng thái ASSIGNED");
-        }
+        StaffScheduleStatus requestedStatus = request.getStatus() == null
+                ? StaffScheduleStatus.ASSIGNED
+                : request.getStatus();
 
-        validateStaffSelectionWindow(request.getWorkDate());
+        if (requestedStatus != StaffScheduleStatus.ASSIGNED
+                && requestedStatus != StaffScheduleStatus.CONFIRMED
+                && requestedStatus != StaffScheduleStatus.CANCELLED) {
+            badRequest("Nhân viên chỉ được đăng ký, xác nhận hoặc từ chối ca của chính mình");
+        }
 
         StaffSchedule exactSchedule =
                 scheduleRepository.findByStaffShiftAndDate(actor.getId(), targetShift.getId(), request.getWorkDate());
 
-        if (exactSchedule != null && exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
-            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
-        }
-
-        validateStaffRequestConflicts(actor.getId(), request.getWorkDate(), targetShift, exactSchedule);
-
-        StaffSchedule saved;
-        if (exactSchedule != null) {
-            exactSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
-            saved = save(exactSchedule);
-        } else {
-            StaffSchedule newSchedule = new StaffSchedule();
-            newSchedule.setStaffId(actor.getId());
-            newSchedule.setShiftId(targetShift.getId());
-            newSchedule.setWorkDate(request.getWorkDate());
-            newSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
-            saved = save(newSchedule);
-        }
-
-        return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+        return switch (requestedStatus) {
+            case ASSIGNED -> handleStaffSelection(actor, request, targetShift, exactSchedule);
+            case CONFIRMED -> handleStaffApproval(actor, request, targetShift, exactSchedule);
+            case CANCELLED -> handleStaffCancellation(actor, exactSchedule);
+        };
     }
 
     private StaffScheduleDetailResponseDTO handleManagerAssignment(
@@ -263,12 +251,29 @@ public class StaffScheduleService {
             return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
         }
 
+        if (exactSchedule != null && exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
+        }
+
+        if (requiresStaffApprovalForManagerProposal(request.getWorkDate(), exactSchedule)) {
+            StaffSchedule saved = createOrRefreshManagerProposal(
+                    principal.role(),
+                    targetStaff.getId(),
+                    request.getWorkDate(),
+                    targetShift,
+                    exactSchedule);
+            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+        }
+
         cancelOverlappingSchedules(targetStaff.getId(), request.getWorkDate(), targetShift,
                 exactSchedule == null ? null : exactSchedule.getId());
 
         StaffSchedule saved;
         if (exactSchedule != null) {
             exactSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
+            if (exactSchedule.getRequestedByRole() == null || exactSchedule.getRequestedByRole().isBlank()) {
+                exactSchedule.setRequestedByRole(normalizeRole(principal.role()));
+            }
             saved = save(exactSchedule);
         } else {
             StaffSchedule newSchedule = new StaffSchedule();
@@ -276,10 +281,124 @@ public class StaffScheduleService {
             newSchedule.setShiftId(targetShift.getId());
             newSchedule.setWorkDate(request.getWorkDate());
             newSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
+            newSchedule.setRequestedByRole(normalizeRole(principal.role()));
             saved = save(newSchedule);
         }
 
         return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+    }
+
+    private StaffScheduleDetailResponseDTO handleStaffSelection(
+            User actor,
+            StaffScheduleRequestDTO request,
+            WorkShift targetShift,
+            StaffSchedule exactSchedule) {
+
+        validateStaffSelectionWindow(request.getWorkDate());
+
+        if (exactSchedule != null && exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
+        }
+
+        if (isManagerProposalAwaitingStaffApproval(exactSchedule)) {
+            badRequest("Ca này do manager đề xuất, hãy gửi trạng thái CONFIRMED để đồng ý hoặc CANCELLED để từ chối");
+        }
+
+        validateStaffRequestConflicts(actor.getId(), request.getWorkDate(), targetShift, exactSchedule);
+
+        StaffSchedule saved;
+        if (exactSchedule != null) {
+            exactSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
+            exactSchedule.setRequestedByRole("STAFF");
+            saved = save(exactSchedule);
+        } else {
+            StaffSchedule newSchedule = new StaffSchedule();
+            newSchedule.setStaffId(actor.getId());
+            newSchedule.setShiftId(targetShift.getId());
+            newSchedule.setWorkDate(request.getWorkDate());
+            newSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
+            newSchedule.setRequestedByRole("STAFF");
+            saved = save(newSchedule);
+        }
+
+        return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+    }
+
+    private StaffScheduleDetailResponseDTO handleStaffApproval(
+            User actor,
+            StaffScheduleRequestDTO request,
+            WorkShift targetShift,
+            StaffSchedule exactSchedule) {
+
+        if (exactSchedule == null) {
+            notFound("Không tìm thấy ca manager đề xuất để xác nhận");
+        }
+
+        if (exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
+        }
+
+        if (!isManagerProposalAwaitingStaffApproval(exactSchedule)) {
+            badRequest("Nhân viên chỉ được xác nhận ca đang chờ duyệt từ manager");
+        }
+
+        cancelOverlappingSchedules(actor.getId(), request.getWorkDate(), targetShift, exactSchedule.getId());
+
+        exactSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
+        StaffSchedule saved = save(exactSchedule);
+        return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+    }
+
+    private StaffScheduleDetailResponseDTO handleStaffCancellation(User actor, StaffSchedule exactSchedule) {
+        if (exactSchedule == null) {
+            notFound("Không tìm thấy lịch làm để huỷ hoặc từ chối");
+        }
+
+        if (exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            forbidden("Ca đã được chốt, nhân viên không thể tự huỷ");
+        }
+
+        if (exactSchedule.getStatus() == StaffScheduleStatus.CANCELLED) {
+            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
+        }
+
+        if (!isManagerProposalAwaitingStaffApproval(exactSchedule)
+                && !isStaffRequestAwaitingManagerApproval(exactSchedule)
+                && !"STAFF".equals(normalizeRole(exactSchedule.getRequestedByRole()))) {
+            forbidden("Nhân viên không thể thao tác với lịch làm này");
+        }
+
+        if (exactSchedule.getStaffId() != actor.getId()) {
+            forbidden("Nhân viên chỉ được thao tác với lịch của chính mình");
+        }
+
+        exactSchedule.setStatus(StaffScheduleStatus.CANCELLED);
+        StaffSchedule saved = save(exactSchedule);
+        return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+    }
+
+    private StaffSchedule createOrRefreshManagerProposal(
+            String proposerRole,
+            int staffId,
+            LocalDate workDate,
+            WorkShift targetShift,
+            StaffSchedule exactSchedule) {
+
+        validateManagerProposalConflicts(staffId, workDate, targetShift, exactSchedule);
+
+        if (exactSchedule != null) {
+            exactSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
+            exactSchedule.setRequestedByRole(normalizeRole(proposerRole));
+            return save(exactSchedule);
+        }
+
+        StaffSchedule newSchedule = new StaffSchedule();
+        newSchedule.setStaffId(staffId);
+        newSchedule.setShiftId(targetShift.getId());
+        newSchedule.setWorkDate(workDate);
+        newSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
+        newSchedule.setRequestedByRole(normalizeRole(proposerRole));
+        return save(newSchedule);
     }
 
     private void validateStaffRequestConflicts(
@@ -309,6 +428,46 @@ public class StaffScheduleService {
             }
 
             conflict("Bạn đã đăng ký một ca trùng thời gian");
+        }
+    }
+
+    private void validateManagerProposalConflicts(
+            int staffId,
+            LocalDate workDate,
+            WorkShift targetShift,
+            StaffSchedule exactSchedule) {
+
+        List<StaffSchedule> sameDaySchedules = scheduleRepository.findByStaffAndDate(staffId, workDate);
+        Integer exactId = exactSchedule == null ? null : exactSchedule.getId();
+
+        for (StaffSchedule schedule : sameDaySchedules) {
+            if (schedule.getStatus() == StaffScheduleStatus.CANCELLED) {
+                continue;
+            }
+            if (exactId != null && schedule.getId() == exactId) {
+                continue;
+            }
+
+            WorkShift existingShift = requireShift(schedule.getShiftId());
+            if (!isOverlapping(targetShift, existingShift)) {
+                continue;
+            }
+
+            if (isManagerProposalAwaitingStaffApproval(schedule)) {
+                schedule.setStatus(StaffScheduleStatus.CANCELLED);
+                save(schedule);
+                continue;
+            }
+
+            if (schedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+                conflict("Nhân viên đã có ca được chốt trùng thời gian");
+            }
+
+            if (isStaffRequestAwaitingManagerApproval(schedule)) {
+                conflict("Nhân viên đã đăng ký một ca trùng thời gian, cần xử lý yêu cầu đó trước");
+            }
+
+            conflict("Đã tồn tại lịch làm trùng thời gian");
         }
     }
 
@@ -371,6 +530,7 @@ public class StaffScheduleService {
         dto.setId(schedule.getId());
         dto.setWorkDate(schedule.getWorkDate());
         dto.setStatus(schedule.getStatus());
+        dto.setRequestedByRole(normalizeRole(schedule.getRequestedByRole()));
         dto.setStaff(toStaffResponse(loadStaff(schedule.getStaffId(), staffCache)));
         dto.setShift(toShiftResponse(loadShift(schedule.getShiftId(), shiftCache)));
         return dto;
@@ -469,6 +629,44 @@ public class StaffScheduleService {
             forbidden(actorLabel + " chưa được gán rạp");
         }
         return principal.cinemaId();
+    }
+
+    private boolean requiresStaffApprovalForManagerProposal(LocalDate workDate, StaffSchedule exactSchedule) {
+        if (!isNextWeek(workDate)) {
+            return false;
+        }
+        if (exactSchedule == null) {
+            return true;
+        }
+        if (exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            return false;
+        }
+        return !isStaffRequestAwaitingManagerApproval(exactSchedule);
+    }
+
+    private boolean isStaffRequestAwaitingManagerApproval(StaffSchedule schedule) {
+        return schedule != null
+                && schedule.getStatus() == StaffScheduleStatus.ASSIGNED
+                && "STAFF".equals(normalizeRole(schedule.getRequestedByRole()));
+    }
+
+    private boolean isManagerProposalAwaitingStaffApproval(StaffSchedule schedule) {
+        if (schedule == null || schedule.getStatus() != StaffScheduleStatus.ASSIGNED) {
+            return false;
+        }
+
+        String requestedByRole = normalizeRole(schedule.getRequestedByRole());
+        return "MANAGER".equals(requestedByRole) || "ADMIN".equals(requestedByRole);
+    }
+
+    private boolean isNextWeek(LocalDate workDate) {
+        LocalDate nextWeekMonday = todayVN().with(DayOfWeek.MONDAY).plusWeeks(1);
+        LocalDate nextWeekSunday = nextWeekMonday.plusDays(6);
+        return !workDate.isBefore(nextWeekMonday) && !workDate.isAfter(nextWeekSunday);
+    }
+
+    private String normalizeRole(String role) {
+        return role == null ? null : role.trim().toUpperCase();
     }
 
     private void assertWorkShiftManagePermission() {
