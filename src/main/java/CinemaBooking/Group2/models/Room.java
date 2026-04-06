@@ -11,6 +11,19 @@ public class Room {
     private int totalSeats;
     private String seatLayout;
     private LocalDateTime createdAt;
+    private Integer status;
+	/**
+	 * @return the status
+	 */
+	public Integer getStatus() {
+		return status;
+	}
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
 	public int getId() {
 		return id;
 	}
@@ -61,9 +74,10 @@ public class Room {
 	 * @param totalSeats
 	 * @param seatLayout
 	 * @param createdAt
+	 * @param status
 	 */
 	public Room(int id, int cinemaId, String name, String type, int totalSeats, String seatLayout,
-			LocalDateTime createdAt) {
+			LocalDateTime createdAt, Integer status) {
 		super();
 		this.id = id;
 		this.cinemaId = cinemaId;
@@ -72,6 +86,7 @@ public class Room {
 		this.totalSeats = totalSeats;
 		this.seatLayout = seatLayout;
 		this.createdAt = createdAt;
+		this.status = status;
 	}
 	/**
 	 * 
@@ -80,7 +95,7 @@ public class Room {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-    
-    
+
+	
 
 }

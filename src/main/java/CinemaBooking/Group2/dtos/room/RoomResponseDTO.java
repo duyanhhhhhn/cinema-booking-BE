@@ -7,6 +7,19 @@ public class RoomResponseDTO {
     private String type;
     private int totalSeats;
     private String seatLayout;
+    private Integer status;
+	/**
+	 * @return the status
+	 */
+	public Integer getStatus() {
+		return status;
+	}
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
 	/**
 	 * @return the id
 	 */
@@ -86,8 +99,10 @@ public class RoomResponseDTO {
 	 * @param type
 	 * @param totalSeats
 	 * @param seatLayout
+	 * @param status
 	 */
-	public RoomResponseDTO(int id, int cinemaId, String name, String type, int totalSeats, String seatLayout) {
+	public RoomResponseDTO(int id, int cinemaId, String name, String type, int totalSeats, String seatLayout,
+			Integer status) {
 		super();
 		this.id = id;
 		this.cinemaId = cinemaId;
@@ -95,6 +110,7 @@ public class RoomResponseDTO {
 		this.type = type;
 		this.totalSeats = totalSeats;
 		this.seatLayout = seatLayout;
+		this.status = status;
 	}
 	/**
 	 * 
@@ -103,6 +119,5 @@ public class RoomResponseDTO {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-    
-    
+	
 }
