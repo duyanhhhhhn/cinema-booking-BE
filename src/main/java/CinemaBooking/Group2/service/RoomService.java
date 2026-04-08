@@ -53,7 +53,7 @@ public class RoomService {
 
 	// ================= GET BY ID =================
 	public RoomResponseDTO getById(int id) {
-		Room room = repo.findById(id); // repo trả Room, không phải Optional
+		Room room = repo.findById(id);
 		if (room == null)
 			throw new RuntimeException("Room not found");
 		return toResponse(room);
@@ -66,7 +66,9 @@ public class RoomService {
 		r.setName(dto.getName());
 		r.setType(dto.getType());
 		r.setTotalSeats(dto.getTotalSeats());
+		r.setStatus(1); // default active
 		r.setSeatLayout(dto.getSeatLayout() == null ? "[]" : dto.getSeatLayout());
+		
 		repo.insert(r);
 		return toResponse(r);
 	}
@@ -81,7 +83,7 @@ public class RoomService {
 		existing.setType(dto.getType());
 		existing.setTotalSeats(dto.getTotalSeats());
 		existing.setSeatLayout(dto.getSeatLayout());
-
+		existing.setStatus(dto.getStatus());
 		repo.update(id, existing);
 		return toResponse(existing);
 	}
@@ -212,10 +214,27 @@ public class RoomService {
 			throw new RuntimeException("Failed to parse seat layout: " + e.getMessage());
 		}
 	}
+	
+	//================== UPDATE ROOM STATUS =================
+	public void updateStatus(int id, int status) {
+	    Room existing = repo.findById(id);
+	    if (existing == null) {
+	        throw new RuntimeException("Room not found");
+	    }
+
+	    repo.updateStatus(id, status);
+	}
 
 	// ================= MAPPER =================
 	private RoomResponseDTO toResponse(Room r) {
-		return new RoomResponseDTO(r.getId(), r.getCinemaId(), r.getName(), r.getType(), r.getTotalSeats(),
-				r.getSeatLayout());
+	    return new RoomResponseDTO(
+	        r.getId(),
+	        r.getCinemaId(),
+	        r.getName(),
+	        r.getType(),
+	        r.getTotalSeats(),
+	        r.getSeatLayout(),
+	        r.getStatus()
+	    );
 	}
 }
