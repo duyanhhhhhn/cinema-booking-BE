@@ -144,6 +144,7 @@ public class ShowtimeSchedulerAdminService {
         if (req.getBasePrice() == null || req.getBasePrice().compareTo(BigDecimal.ZERO) <= 0) badRequest("Giá vé không hợp lệ.");
 
         if (!repo.roomBelongsToCinema(req.getRoomId(), req.getCinemaId())) badRequest("Phòng không thuộc rạp đã chọn.");
+        if (!repo.isRoomActive(req.getRoomId())) conflict("Phòng đang tạm ngưng hoạt động, vui lòng chọn phòng khác.");
 
         String roomType = repo.findRoomType(req.getRoomId());
         String movieFormat = repo.findMovieFormat(req.getMovieId());
@@ -173,6 +174,7 @@ public class ShowtimeSchedulerAdminService {
 
         if (!repo.showtimeBelongsToCinema(id, req.getCinemaId())) badRequest("Suất chiếu không thuộc rạp đã chọn.");
         if (!repo.roomBelongsToCinema(req.getRoomId(), req.getCinemaId())) badRequest("Phòng không thuộc rạp đã chọn.");
+        if (!repo.isRoomActive(req.getRoomId())) conflict("Phòng đang tạm ngưng hoạt động, vui lòng chọn phòng khác.");
 
         if (!"SCHEDULED".equalsIgnoreCase(current.status)) conflict("Suất chiếu không ở trạng thái cho phép chỉnh sửa.");
         if (current.startAt != null && isPastOrNow(current.startAt)) conflict("Suất chiếu đã bắt đầu, không thể chỉnh sửa/di chuyển.");
@@ -284,6 +286,7 @@ public class ShowtimeSchedulerAdminService {
 
         if (!repo.showtimeBelongsToCinema(id, req.getCinemaId())) badRequest("Suất chiếu không thuộc rạp đã chọn.");
         if (!repo.roomBelongsToCinema(req.getRoomId(), req.getCinemaId())) badRequest("Phòng không thuộc rạp đã chọn.");
+        if (!repo.isRoomActive(req.getRoomId())) conflict("Phòng đang tạm ngưng hoạt động, vui lòng chọn phòng khác.");
 
         if (!"SCHEDULED".equalsIgnoreCase(current.status)) conflict("Suất chiếu không ở trạng thái cho phép chỉnh sửa.");
         if (current.startAt != null && isPastOrNow(current.startAt)) conflict("Suất chiếu đã bắt đầu, không thể chỉnh sửa.");

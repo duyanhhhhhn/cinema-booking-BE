@@ -33,6 +33,20 @@ public class ShowtimeRepository {
 	@Autowired
 	private JdbcTemplate jdbc;
 
+	private String effectiveMovieStatusExpr(String alias) {
+		String p = (alias == null || alias.isBlank()) ? "" : alias + ".";
+		return "CASE " +
+				" WHEN " + p + "status = 'ENDED' THEN 'ENDED' " +
+				" WHEN " + p + "status = 'HIDDEN' THEN 'HIDDEN' " +
+				" WHEN " + p + "end_date IS NOT NULL AND DATE(" + p + "end_date) < CURDATE() THEN 'ENDED' " +
+				" WHEN " + p + "release_date IS NOT NULL AND DATE(" + p + "release_date) > CURDATE() THEN 'COMING_SOON' " +
+				" WHEN " + p + "release_date IS NOT NULL AND DATE(" + p + "release_date) <= CURDATE() " +
+				"      AND (" + p + "end_date IS NULL OR DATE(" + p + "end_date) >= CURDATE()) THEN 'NOW_SHOWING' " +
+				" WHEN " + p + "status IS NOT NULL THEN " + p + "status " +
+				" ELSE 'COMING_SOON' " +
+				"END";
+	}
+
 	public Showtime findById(int showtimeId) {
 		String sql = "SELECT * FROM showtime WHERE id = ?";
 		try {
@@ -52,6 +66,44 @@ public class ShowtimeRepository {
 		}
 	}
 
+	public boolean isBookable(int showtimeId) {
+		String sql = """
+				SELECT COUNT(*)
+				FROM showtime s
+				JOIN room r ON r.id = s.room_id
+				JOIN cinema c ON c.id = r.cinema_id
+				WHERE s.id = ?
+				  AND (s.status = 'SCHEDULED' OR s.status IS NULL)
+				  AND COALESCE(r.status, 1) = 1
+				  AND (c.is_active = 1 OR c.is_active IS NULL)
+				""";
+		try {
+			Integer count = jdbc.queryForObject(sql, Integer.class, showtimeId);
+			return count != null && count > 0;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	public Showtime findBookableById(int showtimeId) {
+		String sql = """
+				SELECT s.*
+				FROM showtime s
+				JOIN room r ON r.id = s.room_id
+				JOIN cinema c ON c.id = r.cinema_id
+				WHERE s.id = ?
+				  AND (s.status = 'SCHEDULED' OR s.status IS NULL)
+				  AND COALESCE(r.status, 1) = 1
+				  AND (c.is_active = 1 OR c.is_active IS NULL)
+				LIMIT 1
+				""";
+		try {
+			return jdbc.queryForObject(sql, new BeanPropertyRowMapper<>(Showtime.class), showtimeId);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
 	// (codeser) -> HÀM TRUY VẤN LẤY LỊCH CHIẾU CỦA CÁC BỘ PHIM (RẠP + THỜI GIAN...)
 	public List<MovieShowtimeGroupDtos> getShowtimesPublicGrouped(int cinemaId, Integer movieId, LocalDate date) {
 
@@ -63,6 +115,7 @@ public class ShowtimeRepository {
 			throw new IllegalArgumentException("movieId invalid.");
 
 		boolean hasMovie = (movieId != null && movieId > 0);
+		String effectiveStatus = effectiveMovieStatusExpr("m");
 
 		LocalDateTime startOfDay = date.atStartOfDay();
 		LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
@@ -73,7 +126,8 @@ public class ShowtimeRepository {
 				+ "  r.name AS room_name " + "FROM showtime s " + "JOIN movie  m ON m.id = s.movie_id "
 				+ "JOIN room   r ON r.id = s.room_id " + "JOIN cinema c ON c.id = r.cinema_id "
 				+ "WHERE c.is_active = 1 " + "  AND s.status = 'SCHEDULED' "
-				+ "  AND m.status IN ('COMING_SOON','NOW_SHOWING') " + "  AND r.cinema_id = ? "
+				+ "  AND COALESCE(r.status, 1) = 1 "
+				+ "  AND (" + effectiveStatus + ") IN ('COMING_SOON','NOW_SHOWING') " + "  AND r.cinema_id = ? "
 				+ (hasMovie ? "  AND s.movie_id = ? " : "") + "  AND s.start_time >= ? " + "  AND s.start_time <  ? "
 				+ "ORDER BY m.id ASC, s.start_time ASC, r.name ASC, s.id ASC;";
 
@@ -129,6 +183,7 @@ public class ShowtimeRepository {
 		boolean hasCinema = (cinemaId != null && cinemaId > 0);
 		boolean hasMovie = (movieId != null && movieId > 0);
 		boolean hasDate = (date != null);
+		String effectiveStatus = effectiveMovieStatusExpr("m");
 
 		LocalDateTime startOfDay = null;
 		LocalDateTime endOfDay = null;
@@ -141,7 +196,8 @@ public class ShowtimeRepository {
 				+ "  s.id, s.movie_id, s.room_id, s.start_time, s.end_time, s.base_price, s.status, s.created_at "
 				+ "FROM showtime s " + "JOIN movie  m ON m.id = s.movie_id " + "JOIN room   r ON r.id = s.room_id "
 				+ "JOIN cinema c ON c.id = r.cinema_id " + "WHERE 1=1 " + "  AND c.is_active = 1 "
-				+ "  AND s.status = 'SCHEDULED' " + "  AND m.status IN ('COMING_SOON', 'NOW_SHOWING') "
+				+ "  AND s.status = 'SCHEDULED' " + "  AND COALESCE(r.status, 1) = 1 "
+				+ "  AND (" + effectiveStatus + ") IN ('COMING_SOON', 'NOW_SHOWING') "
 				+ (hasCinema ? " AND r.cinema_id = ? " : "") + (hasMovie ? " AND s.movie_id  = ? " : "")
 				+ (hasDate ? " AND s.start_time >= ? AND s.start_time < ? " : "")
 				+ "ORDER BY s.start_time ASC, s.id ASC;";
@@ -214,6 +270,7 @@ public class ShowtimeRepository {
 	// Only edits: add c.image_url select + setCinemaImageUrl(...) inside dto init.
 
 	public List<MovieWithShowtimesDtos> getCinemasWithShowtimesByMovieId(int movieId, Integer cinemaId) {
+	    String effectiveStatus = effectiveMovieStatusExpr("m");
 	    String baseSql = "SELECT " +
 	            "  c.id AS cinema_id, " +
 	            "  c.name AS cinema_name, " +
@@ -231,6 +288,8 @@ public class ShowtimeRepository {
 	            "JOIN movie m ON m.id = s.movie_id " +
 	            "WHERE s.movie_id = ? " +
 	            "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
+	            "  AND COALESCE(r.status, 1) = 1 " +
+	            "  AND (" + effectiveStatus + ") IN ('COMING_SOON', 'NOW_SHOWING') " +
 	            "  AND s.start_time >= NOW() " +
 	            "  AND s.end_time > s.start_time " +
 	            "  AND (m.duration_minutes IS NULL OR " +
@@ -334,7 +393,11 @@ public class ShowtimeRepository {
 				 "FROM showtime s " +
 				 "JOIN room r ON r.id = s.room_id " +
 				 "JOIN cinema c ON c.id = r.cinema_id " +
-				 "WHERE s.id = ? LIMIT 1";
+				 "WHERE s.id = ? " +
+				 "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
+				 "  AND COALESCE(r.status, 1) = 1 " +
+				 "  AND (c.is_active = 1 OR c.is_active IS NULL) " +
+				 "LIMIT 1";
 
 		try (java.sql.Connection con = dataSource.getConnection();
 			 java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
@@ -369,7 +432,11 @@ public class ShowtimeRepository {
 				 "JOIN room r ON r.id = s.room_id " +
 				 "JOIN cinema c ON c.id = r.cinema_id " +
 				 "JOIN movie m ON m.id = s.movie_id " +
-				 "WHERE s.id = ? LIMIT 1";
+				 "WHERE s.id = ? " +
+				 "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
+				 "  AND COALESCE(r.status, 1) = 1 " +
+				 "  AND (c.is_active = 1 OR c.is_active IS NULL) " +
+				 "LIMIT 1";
 
 		try (java.sql.Connection con = dataSource.getConnection();
 			 java.sql.PreparedStatement ps = con.prepareStatement(sql)) {

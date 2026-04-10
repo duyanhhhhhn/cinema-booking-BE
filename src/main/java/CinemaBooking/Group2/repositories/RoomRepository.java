@@ -1,9 +1,12 @@
 package CinemaBooking.Group2.repositories;
 
 import java.util.List;
+import java.sql.PreparedStatement;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import CinemaBooking.Group2.mappers.RoomMapper;
@@ -67,8 +70,24 @@ public class RoomRepository {
 				""";
 
 		try {
-			return jdbc.update(sql, r.getCinemaId(), r.getName(), r.getType(), r.getTotalSeats(), r.getStatus(),
-					r.getSeatLayout());
+			KeyHolder keyHolder = new GeneratedKeyHolder();
+			jdbc.update(connection -> {
+				PreparedStatement ps = connection.prepareStatement(sql, new String[] { "id" });
+				ps.setInt(1, r.getCinemaId());
+				ps.setString(2, r.getName());
+				ps.setString(3, r.getType());
+				ps.setInt(4, r.getTotalSeats());
+				ps.setInt(5, r.getStatus());
+				ps.setString(6, r.getSeatLayout());
+				return ps;
+			}, keyHolder);
+
+			Number key = keyHolder.getKey();
+			int generatedId = key == null ? 0 : key.intValue();
+			if (generatedId > 0) {
+				r.setId(generatedId);
+			}
+			return generatedId;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0; // Return 0 on error

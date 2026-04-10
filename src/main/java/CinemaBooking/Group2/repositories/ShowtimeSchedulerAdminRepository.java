@@ -58,6 +58,7 @@ public class ShowtimeSchedulerAdminRepository {
             SELECT id, name, type, total_seats
             FROM room
             WHERE cinema_id = ?
+              AND COALESCE(status, 1) = 1
             ORDER BY id ASC
         """;
         return jdbc.query(sql, roomMapper, cinemaId);
@@ -109,6 +110,7 @@ public class ShowtimeSchedulerAdminRepository {
             JOIN room r ON r.id = s.room_id
             JOIN movie m ON m.id = s.movie_id
             WHERE r.cinema_id = ?
+              AND COALESCE(r.status, 1) = 1
               AND (s.status IS NULL OR s.status <> 'CANCELLED')
               AND s.start_time < ?
               AND s.end_time > ?
@@ -143,9 +145,17 @@ public class ShowtimeSchedulerAdminRepository {
         return c != null && c > 0;
     }
 
+    public boolean isRoomActive(int roomId) {
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM room WHERE id = ? AND COALESCE(status, 1) = 1",
+                Integer.class,
+                roomId);
+        return count != null && count > 0;
+    }
+
     public String findRoomType(int roomId) {
         List<String> list = jdbc.queryForList(
-                "SELECT type FROM room WHERE id = ? LIMIT 1",
+                "SELECT type FROM room WHERE id = ? AND COALESCE(status, 1) = 1 LIMIT 1",
                 String.class,
                 roomId
         );
@@ -327,7 +337,7 @@ public class ShowtimeSchedulerAdminRepository {
             "SELECT m.id, m.title, m.duration_minutes, m.poster_url, " +
             effectiveStatus + " AS status, m.format " +
             "FROM movie m " +
-            "WHERE (" + effectiveStatus + ") <> 'ENDED' ";
+            "WHERE (" + effectiveStatus + ") NOT IN ('ENDED', 'HIDDEN') ";
 
         java.util.ArrayList<Object> args = new java.util.ArrayList<>();
 
@@ -370,7 +380,7 @@ public class ShowtimeSchedulerAdminRepository {
         String roomSql = """
             SELECT type
             FROM room
-            WHERE id = ? AND cinema_id = ?
+            WHERE id = ? AND cinema_id = ? AND COALESCE(status, 1) = 1
             LIMIT 1
         """;
 
@@ -449,6 +459,7 @@ public class ShowtimeSchedulerAdminRepository {
             JOIN room r ON r.id = s.room_id
             JOIN movie m ON m.id = s.movie_id
             WHERE s.id = ?
+              AND COALESCE(r.status, 1) = 1
             LIMIT 1
         """;
         List<ShowtimeDetailRow> list = jdbc.query(sql, showtimeDetailMapper, showtimeId);

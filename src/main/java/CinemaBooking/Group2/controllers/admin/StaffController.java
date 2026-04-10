@@ -20,10 +20,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.staff.CreateWorkShiftRequestDTO;
+import CinemaBooking.Group2.dtos.staff.CreateStaffSwapRequestDTO;
 import CinemaBooking.Group2.dtos.staff.ShiftTemplateResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffScheduleDetailResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffScheduleRequestDTO;
+import CinemaBooking.Group2.dtos.staff.StaffRegistrationWindowResponseDTO;
+import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;
+import CinemaBooking.Group2.dtos.staff.StaffSwapActionRequestDTO;
+import CinemaBooking.Group2.dtos.staff.StaffSwapRequestResponseDTO;
+import CinemaBooking.Group2.dtos.staff.UpdateStaffRegistrationWindowRequestDTO;
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
+import CinemaBooking.Group2.models.Enum.StaffScheduleSwapStatus;
 import CinemaBooking.Group2.service.StaffScheduleService;
 import jakarta.validation.Valid;
 
@@ -86,6 +93,21 @@ public class StaffController {
                 .body(new ApiResponse<>("Xử lý lịch làm thành công", data));
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','STAFF')")
+    @GetMapping("/schedule/registration-window")
+    public ResponseEntity<ApiResponse<StaffRegistrationWindowResponseDTO>> getRegistrationWindowStatus() {
+        StaffRegistrationWindowResponseDTO data = staffScheduleService.getRegistrationWindowStatus();
+        return ResponseEntity.ok(new ApiResponse<>("Lấy trạng thái mở đăng ký thành công", data));
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PutMapping("/schedule/registration-window")
+    public ResponseEntity<ApiResponse<StaffRegistrationWindowResponseDTO>> updateRegistrationWindowStatus(
+            @RequestBody UpdateStaffRegistrationWindowRequestDTO request) {
+        StaffRegistrationWindowResponseDTO data = staffScheduleService.updateRegistrationWindow(request);
+        return ResponseEntity.ok(new ApiResponse<>("Cập nhật trạng thái mở đăng ký thành công", data));
+    }
+
     @GetMapping("/schedule/my")
     public ResponseEntity<ApiResponse<List<StaffScheduleDetailResponseDTO>>> getMySchedule(
             @RequestParam(required = false)
@@ -117,5 +139,53 @@ public class StaffController {
         List<StaffScheduleDetailResponseDTO> data =
                 staffScheduleService.getCinemaSchedule(startDate, endDate, status, staffId, cinemaId);
         return ResponseEntity.ok(new ApiResponse<>("Lấy lịch làm việc toàn rạp thành công", data));
+    }
+
+    @PreAuthorize("hasAuthority('STAFF')")
+    @GetMapping("/schedule/swap/candidates")
+    public ResponseEntity<ApiResponse<List<StaffResponseDTO>>> getSwapCandidates(@RequestParam int scheduleId) {
+        List<StaffResponseDTO> data = staffScheduleService.getSwapCandidates(scheduleId);
+        return ResponseEntity.ok(new ApiResponse<>("Lấy danh sách nhân viên làm thay thành công", data));
+    }
+
+    @PreAuthorize("hasAuthority('STAFF')")
+    @PostMapping("/schedule/swap-requests")
+    public ResponseEntity<ApiResponse<StaffSwapRequestResponseDTO>> createSwapRequest(
+            @Valid @RequestBody CreateStaffSwapRequestDTO request) {
+
+        StaffSwapRequestResponseDTO data = staffScheduleService.createSwapRequest(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("Tạo yêu cầu nhờ làm thay thành công", data));
+    }
+
+    @PreAuthorize("hasAnyAuthority('MANAGER','STAFF')")
+    @GetMapping("/schedule/swap-requests")
+    public ResponseEntity<ApiResponse<List<StaffSwapRequestResponseDTO>>> getSwapRequests(
+            @RequestParam(required = false) String box,
+            @RequestParam(required = false) StaffScheduleSwapStatus status,
+            @RequestParam(required = false) Integer cinemaId) {
+
+        List<StaffSwapRequestResponseDTO> data = staffScheduleService.getSwapRequests(box, status, cinemaId);
+        return ResponseEntity.ok(new ApiResponse<>("Lấy danh sách yêu cầu đổi ca thành công", data));
+    }
+
+    @PreAuthorize("hasAuthority('STAFF')")
+    @PutMapping("/schedule/swap-requests/{id}/respond")
+    public ResponseEntity<ApiResponse<StaffSwapRequestResponseDTO>> respondSwapRequest(
+            @PathVariable int id,
+            @Valid @RequestBody StaffSwapActionRequestDTO request) {
+
+        StaffSwapRequestResponseDTO data = staffScheduleService.respondSwapRequest(id, request);
+        return ResponseEntity.ok(new ApiResponse<>("Phản hồi yêu cầu đổi ca thành công", data));
+    }
+
+    @PreAuthorize("hasAuthority('MANAGER')")
+    @PutMapping("/schedule/swap-requests/{id}/review")
+    public ResponseEntity<ApiResponse<StaffSwapRequestResponseDTO>> reviewSwapRequest(
+            @PathVariable int id,
+            @Valid @RequestBody StaffSwapActionRequestDTO request) {
+
+        StaffSwapRequestResponseDTO data = staffScheduleService.reviewSwapRequest(id, request);
+        return ResponseEntity.ok(new ApiResponse<>("Duyệt yêu cầu đổi ca thành công", data));
     }
 }

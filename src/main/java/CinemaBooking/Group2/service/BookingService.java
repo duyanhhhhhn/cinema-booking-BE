@@ -104,9 +104,9 @@ public class BookingService {
     private SeatHoldRepository seatHoldRepository;
 
     public BookingCalculateResponse calculateBooking(BookingCalculateRequest request) {
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        Showtime showtime = showtimeRepository.findBookableById(request.getShowtimeId());
         if (showtime == null) {
-            throw new RuntimeException("Showtime not found");
+            throw new RuntimeException("Showtime không khả dụng");
         }
 
         BookingCalculateResponse response = new BookingCalculateResponse();
@@ -368,9 +368,9 @@ public class BookingService {
     @Transactional
     public BookingCreateResponse createBooking(BookingCreateRequest request) {
         // Validate showtime
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        Showtime showtime = showtimeRepository.findBookableById(request.getShowtimeId());
         if (showtime == null) {
-            throw new RuntimeException("Showtime not found");
+            throw new RuntimeException("Showtime không khả dụng");
         }
 
         // Validate seats availability
@@ -558,9 +558,9 @@ public class BookingService {
         }
         
         // Validate showtime
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        Showtime showtime = showtimeRepository.findBookableById(request.getShowtimeId());
         if (showtime == null) {
-            throw new RuntimeException("Showtime not found");
+            throw new RuntimeException("Showtime không khả dụng");
         }
 
         // Validate seats availability

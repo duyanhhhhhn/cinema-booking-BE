@@ -100,6 +100,8 @@ public class RoomService {
 
         // 1. save room
         repo.updateSeatLayout(roomId, json, dto.getTotalSeats());
+        room.setSeatLayout(json);
+        room.setTotalSeats(dto.getTotalSeats());
 
         // 2. parse JSON
         List<SeatLayoutRowDTO> rows = objectMapper.readValue(

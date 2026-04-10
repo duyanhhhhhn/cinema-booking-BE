@@ -87,6 +87,65 @@ public class UserRepository {
         }
     }
 
+    public List<User> findActiveStaffByCinemaAndPosition(int cinemaId, String position, Integer excludeUserId) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT u.*, r.name AS role_name
+                FROM user u
+                JOIN role r ON r.id = u.role_id
+                WHERE u.role_id = 3
+                  AND u.is_active = 1
+                  AND u.cinema_id = ?
+                """);
+
+        List<Object> params = new ArrayList<>();
+        params.add(cinemaId);
+
+        if (position != null && !position.isBlank()) {
+            sql.append(" AND u.position = ?");
+            params.add(position);
+        }
+
+        if (excludeUserId != null && excludeUserId > 0) {
+            sql.append(" AND u.id <> ?");
+            params.add(excludeUserId);
+        }
+
+        sql.append(" ORDER BY u.full_name ASC");
+        return jdbc.query(sql.toString(), new UserMapper(), params.toArray());
+    }
+
+    public List<User> findActiveUsersByRoleName(String roleName) {
+        String sql = """
+                SELECT u.*, r.name AS role_name
+                FROM user u
+                JOIN role r ON r.id = u.role_id
+                WHERE u.is_active = 1
+                  AND upper(r.name) = upper(?)
+                ORDER BY u.full_name ASC
+                """;
+        return jdbc.query(sql, new UserMapper(), roleName);
+    }
+
+    public List<User> findActiveUsersByRoleNameAndCinema(String roleName, Integer cinemaId) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT u.*, r.name AS role_name
+                FROM user u
+                JOIN role r ON r.id = u.role_id
+                WHERE u.is_active = 1
+                  AND upper(r.name) = upper(?)
+                """);
+        List<Object> params = new ArrayList<>();
+        params.add(roleName);
+
+        if (cinemaId != null && cinemaId > 0) {
+            sql.append(" AND u.cinema_id = ?");
+            params.add(cinemaId);
+        }
+
+        sql.append(" ORDER BY u.full_name ASC");
+        return jdbc.query(sql.toString(), new UserMapper(), params.toArray());
+    }
+
     public UserResponseDTO findUserDetail(int id) {
         String sql = """
                 SELECT id, full_name, email, phone, role_id, cinema_id, position, is_active

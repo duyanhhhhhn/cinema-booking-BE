@@ -14,6 +14,7 @@ import CinemaBooking.Group2.models.Seat;
 import CinemaBooking.Group2.repositories.BookingSeatRepository;
 import CinemaBooking.Group2.repositories.SeatHoldRepository;
 import CinemaBooking.Group2.repositories.SeatRepository;
+import CinemaBooking.Group2.repositories.ShowtimeRepository;
 
 /**
  * Service for retrieving seat status information
@@ -30,8 +31,15 @@ public class SeatStatusService {
     @Autowired
     private SeatHoldRepository seatHoldRepository;
 
+    @Autowired
+    private ShowtimeRepository showtimeRepository;
+
     
     public List<SeatStatusDTO> getSeatStatusByShowtime(int showtimeId, Integer currentUserId) {
+        if (!showtimeRepository.isBookable(showtimeId)) {
+            throw new RuntimeException("Showtime không khả dụng");
+        }
+
         List<Seat> seats = seatRepository.findSeatsByShowtime(showtimeId);
         
         List<Integer> soldSeatIds = bookingSeatRepository.findSoldSeatIdsByShowtime(showtimeId);
@@ -70,6 +78,10 @@ public class SeatStatusService {
 
    
     public boolean isSeatAvailable(int showtimeId, int seatId) {
+        if (!showtimeRepository.isBookable(showtimeId)) {
+            return false;
+        }
+
         // Check if sold
         if (bookingSeatRepository.isSeatSold(showtimeId, seatId)) {
             return false;
