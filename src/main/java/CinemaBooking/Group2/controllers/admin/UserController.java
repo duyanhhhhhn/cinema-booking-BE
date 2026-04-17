@@ -96,6 +96,7 @@ public class UserController {
 
         UserDTO dto = new UserDTO(user.getId(), user.getFullName(), user.getEmail(), user.getPhone(),
                 user.getAvatarUrl(), user.getRoleName(), user.getCreatedAt(), user.getCinemaId(), user.getIsActive());
+        dto.setPosition(user.getPosition() == null ? null : user.getPosition().name());
 
         return ResponseEntity.ok(new ApiResponse<>("Success", dto));
     }

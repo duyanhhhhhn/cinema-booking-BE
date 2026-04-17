@@ -18,23 +18,29 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import CinemaBooking.Group2.dtos.staff.CreateWorkShiftRequestDTO;
+import CinemaBooking.Group2.dtos.staff.CreateStaffUrgentRequestDTO;
 import CinemaBooking.Group2.dtos.staff.CreateStaffSwapRequestDTO;
 import CinemaBooking.Group2.dtos.staff.ShiftTemplateResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffRegistrationWindowResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffScheduleDetailResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffScheduleRequestDTO;
+import CinemaBooking.Group2.dtos.staff.StaffUrgentRequestResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffSwapActionRequestDTO;
 import CinemaBooking.Group2.dtos.staff.StaffSwapRequestResponseDTO;
 import CinemaBooking.Group2.dtos.staff.UpdateStaffRegistrationWindowRequestDTO;
 import CinemaBooking.Group2.models.StaffSchedule;
+import CinemaBooking.Group2.models.StaffScheduleUrgentRequest;
 import CinemaBooking.Group2.models.StaffScheduleSwapRequest;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.WorkShift;
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
+import CinemaBooking.Group2.models.Enum.StaffScheduleUrgentRequestStatus;
+import CinemaBooking.Group2.models.Enum.StaffScheduleUrgentRequestType;
 import CinemaBooking.Group2.models.Enum.StaffScheduleSwapStatus;
 import CinemaBooking.Group2.repositories.ScheduleRepository;
 import CinemaBooking.Group2.repositories.ShiftRepository;
+import CinemaBooking.Group2.repositories.StaffScheduleUrgentRequestRepository;
 import CinemaBooking.Group2.repositories.StaffScheduleSwapRequestRepository;
 import CinemaBooking.Group2.repositories.UserRepository;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
@@ -46,6 +52,7 @@ public class StaffScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final ShiftRepository shiftRepository;
+    private final StaffScheduleUrgentRequestRepository urgentRequestRepository;
     private final StaffScheduleSwapRequestRepository swapRequestRepository;
     private final UserRepository userRepository;
     private final AuthService authService;
@@ -55,6 +62,7 @@ public class StaffScheduleService {
     public StaffScheduleService(
             ScheduleRepository scheduleRepository,
             ShiftRepository shiftRepository,
+            StaffScheduleUrgentRequestRepository urgentRequestRepository,
             StaffScheduleSwapRequestRepository swapRequestRepository,
             UserRepository userRepository,
             AuthService authService,
@@ -62,6 +70,7 @@ public class StaffScheduleService {
             StaffRegistrationWindowService registrationWindowService) {
         this.scheduleRepository = scheduleRepository;
         this.shiftRepository = shiftRepository;
+        this.urgentRequestRepository = urgentRequestRepository;
         this.swapRequestRepository = swapRequestRepository;
         this.userRepository = userRepository;
         this.authService = authService;
@@ -165,6 +174,7 @@ public class StaffScheduleService {
         AuthUserPrincipal principal = authService.getPrincipal();
         User actor = requireUserByEmail(principal.email());
         WorkShift targetShift = requireShift(request.getShiftId());
+        validateScheduleWriteWindow(request.getWorkDate(), targetShift);
 
         return switch (principal.role()) {
             case "STAFF" -> handleStaffRequest(actor, request, targetShift);
@@ -213,6 +223,29 @@ public class StaffScheduleService {
         return toScheduleResponses(schedules);
     }
 
+    @Transactional
+    public void deleteSchedule(int scheduleId) {
+        AuthUserPrincipal principal = authService.getPrincipal();
+        StaffSchedule schedule = requireSchedule(scheduleId);
+        WorkShift shift = requireShift(schedule.getShiftId());
+        validateScheduleWriteWindow(schedule.getWorkDate(), shift);
+
+        if ("STAFF".equals(principal.role())) {
+            User actor = requireUserByEmail(principal.email());
+            validateStaffScheduleDeletion(actor, schedule);
+        } else if ("MANAGER".equals(principal.role()) || "ADMIN".equals(principal.role())) {
+            User targetStaff = requireStaff(schedule.getStaffId());
+            enforceCinemaScope(principal, targetStaff);
+        } else {
+            forbidden("Bạn không có quyền xóa lịch làm");
+        }
+
+        int deletedRows = scheduleRepository.delete(scheduleId);
+        if (deletedRows <= 0) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể xóa lịch làm");
+        }
+    }
+
     public List<StaffResponseDTO> getSwapCandidates(int scheduleId) {
         AuthUserPrincipal principal = authService.getPrincipal();
         if (!"STAFF".equals(principal.role())) {
@@ -221,12 +254,12 @@ public class StaffScheduleService {
 
         User actor = requireUserByEmail(principal.email());
         StaffSchedule schedule = requireSchedule(scheduleId);
-        validateSwapSourceSchedule(actor, schedule);
-
         WorkShift shift = requireShift(schedule.getShiftId());
+        validateSwapSourceSchedule(actor, schedule, shift);
+
         List<User> users = userRepository.findActiveStaffByCinemaAndPosition(
                 actor.getCinemaId(),
-                null,
+                actor.getPosition() == null ? null : actor.getPosition().name(),
                 actor.getId());
 
         List<StaffResponseDTO> candidates = new ArrayList<>();
@@ -236,6 +269,56 @@ public class StaffScheduleService {
             }
         }
         return candidates;
+    }
+
+    @Transactional
+    public StaffUrgentRequestResponseDTO createUrgentRequest(CreateStaffUrgentRequestDTO request) {
+        if (request == null || request.getScheduleId() == null) {
+            badRequest("Dữ liệu yêu cầu khẩn không hợp lệ");
+        }
+
+        AuthUserPrincipal principal = authService.getPrincipal();
+        if (!"STAFF".equals(principal.role())) {
+            forbidden("Chỉ STAFF mới được gửi yêu cầu khẩn");
+        }
+
+        User actor = requireUserByEmail(principal.email());
+        StaffSchedule schedule = requireSchedule(request.getScheduleId());
+        WorkShift shift = requireShift(schedule.getShiftId());
+        validateUrgentSourceSchedule(actor, schedule, shift);
+
+        StaffScheduleUrgentRequest openRequest = urgentRequestRepository.findOpenByScheduleId(schedule.getId());
+        if (openRequest != null) {
+            conflict("Ca này đang có một yêu cầu khẩn chờ duyệt");
+        }
+
+        StaffScheduleUrgentRequestType type = parseUrgentRequestType(request.getType());
+        String reason = normalizeOptionalText(request.getReason());
+        if (reason == null) {
+            badRequest("Vui lòng nhập lý do");
+        }
+
+        LocalTime expectedArrivalTime = null;
+        if (type == StaffScheduleUrgentRequestType.LATE_ARRIVAL) {
+            expectedArrivalTime = validateExpectedArrivalTime(schedule, shift, request.getExpectedArrivalTime());
+        }
+
+        StaffScheduleUrgentRequest urgentRequest = new StaffScheduleUrgentRequest();
+        urgentRequest.setScheduleId(schedule.getId());
+        urgentRequest.setRequesterStaffId(actor.getId());
+        urgentRequest.setType(type);
+        urgentRequest.setStatus(StaffScheduleUrgentRequestStatus.PENDING_ADMIN_APPROVAL);
+        urgentRequest.setReason(reason);
+        urgentRequest.setExpectedArrivalTime(expectedArrivalTime);
+
+        int requestId = urgentRequestRepository.create(urgentRequest);
+        if (requestId <= 0) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể tạo yêu cầu khẩn");
+        }
+
+        StaffScheduleUrgentRequest savedRequest = requireUrgentRequest(requestId);
+        notifyUrgentRequestCreated(savedRequest, actor, schedule, shift);
+        return toUrgentResponse(savedRequest, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
     @Transactional
@@ -251,7 +334,8 @@ public class StaffScheduleService {
 
         User actor = requireUserByEmail(principal.email());
         StaffSchedule schedule = requireSchedule(request.getScheduleId());
-        validateSwapSourceSchedule(actor, schedule);
+        WorkShift shift = requireShift(schedule.getShiftId());
+        validateSwapSourceSchedule(actor, schedule, shift);
 
         StaffScheduleSwapRequest openRequest = swapRequestRepository.findOpenByScheduleId(schedule.getId());
         if (openRequest != null) {
@@ -261,7 +345,6 @@ public class StaffScheduleService {
         User targetStaff = requireStaff(request.getTargetStaffId());
         validateSwapTarget(actor, targetStaff);
 
-        WorkShift shift = requireShift(schedule.getShiftId());
         if (!canCoverShift(targetStaff, schedule.getWorkDate(), shift, null)) {
             conflict("Nhân viên được nhờ phải trống lịch ở ca này");
         }
@@ -320,6 +403,43 @@ public class StaffScheduleService {
         List<StaffSwapRequestResponseDTO> data = new ArrayList<>();
         for (StaffScheduleSwapRequest request : requests) {
             data.add(toSwapResponse(request, staffCache, shiftCache, scheduleCache));
+        }
+        return data;
+    }
+
+    public List<StaffUrgentRequestResponseDTO> getUrgentRequests(
+            String box,
+            StaffScheduleUrgentRequestStatus status,
+            Integer cinemaIdParam) {
+
+        AuthUserPrincipal principal = authService.getPrincipal();
+        User actor = requireUserByEmail(principal.email());
+        String normalizedBox = normalizeUrgentBox(box, principal.role());
+
+        List<StaffScheduleUrgentRequest> requests;
+        if ("OUTGOING".equals(normalizedBox)) {
+            if (!"STAFF".equals(principal.role())) {
+                forbidden("Chỉ STAFF mới có danh sách yêu cầu khẩn của mình");
+            }
+            requests = urgentRequestRepository.findByRequesterStaff(actor.getId(), status);
+        } else {
+            if (!"MANAGER".equals(principal.role()) && !"ADMIN".equals(principal.role())) {
+                forbidden("Bạn không có quyền xem yêu cầu khẩn cần duyệt");
+            }
+
+            Integer scopedCinemaId = resolveCinemaScheduleScope(principal, cinemaIdParam);
+            StaffScheduleUrgentRequestStatus effectiveStatus =
+                    status == null ? StaffScheduleUrgentRequestStatus.PENDING_ADMIN_APPROVAL : status;
+            requests = urgentRequestRepository.findByReviewCinema(scopedCinemaId, effectiveStatus);
+        }
+
+        Map<Integer, User> staffCache = new HashMap<>();
+        Map<Integer, WorkShift> shiftCache = new HashMap<>();
+        Map<Integer, StaffSchedule> scheduleCache = new HashMap<>();
+
+        List<StaffUrgentRequestResponseDTO> data = new ArrayList<>();
+        for (StaffScheduleUrgentRequest request : requests) {
+            data.add(toUrgentResponse(request, staffCache, shiftCache, scheduleCache));
         }
         return data;
     }
@@ -395,6 +515,8 @@ public class StaffScheduleService {
         }
 
         WorkShift shift = requireShift(sourceSchedule.getShiftId());
+        validateSwapSourceSchedule(requester, sourceSchedule, shift);
+        validateSwapTarget(requester, targetStaff);
         StaffSchedule exactTargetSchedule = scheduleRepository.findByStaffShiftAndDate(
                 targetStaff.getId(),
                 shift.getId(),
@@ -437,6 +559,65 @@ public class StaffScheduleService {
         return toSwapResponse(requireSwapRequest(requestId), new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
+    @Transactional
+    public StaffUrgentRequestResponseDTO reviewUrgentRequest(int requestId, StaffSwapActionRequestDTO request) {
+        if (request == null || request.getAction() == null) {
+            badRequest("Dữ liệu duyệt yêu cầu khẩn không hợp lệ");
+        }
+
+        AuthUserPrincipal principal = authService.getPrincipal();
+        if (!"MANAGER".equals(principal.role()) && !"ADMIN".equals(principal.role())) {
+            forbidden("Bạn không có quyền duyệt yêu cầu khẩn");
+        }
+
+        StaffScheduleUrgentRequest urgentRequest = requireUrgentRequest(requestId);
+        if (urgentRequest.getStatus() != StaffScheduleUrgentRequestStatus.PENDING_ADMIN_APPROVAL) {
+            conflict("Yêu cầu khẩn này không còn ở trạng thái chờ duyệt");
+        }
+
+        StaffSchedule sourceSchedule = requireSchedule(urgentRequest.getScheduleId());
+        User requester = requireStaff(urgentRequest.getRequesterStaffId());
+        enforceCinemaScope(principal, requester);
+        WorkShift shift = requireShift(sourceSchedule.getShiftId());
+
+        String action = normalizeOptionalText(request.getAction());
+        if (action == null) {
+            badRequest("Action không hợp lệ");
+        }
+
+        if ("REJECT".equalsIgnoreCase(action)) {
+            urgentRequest.setStatus(StaffScheduleUrgentRequestStatus.ADMIN_REJECTED);
+            urgentRequestRepository.update(urgentRequest);
+            notifyUrgentReviewResolved(urgentRequest, requester, sourceSchedule, shift, false);
+            return toUrgentResponse(requireUrgentRequest(requestId), new HashMap<>(), new HashMap<>(), new HashMap<>());
+        }
+
+        if (!"APPROVE".equalsIgnoreCase(action)) {
+            badRequest("Action duyệt không hợp lệ");
+        }
+
+        if (sourceSchedule.getStatus() != StaffScheduleStatus.CONFIRMED) {
+            conflict("Ca này không còn ở trạng thái có thể xử lý");
+        }
+        if (hasShiftEnded(sourceSchedule.getWorkDate(), shift)) {
+            conflict("Ca này đã kết thúc nên không thể duyệt yêu cầu khẩn");
+        }
+
+        if (urgentRequest.getType() == StaffScheduleUrgentRequestType.EMERGENCY_LEAVE) {
+            sourceSchedule.setStatus(StaffScheduleStatus.CANCELLED);
+            sourceSchedule.setRequestedByRole("EMERGENCY_APPROVED");
+            save(sourceSchedule);
+        } else {
+            validateApprovedLateArrival(sourceSchedule, shift, urgentRequest.getExpectedArrivalTime());
+        }
+
+        urgentRequest.setStatus(StaffScheduleUrgentRequestStatus.ADMIN_APPROVED);
+        urgentRequestRepository.update(urgentRequest);
+        notifyUrgentReviewResolved(urgentRequest, requester, sourceSchedule, shift, true);
+
+        return toUrgentResponse(requireUrgentRequest(requestId), new HashMap<>(), new HashMap<>(), new HashMap<>());
+    }
+
     private Integer resolveCinemaScheduleScope(AuthUserPrincipal principal, Integer cinemaIdParam) {
         return switch (principal.role()) {
             case "ADMIN" -> cinemaIdParam;
@@ -462,20 +643,14 @@ public class StaffScheduleService {
                 ? StaffScheduleStatus.ASSIGNED
                 : request.getStatus();
 
-        if (requestedStatus != StaffScheduleStatus.ASSIGNED
-                && requestedStatus != StaffScheduleStatus.CONFIRMED
-                && requestedStatus != StaffScheduleStatus.CANCELLED) {
-            badRequest("Nhân viên chỉ được đăng ký, xác nhận hoặc từ chối ca của chính mình");
+        if (requestedStatus != StaffScheduleStatus.ASSIGNED) {
+            badRequest("Nhân viên chỉ được gửi đăng ký ca làm của chính mình");
         }
 
         StaffSchedule exactSchedule =
                 scheduleRepository.findByStaffShiftAndDate(actor.getId(), targetShift.getId(), request.getWorkDate());
 
-        return switch (requestedStatus) {
-            case ASSIGNED -> handleStaffSelection(actor, request, targetShift, exactSchedule);
-            case CONFIRMED -> handleStaffApproval(actor, request, targetShift, exactSchedule);
-            case CANCELLED -> handleStaffCancellation(actor, exactSchedule);
-        };
+        return handleStaffSelection(actor, request, targetShift, exactSchedule);
     }
 
     private StaffScheduleDetailResponseDTO handleManagerAssignment(
@@ -484,7 +659,7 @@ public class StaffScheduleService {
             WorkShift targetShift) {
 
         if (request.getStaffId() == null || request.getStaffId() <= 0) {
-            badRequest("Manager phải chọn nhân viên để phân công");
+            badRequest("Thiếu nhân viên cần cập nhật lịch");
         }
 
         User targetStaff = requireStaff(request.getStaffId());
@@ -494,8 +669,9 @@ public class StaffScheduleService {
         if (targetStatus == null) {
             targetStatus = StaffScheduleStatus.CONFIRMED;
         }
-        if (targetStatus != StaffScheduleStatus.CONFIRMED && targetStatus != StaffScheduleStatus.CANCELLED) {
-            badRequest("Manager chỉ được chốt ca CONFIRMED hoặc huỷ ca CANCELLED");
+        if (targetStatus != StaffScheduleStatus.CONFIRMED
+                && targetStatus != StaffScheduleStatus.CANCELLED) {
+            forbidden("Manager/Admin chỉ được duyệt hoặc từ chối ca do staff đăng ký.");
         }
 
         StaffSchedule exactSchedule = scheduleRepository.findByStaffShiftAndDate(
@@ -503,49 +679,25 @@ public class StaffScheduleService {
                 targetShift.getId(),
                 request.getWorkDate());
 
-        if (targetStatus == StaffScheduleStatus.CANCELLED) {
-            if (exactSchedule == null) {
-                notFound("Không tìm thấy lịch làm để huỷ");
-            }
-            exactSchedule.setStatus(StaffScheduleStatus.CANCELLED);
-            StaffSchedule saved = save(exactSchedule);
-            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+        if (exactSchedule == null) {
+            notFound("Không tìm thấy lịch staff đã đăng ký");
         }
 
-        if (exactSchedule != null && exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
-            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
+        if (!isStaffRequestAwaitingManagerApproval(exactSchedule)
+                && exactSchedule.getStatus() != StaffScheduleStatus.CONFIRMED) {
+            conflict("Ca này không ở trạng thái chờ manager duyệt");
         }
 
-        if (requiresStaffApprovalForManagerProposal(request.getWorkDate(), exactSchedule)) {
-            StaffSchedule saved = createOrRefreshManagerProposal(
-                    principal.role(),
-                    targetStaff.getId(),
-                    request.getWorkDate(),
-                    targetShift,
-                    exactSchedule);
-            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
-        }
-
-        cancelOverlappingSchedules(targetStaff.getId(), request.getWorkDate(), targetShift,
-                exactSchedule == null ? null : exactSchedule.getId());
-
-        StaffSchedule saved;
-        if (exactSchedule != null) {
+        if (targetStatus == StaffScheduleStatus.CONFIRMED) {
+            cancelOverlappingSchedules(targetStaff.getId(), request.getWorkDate(), targetShift, exactSchedule.getId());
             exactSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
-            if (exactSchedule.getRequestedByRole() == null || exactSchedule.getRequestedByRole().isBlank()) {
-                exactSchedule.setRequestedByRole(normalizeRole(principal.role()));
-            }
-            saved = save(exactSchedule);
         } else {
-            StaffSchedule newSchedule = new StaffSchedule();
-            newSchedule.setStaffId(targetStaff.getId());
-            newSchedule.setShiftId(targetShift.getId());
-            newSchedule.setWorkDate(request.getWorkDate());
-            newSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
-            newSchedule.setRequestedByRole(normalizeRole(principal.role()));
-            saved = save(newSchedule);
+            exactSchedule.setStatus(StaffScheduleStatus.CANCELLED);
         }
-
+        if (exactSchedule.getRequestedByRole() == null || exactSchedule.getRequestedByRole().isBlank()) {
+            exactSchedule.setRequestedByRole(normalizeRole(principal.role()));
+        }
+        StaffSchedule saved = save(exactSchedule);
         return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
     }
 
@@ -559,10 +711,6 @@ public class StaffScheduleService {
 
         if (exactSchedule != null && exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
             return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
-        }
-
-        if (isManagerProposalAwaitingStaffApproval(exactSchedule)) {
-            badRequest("Ca này do manager đề xuất, hãy gửi trạng thái CONFIRMED để đồng ý hoặc CANCELLED để từ chối");
         }
 
         validateStaffRequestConflicts(actor.getId(), request.getWorkDate(), targetShift, exactSchedule);
@@ -821,6 +969,30 @@ public class StaffScheduleService {
         return dto;
     }
 
+    private StaffUrgentRequestResponseDTO toUrgentResponse(
+            StaffScheduleUrgentRequest request,
+            Map<Integer, User> staffCache,
+            Map<Integer, WorkShift> shiftCache,
+            Map<Integer, StaffSchedule> scheduleCache) {
+
+        StaffSchedule schedule = loadSchedule(request.getScheduleId(), scheduleCache);
+
+        StaffUrgentRequestResponseDTO dto = new StaffUrgentRequestResponseDTO();
+        dto.setId(request.getId());
+        dto.setScheduleId(request.getScheduleId());
+        dto.setType(request.getType().name());
+        dto.setStatus(request.getStatus().name());
+        dto.setReason(request.getReason());
+        dto.setExpectedArrivalTime(request.getExpectedArrivalTime());
+        dto.setCreatedAt(request.getCreatedAt());
+        dto.setUpdatedAt(request.getUpdatedAt());
+        dto.setWorkDate(schedule.getWorkDate());
+        dto.setSourceScheduleStatus(schedule.getStatus().name());
+        dto.setRequester(toStaffResponse(loadStaff(request.getRequesterStaffId(), staffCache)));
+        dto.setShift(toShiftResponse(loadShift(schedule.getShiftId(), shiftCache)));
+        return dto;
+    }
+
     private StaffResponseDTO toStaffResponse(User staff) {
         StaffResponseDTO dto = new StaffResponseDTO();
         dto.setId(staff.getId());
@@ -843,15 +1015,18 @@ public class StaffScheduleService {
         return dto;
     }
 
-    private void validateSwapSourceSchedule(User actor, StaffSchedule schedule) {
+    private void validateSwapSourceSchedule(User actor, StaffSchedule schedule, WorkShift shift) {
         if (schedule.getStaffId() != actor.getId()) {
             forbidden("Bạn chỉ được tạo yêu cầu nhờ làm thay cho ca của chính mình");
         }
         if (schedule.getStatus() != StaffScheduleStatus.CONFIRMED) {
             conflict("Chỉ ca đã được chốt mới có thể nhờ làm thay");
         }
-        if (schedule.getWorkDate().isBefore(todayVN())) {
-            conflict("Không thể nhờ làm thay cho ca đã qua");
+        if (actor.getPosition() == null) {
+            conflict("Nhân viên chưa được gán vị trí công việc");
+        }
+        if (hasShiftStarted(schedule.getWorkDate(), shift)) {
+            conflict("Chỉ được nhờ làm thay trước khi ca bắt đầu");
         }
     }
 
@@ -861,6 +1036,100 @@ public class StaffScheduleService {
         }
         if (targetStaff.getCinemaId() != actor.getCinemaId()) {
             conflict("Chỉ được nhờ nhân viên cùng rạp làm thay");
+        }
+        if (actor.getPosition() == null || targetStaff.getPosition() == null) {
+            conflict("Nhân viên phải có vị trí công việc rõ ràng mới được đổi ca");
+        }
+        if (actor.getPosition() != targetStaff.getPosition()) {
+            conflict("Chỉ nhân viên cùng vị trí công việc mới được làm thay ca cho nhau");
+        }
+    }
+
+    private void validateStaffScheduleDeletion(User actor, StaffSchedule schedule) {
+        if (schedule.getStaffId() != actor.getId()) {
+            forbidden("Bạn chỉ được xóa lịch của chính mình");
+        }
+        if (schedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            forbidden("Ca đã được chốt, hãy dùng nhờ làm thay hoặc yêu cầu khẩn");
+        }
+
+        String requestedByRole = normalizeRole(schedule.getRequestedByRole());
+        if ("MANAGER".equals(requestedByRole) || "ADMIN".equals(requestedByRole)) {
+            forbidden("Ca do manager đề xuất cần phản hồi bằng xác nhận hoặc từ chối");
+        }
+        if ("SWAP_TRANSFERRED".equals(requestedByRole) || "EMERGENCY_APPROVED".equals(requestedByRole)) {
+            forbidden("Không thể xóa lịch đã phát sinh từ điều phối vận hành");
+        }
+    }
+
+    private void validateUrgentSourceSchedule(User actor, StaffSchedule schedule, WorkShift shift) {
+        if (schedule.getStaffId() != actor.getId()) {
+            forbidden("Bạn chỉ được gửi yêu cầu khẩn cho ca của chính mình");
+        }
+        if (schedule.getStatus() != StaffScheduleStatus.CONFIRMED) {
+            conflict("Chỉ ca đã được chốt mới được gửi yêu cầu khẩn");
+        }
+        if (!todayVN().equals(schedule.getWorkDate())) {
+            conflict("Chỉ ca trong hôm nay mới được gửi yêu cầu khẩn hoặc xin đi muộn");
+        }
+        if (hasShiftEnded(schedule.getWorkDate(), shift)) {
+            conflict("Ca này đã kết thúc nên không thể gửi yêu cầu khẩn");
+        }
+    }
+
+    private StaffScheduleUrgentRequestType parseUrgentRequestType(String type) {
+        String normalizedType = normalizeOptionalText(type);
+        if (normalizedType == null) {
+            badRequest("Loại yêu cầu khẩn không hợp lệ");
+        }
+
+        try {
+            return StaffScheduleUrgentRequestType.valueOf(normalizedType.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            badRequest("Loại yêu cầu khẩn không hợp lệ");
+            return StaffScheduleUrgentRequestType.EMERGENCY_LEAVE;
+        }
+    }
+
+    private LocalTime validateExpectedArrivalTime(
+            StaffSchedule schedule,
+            WorkShift shift,
+            LocalTime expectedArrivalTime) {
+
+        if (expectedArrivalTime == null) {
+            badRequest("Vui lòng chọn giờ dự kiến đi muộn");
+        }
+
+        ShiftDateTimeRange range = buildShiftDateTimeRange(schedule.getWorkDate(), shift);
+        LocalDateTime expectedArrivalDateTime =
+                normalizeShiftTime(schedule.getWorkDate(), expectedArrivalTime, range);
+
+        if (!expectedArrivalDateTime.isAfter(range.startDateTime())) {
+            conflict("Giờ đến dự kiến phải sau giờ bắt đầu ca");
+        }
+        if (!expectedArrivalDateTime.isBefore(range.endDateTime())) {
+            conflict("Giờ đến dự kiến phải nằm trong khung ca làm");
+        }
+        if (!expectedArrivalDateTime.isAfter(nowVN())) {
+            conflict("Giờ đến dự kiến phải ở tương lai");
+        }
+
+        return expectedArrivalTime;
+    }
+
+    private void validateApprovedLateArrival(
+            StaffSchedule schedule,
+            WorkShift shift,
+            LocalTime expectedArrivalTime) {
+        if (expectedArrivalTime == null) {
+            conflict("Yêu cầu đi muộn đang thiếu giờ đến dự kiến");
+        }
+
+        ShiftDateTimeRange range = buildShiftDateTimeRange(schedule.getWorkDate(), shift);
+        LocalDateTime expectedArrivalDateTime =
+                normalizeShiftTime(schedule.getWorkDate(), expectedArrivalTime, range);
+        if (!expectedArrivalDateTime.isBefore(range.endDateTime())) {
+            conflict("Giờ đến dự kiến không còn nằm trong ca làm");
         }
     }
 
@@ -896,6 +1165,16 @@ public class StaffScheduleService {
         return normalizedBox.toUpperCase();
     }
 
+    private String normalizeUrgentBox(String box, String role) {
+        String normalizedRole = normalizeRole(role);
+        String normalizedBox = normalizeOptionalText(box);
+        if (normalizedBox == null) {
+            return "STAFF".equals(normalizedRole) ? "OUTGOING" : "REVIEW";
+        }
+
+        return normalizedBox.toUpperCase();
+    }
+
     private void acceptSwapRequest(User actor, StaffScheduleSwapRequest swapRequest) {
         if (swapRequest.getTargetStaffId() != actor.getId()) {
             forbidden("Bạn không phải nhân viên được nhờ làm thay của yêu cầu này");
@@ -906,6 +1185,9 @@ public class StaffScheduleService {
 
         StaffSchedule schedule = requireSchedule(swapRequest.getScheduleId());
         WorkShift shift = requireShift(schedule.getShiftId());
+        User requester = requireStaff(swapRequest.getRequesterStaffId());
+        validateSwapSourceSchedule(requester, schedule, shift);
+        validateSwapTarget(requester, actor);
         if (!canCoverShift(actor, schedule.getWorkDate(), shift, null)) {
             conflict("Bạn không trống lịch ở ca này nên không thể nhận làm thay");
         }
@@ -915,7 +1197,6 @@ public class StaffScheduleService {
         swapRequest.setStatus(StaffScheduleSwapStatus.PENDING_ADMIN_APPROVAL);
         swapRequestRepository.update(swapRequest);
 
-        User requester = requireStaff(swapRequest.getRequesterStaffId());
         notifySwapAcceptedByTarget(swapRequest, requester, actor, schedule, shift, managers);
     }
 
@@ -1124,6 +1405,67 @@ public class StaffScheduleService {
                 swapRequest.getId());
     }
 
+    private void notifyUrgentRequestCreated(
+            StaffScheduleUrgentRequest urgentRequest,
+            User requester,
+            StaffSchedule schedule,
+            WorkShift shift) {
+
+        for (User reviewer : requireUrgentReviewUsers(requester.getCinemaId())) {
+            notifyUserSafely(
+                    reviewer.getId(),
+                    urgentRequest.getType() == StaffScheduleUrgentRequestType.LATE_ARRIVAL
+                            ? "STAFF_LATE_REQUEST"
+                            : "STAFF_URGENT_REQUEST",
+                    "Có yêu cầu khẩn chờ duyệt",
+                    buildUrgentRequestReviewMessage(urgentRequest, requester, schedule, shift),
+                    buildManagerUrgentActionUrl(urgentRequest.getId()),
+                    "Mở lịch làm",
+                    "STAFF_URGENT_REQUEST",
+                    urgentRequest.getId());
+        }
+    }
+
+    private void notifyUrgentReviewResolved(
+            StaffScheduleUrgentRequest urgentRequest,
+            User requester,
+            StaffSchedule schedule,
+            WorkShift shift,
+            boolean approved) {
+
+        String shiftSummary = buildShiftSummary(schedule, shift);
+        String requestLabel = urgentRequest.getType() == StaffScheduleUrgentRequestType.LATE_ARRIVAL
+                ? "xin đi muộn"
+                : "hủy khẩn";
+        String title = approved
+                ? "Yêu cầu " + requestLabel + " đã được duyệt"
+                : "Yêu cầu " + requestLabel + " không được duyệt";
+        String message = approved
+                ? "Quản lý đã duyệt yêu cầu " + requestLabel + " cho ca " + shiftSummary + "."
+                : "Quản lý đã từ chối yêu cầu " + requestLabel + " cho ca " + shiftSummary + ".";
+
+        if (approved && urgentRequest.getType() == StaffScheduleUrgentRequestType.LATE_ARRIVAL
+                && urgentRequest.getExpectedArrivalTime() != null) {
+            message += " Thời gian có mặt dự kiến: " + formatTime(urgentRequest.getExpectedArrivalTime()) + ".";
+        }
+
+        notifyUserSafely(
+                requester.getId(),
+                approved
+                        ? (urgentRequest.getType() == StaffScheduleUrgentRequestType.LATE_ARRIVAL
+                                ? "STAFF_LATE_APPROVED"
+                                : "STAFF_URGENT_APPROVED")
+                        : (urgentRequest.getType() == StaffScheduleUrgentRequestType.LATE_ARRIVAL
+                                ? "STAFF_LATE_REJECTED"
+                                : "STAFF_URGENT_REJECTED"),
+                title,
+                message,
+                buildStaffUrgentActionUrl(urgentRequest.getId()),
+                "Xem trạng thái",
+                "STAFF_URGENT_REQUEST",
+                urgentRequest.getId());
+    }
+
     private void notifyUserSafely(
             int recipientUserId,
             String type,
@@ -1160,12 +1502,44 @@ public class StaffScheduleService {
         return "/admin/staff-schedules/swaps?focusRequest=" + requestId;
     }
 
+    private String buildStaffUrgentActionUrl(int requestId) {
+        return "/admin/staff-schedules/my?focusUrgentRequest=" + requestId;
+    }
+
+    private String buildManagerUrgentActionUrl(int requestId) {
+        return "/admin/staff-schedules?focusUrgentRequest=" + requestId;
+    }
+
     private List<User> requireSwapReviewManagers(Integer cinemaId) {
         List<User> managers = userRepository.findActiveUsersByRoleNameAndCinema("MANAGER", cinemaId);
         if (managers == null || managers.isEmpty()) {
             conflict("Chi nhánh này chưa có manager để duyệt yêu cầu làm thay");
         }
         return managers;
+    }
+
+    private List<User> requireUrgentReviewUsers(Integer cinemaId) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        List<User> reviewers = new ArrayList<>();
+
+        List<User> managers = userRepository.findActiveUsersByRoleNameAndCinema("MANAGER", cinemaId);
+        for (User manager : managers) {
+            if (ids.add(manager.getId())) {
+                reviewers.add(manager);
+            }
+        }
+
+        List<User> admins = userRepository.findActiveUsersByRoleName("ADMIN");
+        for (User admin : admins) {
+            if (ids.add(admin.getId())) {
+                reviewers.add(admin);
+            }
+        }
+
+        if (reviewers.isEmpty()) {
+            conflict("Hiện chưa có quản lý hoặc admin để duyệt yêu cầu khẩn");
+        }
+        return reviewers;
     }
 
     private String buildShiftSummary(StaffSchedule schedule, WorkShift shift) {
@@ -1185,6 +1559,32 @@ public class StaffScheduleService {
             return ".";
         }
         return ". Lý do: " + normalizedNote;
+    }
+
+    private String buildUrgentRequestReviewMessage(
+            StaffScheduleUrgentRequest urgentRequest,
+            User requester,
+            StaffSchedule schedule,
+            WorkShift shift) {
+
+        StringBuilder message = new StringBuilder();
+        if (urgentRequest.getType() == StaffScheduleUrgentRequestType.LATE_ARRIVAL) {
+            message.append(requester.getFullName())
+                    .append(" xin đi muộn cho ca ")
+                    .append(buildShiftSummary(schedule, shift));
+            if (urgentRequest.getExpectedArrivalTime() != null) {
+                message.append(". Dự kiến có mặt lúc ")
+                        .append(formatTime(urgentRequest.getExpectedArrivalTime()));
+            }
+        } else {
+            message.append(requester.getFullName())
+                    .append(" xin hủy khẩn ca ")
+                    .append(buildShiftSummary(schedule, shift));
+        }
+
+        message.append(buildReasonSuffix(urgentRequest.getReason()))
+                .append(" Vui lòng kiểm tra và duyệt yêu cầu.");
+        return message.toString();
     }
 
     private String formatTime(LocalTime time) {
@@ -1249,7 +1649,7 @@ public class StaffScheduleService {
     private StaffSchedule requireSchedule(int scheduleId) {
         StaffSchedule schedule = scheduleRepository.findById(scheduleId);
         if (schedule == null) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể đọc lại lịch làm vừa lưu");
+            notFound("Không tìm thấy lịch làm");
         }
         return schedule;
     }
@@ -1258,6 +1658,14 @@ public class StaffScheduleService {
         StaffScheduleSwapRequest request = swapRequestRepository.findById(requestId);
         if (request == null) {
             notFound("Không tìm thấy yêu cầu đổi ca");
+        }
+        return request;
+    }
+
+    private StaffScheduleUrgentRequest requireUrgentRequest(int requestId) {
+        StaffScheduleUrgentRequest request = urgentRequestRepository.findById(requestId);
+        if (request == null) {
+            notFound("Không tìm thấy yêu cầu khẩn");
         }
         return request;
     }
@@ -1362,6 +1770,12 @@ public class StaffScheduleService {
         return shiftName;
     }
 
+    private void validateScheduleWriteWindow(LocalDate workDate, WorkShift targetShift) {
+        if (workDate.isBefore(todayVN()) || hasShiftStarted(workDate, targetShift)) {
+            conflict("Không thể tạo hoặc chỉnh sửa lịch cho ca đã bắt đầu hoặc đã qua");
+        }
+    }
+
     private void validateStaffSelectionWindow(LocalDate workDate) {
         LocalDate today = todayVN();
         if (!registrationWindowService.canStaffRegisterToday()) {
@@ -1404,6 +1818,36 @@ public class StaffScheduleService {
         return firstStart < secondEnd && secondStart < firstEnd;
     }
 
+    private boolean hasShiftStarted(LocalDate workDate, WorkShift shift) {
+        return !buildShiftDateTimeRange(workDate, shift).startDateTime().isAfter(nowVN());
+    }
+
+    private boolean hasShiftEnded(LocalDate workDate, WorkShift shift) {
+        return !buildShiftDateTimeRange(workDate, shift).endDateTime().isAfter(nowVN());
+    }
+
+    private ShiftDateTimeRange buildShiftDateTimeRange(LocalDate workDate, WorkShift shift) {
+        LocalDateTime startDateTime = LocalDateTime.of(workDate, shift.getStartTime());
+        LocalDateTime endDateTime = LocalDateTime.of(workDate, shift.getEndTime());
+        if (!endDateTime.isAfter(startDateTime)) {
+            endDateTime = endDateTime.plusDays(1);
+        }
+        return new ShiftDateTimeRange(startDateTime, endDateTime);
+    }
+
+    private LocalDateTime normalizeShiftTime(
+            LocalDate workDate,
+            LocalTime time,
+            ShiftDateTimeRange range) {
+
+        LocalDateTime dateTime = LocalDateTime.of(workDate, time);
+        if (range.endDateTime().toLocalDate().isAfter(range.startDateTime().toLocalDate())
+                && dateTime.isBefore(range.startDateTime())) {
+            dateTime = dateTime.plusDays(1);
+        }
+        return dateTime;
+    }
+
     private int toMinutes(LocalTime time) {
         return time.getHour() * 60 + time.getMinute();
     }
@@ -1419,6 +1863,10 @@ public class StaffScheduleService {
 
     private LocalDate todayVN() {
         return LocalDate.now(ZONE_VN);
+    }
+
+    private LocalDateTime nowVN() {
+        return LocalDateTime.now(ZONE_VN);
     }
 
     private void badRequest(String message) {
@@ -1438,5 +1886,8 @@ public class StaffScheduleService {
     }
 
     private record DateRange(LocalDate startDate, LocalDate endDate) {
+    }
+
+    private record ShiftDateTimeRange(LocalDateTime startDateTime, LocalDateTime endDateTime) {
     }
 }
