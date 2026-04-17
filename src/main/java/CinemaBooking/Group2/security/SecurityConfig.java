@@ -98,6 +98,8 @@ public class SecurityConfig {
 						)
 						.authenticated()
 						.requestMatchers("/api/admin/dashboard/**").hasAnyAuthority("ADMIN", "MANAGER")
+						.requestMatchers(HttpMethod.POST, "/api/admin/bookings/walk-in").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+						.requestMatchers(HttpMethod.GET, "/api/admin/invoices/*").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
 						// ===== ROLE BASE =====
 						.requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "MANAGER")
 						.requestMatchers("/api/manager/**").hasAnyAuthority("ADMIN", "MANAGER")

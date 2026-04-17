@@ -13,7 +13,10 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
 import CinemaBooking.Group2.dtos.booking.WalkInBookingRequest;
 import CinemaBooking.Group2.dtos.booking.WalkInBookingResponse;
+import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.service.BookingService;
+import CinemaBooking.Group2.service.StaffScheduleService;
+import CinemaBooking.Group2.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,6 +28,10 @@ public class BookingAdminController {
 
     @Autowired
     private BookingService bookingService;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private StaffScheduleService staffScheduleService;
 
     @GetMapping("/{code}")
     @Operation(summary = "Get booking by code (Admin)", description = "Lấy thông tin chi tiết booking theo mã booking. API dành cho admin để kiểm tra vé của người dùng đã đặt.")
@@ -37,7 +44,9 @@ public class BookingAdminController {
     @PostMapping("/walk-in")
     public ResponseEntity<ApiResponse<WalkInBookingResponse>> createWalkInBooking(
             @Valid @RequestBody WalkInBookingRequest request) {
-        WalkInBookingResponse booking = bookingService.createWalkInBooking(request);
+        User actor = userService.getCurrentAuthenticatedUser();
+        staffScheduleService.assertCanAccessTicketSelling(actor);
+        WalkInBookingResponse booking = bookingService.createWalkInBooking(request, actor);
         return ResponseEntity.ok(new ApiResponse<>("Booking created successfully", booking));
     }
 }

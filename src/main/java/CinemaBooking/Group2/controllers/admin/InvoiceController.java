@@ -14,8 +14,11 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.PageResponse;
 import CinemaBooking.Group2.dtos.invoice.InvoiceListResponse;
 import CinemaBooking.Group2.dtos.invoice.InvoiceResponse;
+import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.InvoiceService;
+import CinemaBooking.Group2.service.StaffScheduleService;
+import CinemaBooking.Group2.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +30,10 @@ public class InvoiceController {
 
     @Autowired
     private InvoiceService invoiceService;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private StaffScheduleService staffScheduleService;
 
     /**
      * GET /api/admin/invoices
@@ -78,11 +85,13 @@ public class InvoiceController {
     ) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         AuthUserPrincipal principal = (AuthUserPrincipal) auth.getPrincipal();
+        User actor = userService.getCurrentAuthenticatedUser();
 
-        String role = principal.role();
-        Integer userCinemaId = principal.cinemaId();
-
-        InvoiceResponse invoice = invoiceService.getInvoiceByBookingCodeWithAuth(bookingCode, role, userCinemaId);
+        staffScheduleService.assertCanAccessTicketSelling(actor);
+        InvoiceResponse invoice = invoiceService.getInvoiceByBookingCodeWithAuth(
+                bookingCode,
+                principal.role(),
+                principal.cinemaId());
         return ResponseEntity.ok(new ApiResponse<>("Success", invoice));
     }
 }

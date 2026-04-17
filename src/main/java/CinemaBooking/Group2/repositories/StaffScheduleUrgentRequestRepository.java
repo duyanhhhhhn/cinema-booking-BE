@@ -70,6 +70,21 @@ public class StaffScheduleUrgentRequestRepository {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    public StaffScheduleUrgentRequest findLatestApprovedByScheduleId(int scheduleId) {
+        List<StaffScheduleUrgentRequest> rows = jdbcTemplate.query(
+                """
+                select *
+                from staff_schedule_urgent_request
+                where schedule_id = ?
+                  and status = 'ADMIN_APPROVED'
+                order by id desc
+                limit 1
+                """,
+                this::mapRow,
+                scheduleId);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
     public List<StaffScheduleUrgentRequest> findByRequesterStaff(
             int requesterStaffId,
             StaffScheduleUrgentRequestStatus status) {

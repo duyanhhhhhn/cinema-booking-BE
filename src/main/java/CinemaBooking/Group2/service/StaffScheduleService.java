@@ -29,6 +29,7 @@ import CinemaBooking.Group2.dtos.staff.StaffUrgentRequestResponseDTO;
 import CinemaBooking.Group2.dtos.staff.StaffSwapActionRequestDTO;
 import CinemaBooking.Group2.dtos.staff.StaffSwapRequestResponseDTO;
 import CinemaBooking.Group2.dtos.staff.UpdateStaffRegistrationWindowRequestDTO;
+import CinemaBooking.Group2.dtos.auth.UserPositionResponseDTO;
 import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.StaffScheduleUrgentRequest;
 import CinemaBooking.Group2.models.StaffScheduleSwapRequest;
@@ -196,6 +197,64 @@ public class StaffScheduleService {
                 scheduleRepository.findByStaffAndRange(currentUser.getId(), range.startDate(), range.endDate(), status);
 
         return toScheduleResponses(schedules);
+    }
+
+    public UserPositionResponseDTO getCurrentUserPosition(User currentUser) {
+        UserPositionResponseDTO dto = new UserPositionResponseDTO();
+        String role = normalizeRole(currentUser.getRoleName());
+        boolean isTicketSeller =
+                currentUser.getPosition() == User.UserPosition.TICKET_SELLER;
+
+        dto.setUserId(currentUser.getId());
+        dto.setRole(role);
+        dto.setCinemaId(currentUser.getCinemaId());
+        dto.setPosition(currentUser.getPosition() == null ? null : currentUser.getPosition().name());
+        dto.setTicketSeller(isTicketSeller);
+
+        if ("ADMIN".equals(role) || "MANAGER".equals(role)) {
+            dto.setHasActiveApprovedShiftNow(false);
+            dto.setCanAccessTicketSelling(true);
+            return dto;
+        }
+
+        ActiveTicketSellingShift activeShift = isTicketSeller
+                ? findActiveTicketSellingShift(currentUser)
+                : null;
+
+        dto.setHasActiveApprovedShiftNow(activeShift != null);
+        dto.setCanAccessTicketSelling(activeShift != null);
+        dto.setActiveShift(toActiveShiftResponse(activeShift));
+        return dto;
+    }
+
+    public boolean canAccessTicketSelling(User currentUser) {
+        String role = normalizeRole(currentUser.getRoleName());
+        if ("ADMIN".equals(role) || "MANAGER".equals(role)) {
+            return true;
+        }
+        if (!"STAFF".equals(role)) {
+            return false;
+        }
+        if (currentUser.getPosition() != User.UserPosition.TICKET_SELLER) {
+            return false;
+        }
+        return findActiveTicketSellingShift(currentUser) != null;
+    }
+
+    public void assertCanAccessTicketSelling(User currentUser) {
+        String role = normalizeRole(currentUser.getRoleName());
+        if ("ADMIN".equals(role) || "MANAGER".equals(role)) {
+            return;
+        }
+        if (!"STAFF".equals(role)) {
+            forbidden("Bạn không có quyền sử dụng chức năng bán vé");
+        }
+        if (currentUser.getPosition() != User.UserPosition.TICKET_SELLER) {
+            forbidden("Chỉ nhân viên có vị trí TICKET_SELLER mới được sử dụng chức năng bán vé");
+        }
+        if (findActiveTicketSellingShift(currentUser) == null) {
+            forbidden("Chỉ nhân viên bán vé đang trong ca làm hợp lệ mới được sử dụng chức năng bán vé");
+        }
     }
 
     public List<StaffScheduleDetailResponseDTO> getCinemaSchedule(
@@ -679,26 +738,51 @@ public class StaffScheduleService {
                 targetShift.getId(),
                 request.getWorkDate());
 
+        if (targetStatus == StaffScheduleStatus.CANCELLED) {
+            if (exactSchedule == null) {
+                notFound("Không tìm thấy lịch làm để huỷ");
+            }
+            if (exactSchedule.getStatus() == StaffScheduleStatus.CANCELLED) {
+                return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
+            }
+
+            exactSchedule.setStatus(StaffScheduleStatus.CANCELLED);
+            StaffSchedule saved = save(exactSchedule);
+            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+        }
+
         if (exactSchedule == null) {
-            notFound("Không tìm thấy lịch staff đã đăng ký");
+            StaffSchedule saved = createManagerConfirmedSchedule(
+                    principal.role(),
+                    targetStaff.getId(),
+                    request.getWorkDate(),
+                    targetShift);
+            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
         }
 
-        if (!isStaffRequestAwaitingManagerApproval(exactSchedule)
-                && exactSchedule.getStatus() != StaffScheduleStatus.CONFIRMED) {
-            conflict("Ca này không ở trạng thái chờ manager duyệt");
+        if (exactSchedule.getStatus() == StaffScheduleStatus.CONFIRMED) {
+            return toScheduleResponse(exactSchedule, new HashMap<>(), new HashMap<>());
         }
 
-        if (targetStatus == StaffScheduleStatus.CONFIRMED) {
+        if (isStaffRequestAwaitingManagerApproval(exactSchedule)) {
             cancelOverlappingSchedules(targetStaff.getId(), request.getWorkDate(), targetShift, exactSchedule.getId());
             exactSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
-        } else {
-            exactSchedule.setStatus(StaffScheduleStatus.CANCELLED);
+            StaffSchedule saved = save(exactSchedule);
+            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
         }
-        if (exactSchedule.getRequestedByRole() == null || exactSchedule.getRequestedByRole().isBlank()) {
-            exactSchedule.setRequestedByRole(normalizeRole(principal.role()));
+
+        if (isManagerProposalAwaitingStaffApproval(exactSchedule)
+                || exactSchedule.getStatus() == StaffScheduleStatus.CANCELLED) {
+            StaffSchedule saved = createManagerConfirmedSchedule(
+                    principal.role(),
+                    targetStaff.getId(),
+                    request.getWorkDate(),
+                    targetShift,
+                    exactSchedule);
+            return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
         }
-        StaffSchedule saved = save(exactSchedule);
-        return toScheduleResponse(saved, new HashMap<>(), new HashMap<>());
+
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Ca này không ở trạng thái có thể cập nhật");
     }
 
     private StaffScheduleDetailResponseDTO handleStaffSelection(
@@ -806,6 +890,40 @@ public class StaffScheduleService {
         newSchedule.setShiftId(targetShift.getId());
         newSchedule.setWorkDate(workDate);
         newSchedule.setStatus(StaffScheduleStatus.ASSIGNED);
+        newSchedule.setRequestedByRole(normalizeRole(proposerRole));
+        return save(newSchedule);
+    }
+
+    private StaffSchedule createManagerConfirmedSchedule(
+            String proposerRole,
+            int staffId,
+            LocalDate workDate,
+            WorkShift targetShift) {
+        return createManagerConfirmedSchedule(proposerRole, staffId, workDate, targetShift, null);
+    }
+
+    private StaffSchedule createManagerConfirmedSchedule(
+            String proposerRole,
+            int staffId,
+            LocalDate workDate,
+            WorkShift targetShift,
+            StaffSchedule exactSchedule) {
+
+        validateManagerProposalConflicts(staffId, workDate, targetShift, exactSchedule);
+
+        if (exactSchedule != null) {
+            exactSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
+            if (exactSchedule.getRequestedByRole() == null || exactSchedule.getRequestedByRole().isBlank()) {
+                exactSchedule.setRequestedByRole(normalizeRole(proposerRole));
+            }
+            return save(exactSchedule);
+        }
+
+        StaffSchedule newSchedule = new StaffSchedule();
+        newSchedule.setStaffId(staffId);
+        newSchedule.setShiftId(targetShift.getId());
+        newSchedule.setWorkDate(workDate);
+        newSchedule.setStatus(StaffScheduleStatus.CONFIRMED);
         newSchedule.setRequestedByRole(normalizeRole(proposerRole));
         return save(newSchedule);
     }
@@ -940,6 +1058,7 @@ public class StaffScheduleService {
         dto.setWorkDate(schedule.getWorkDate());
         dto.setStatus(schedule.getStatus());
         dto.setRequestedByRole(normalizeRole(schedule.getRequestedByRole()));
+        dto.setCreatedAt(schedule.getCreatedAt());
         dto.setStaff(toStaffResponse(loadStaff(schedule.getStaffId(), staffCache)));
         dto.setShift(toShiftResponse(loadShift(schedule.getShiftId(), shiftCache)));
         return dto;
@@ -1012,6 +1131,23 @@ public class StaffScheduleService {
         dto.setName(shift.getName());
         dto.setStartTime(shift.getStartTime());
         dto.setEndTime(shift.getEndTime());
+        return dto;
+    }
+
+    private UserPositionResponseDTO.ActiveShiftDTO toActiveShiftResponse(ActiveTicketSellingShift activeShift) {
+        if (activeShift == null) {
+            return null;
+        }
+
+        UserPositionResponseDTO.ActiveShiftDTO dto = new UserPositionResponseDTO.ActiveShiftDTO();
+        dto.setScheduleId(activeShift.schedule().getId());
+        dto.setShiftId(activeShift.shift().getId());
+        dto.setWorkDate(activeShift.schedule().getWorkDate());
+        dto.setShiftName(activeShift.shift().getName());
+        dto.setStartTime(activeShift.shift().getStartTime());
+        dto.setEndTime(activeShift.shift().getEndTime());
+        dto.setStatus(activeShift.schedule().getStatus().name());
+        dto.setApprovedLateArrivalTime(activeShift.approvedLateArrivalTime());
         return dto;
     }
 
@@ -1131,6 +1267,50 @@ public class StaffScheduleService {
         if (!expectedArrivalDateTime.isBefore(range.endDateTime())) {
             conflict("Giờ đến dự kiến không còn nằm trong ca làm");
         }
+    }
+
+    private ActiveTicketSellingShift findActiveTicketSellingShift(User currentUser) {
+        LocalDate today = todayVN();
+        LocalDateTime now = nowVN();
+        List<StaffSchedule> schedules = scheduleRepository.findByStaffAndRange(
+                currentUser.getId(),
+                today.minusDays(1),
+                today,
+                null);
+
+        for (StaffSchedule schedule : schedules) {
+            if (schedule.getStatus() != StaffScheduleStatus.CONFIRMED) {
+                continue;
+            }
+
+            WorkShift shift = requireShift(schedule.getShiftId());
+            ShiftDateTimeRange range = buildShiftDateTimeRange(schedule.getWorkDate(), shift);
+            if (now.isBefore(range.startDateTime()) || !now.isBefore(range.endDateTime())) {
+                continue;
+            }
+
+            LocalTime approvedLateArrivalTime = findApprovedLateArrivalTime(schedule.getId());
+            if (approvedLateArrivalTime != null) {
+                LocalDateTime expectedArrivalDateTime =
+                        normalizeShiftTime(schedule.getWorkDate(), approvedLateArrivalTime, range);
+                if (!expectedArrivalDateTime.isBefore(range.endDateTime())
+                        || now.isBefore(expectedArrivalDateTime)) {
+                    continue;
+                }
+            }
+
+            return new ActiveTicketSellingShift(schedule, shift, approvedLateArrivalTime);
+        }
+
+        return null;
+    }
+
+    private LocalTime findApprovedLateArrivalTime(int scheduleId) {
+        StaffScheduleUrgentRequest request = urgentRequestRepository.findLatestApprovedByScheduleId(scheduleId);
+        if (request == null || request.getType() != StaffScheduleUrgentRequestType.LATE_ARRIVAL) {
+            return null;
+        }
+        return request.getExpectedArrivalTime();
     }
 
     private boolean canCoverShift(User targetStaff, LocalDate workDate, WorkShift shift, Integer exactScheduleId) {
@@ -1772,7 +1952,7 @@ public class StaffScheduleService {
 
     private void validateScheduleWriteWindow(LocalDate workDate, WorkShift targetShift) {
         if (workDate.isBefore(todayVN()) || hasShiftStarted(workDate, targetShift)) {
-            conflict("Không thể tạo hoặc chỉnh sửa lịch cho ca đã bắt đầu hoặc đã qua");
+            conflict("Không thể tạo hoặc chỉnh sửa lịch cho thời gian đã qua hoặc ca đã bắt đầu");
         }
     }
 
@@ -1889,5 +2069,11 @@ public class StaffScheduleService {
     }
 
     private record ShiftDateTimeRange(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+    }
+
+    private record ActiveTicketSellingShift(
+            StaffSchedule schedule,
+            WorkShift shift,
+            LocalTime approvedLateArrivalTime) {
     }
 }

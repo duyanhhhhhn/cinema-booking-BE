@@ -168,6 +168,15 @@ public class UserService {
 		return userRepo.findByEmail(email);
 	}
 
+	public User getCurrentAuthenticatedUser() {
+		AuthUserPrincipal principal = authService.getPrincipal();
+		User user = userRepo.findByEmail(principal.email());
+		if (user == null) {
+			throw new RuntimeException("User không tồn tại");
+		}
+		return user;
+	}
+
 	// ================= UPDATE PROFILE =================
 	public void updateMyProfile(UpdateProfileRequestDTO req) {
 		AuthUserPrincipal principal = (AuthUserPrincipal) SecurityContextHolder.getContext().getAuthentication()

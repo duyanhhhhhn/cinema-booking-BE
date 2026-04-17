@@ -12,7 +12,7 @@ import CinemaBooking.Group2.dtos.ApiResponse;
 import CinemaBooking.Group2.dtos.ticket.PrintTicketRequest;
 import CinemaBooking.Group2.dtos.ticket.PrintTicketResponse;
 import CinemaBooking.Group2.models.User;
-import CinemaBooking.Group2.security.AuthUserPrincipal;
+import CinemaBooking.Group2.service.StaffScheduleService;
 import CinemaBooking.Group2.service.TicketService;
 import CinemaBooking.Group2.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +31,8 @@ public class TicketController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private StaffScheduleService staffScheduleService;
 
     @PostMapping("/print")
     @Operation(summary = "In vé tại quầy", description = "API dành cho nhân viên quầy để in vé cho khách hàng. " +
@@ -38,18 +40,9 @@ public class TicketController {
             "Nếu không truyền danh sách ticketCodes, sẽ in tất cả vé chưa in của booking.")
     public ResponseEntity<ApiResponse<PrintTicketResponse>> printTickets(
             @RequestBody PrintTicketRequest request) {
-        // Lấy staffId từ user đang đăng nhập
-        int staffId = 0;
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof AuthUserPrincipal) {
-            AuthUserPrincipal principal = (AuthUserPrincipal) auth.getPrincipal();
-            User user = userService.findByEmail(principal.email());
-            if (user != null) {
-                staffId = user.getId();
-            }
-        }
-
-        PrintTicketResponse response = ticketService.printTickets(request, staffId);
+        User actor = userService.getCurrentAuthenticatedUser();
+        staffScheduleService.assertCanAccessTicketSelling(actor);
+        PrintTicketResponse response = ticketService.printTickets(request, actor.getId());
         return ResponseEntity.ok(new ApiResponse<>("Tickets printed successfully", response));
     }
 }

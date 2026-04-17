@@ -1,6 +1,7 @@
 package CinemaBooking.Group2.dtos.staff;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 
@@ -10,6 +11,7 @@ public class StaffScheduleDetailResponseDTO {
     private LocalDate workDate;
     private StaffScheduleStatus status;
     private String requestedByRole;
+    private LocalDateTime createdAt;
     private StaffResponseDTO staff;
     private ShiftTemplateResponseDTO shift;
 
@@ -43,6 +45,14 @@ public class StaffScheduleDetailResponseDTO {
 
     public void setRequestedByRole(String requestedByRole) {
         this.requestedByRole = requestedByRole;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public StaffResponseDTO getStaff() {
