@@ -38,6 +38,30 @@ public class RoomRepository {
 			return List.of(); // Return empty list on error
 		}
 	}
+	
+	// ================= FIND BY CINEMA + STATUS =================
+	public List<Room> findWithFilter(Integer cinemaId, Integer status) {
+
+	    StringBuilder sql = new StringBuilder("SELECT * FROM room WHERE 1=1");
+	    List<Object> params = new java.util.ArrayList<>();
+
+	    if (cinemaId != null) {
+	        sql.append(" AND cinema_id = ?");
+	        params.add(cinemaId);
+	    }
+
+	    if (status != null) {
+	        sql.append(" AND status = ?");
+	        params.add(status);
+	    }
+
+	    try {
+	        return jdbc.query(sql.toString(), new RoomMapper(), params.toArray());
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return List.of();
+	    }
+	}
 
 	// ================= FIND BY ID =================
 	public Room findById(int id) {
