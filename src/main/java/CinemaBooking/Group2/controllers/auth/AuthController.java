@@ -17,6 +17,7 @@ import CinemaBooking.Group2.service.ChangePasswordService;
 import CinemaBooking.Group2.service.ForgotPasswordService;
 import CinemaBooking.Group2.service.RegisterService;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
