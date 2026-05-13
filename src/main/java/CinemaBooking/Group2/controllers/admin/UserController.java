@@ -27,7 +27,7 @@ import CinemaBooking.Group2.service.BookingService;
 import CinemaBooking.Group2.service.UserService;
 
 import org.springframework.http.MediaType;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
