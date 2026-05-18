@@ -90,9 +90,9 @@ public class MarketingAdminController {
 		}
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<PostResponseDTO>("Error", null));
 	}
-	@GetMapping("/admin/api/vouchers")
+	@GetMapping("/api/vouchers")
 	@CrossOrigin
-	public ResponseEntity<List<VoucherResponseDTO>> getVoucher(){
+	public ResponseEntity<ApiResponse<List<VoucherResponseDTO>>> getVoucher(){
 		List<VoucherResponseDTO> item=null;
 		try {
 			item= service.getVoucher();
@@ -100,7 +100,7 @@ public class MarketingAdminController {
 		catch (Exception e) {
 			// TODO: handle exception
 		}
-		return ResponseEntity.ok(item);
+		return ResponseEntity.ok(new ApiResponse<>("get voucher", item));
 		}
 	@GetMapping("/api/vouchers/check")
 	@CrossOrigin
