@@ -3,7 +3,14 @@ package CinemaBooking.Group2.dtos.showtime;
 public class ShowtimeItemDtos {
     private int id;
     private String startTime; 
-    public int getId() {
+    private String roomName;
+    public String getRoomName() {
+		return roomName;
+	}
+	public void setRoomName(String roomName) {
+		this.roomName = roomName;
+	}
+	public int getId() {
 		return id;
 	}
 	public void setId(int id) {

@@ -8,7 +8,7 @@ public class ShowtimePublicDtos {
     private String startTime;    
     private BigDecimal price;    
     private String roomName;
-
+    
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
