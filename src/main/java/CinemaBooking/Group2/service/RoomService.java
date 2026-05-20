@@ -50,6 +50,15 @@ public class RoomService {
 			return List.of();
 		return rooms.stream().map(this::toResponse).toList();
 	}
+	
+	// ================= GET BY CINEMA + STATUS =================
+	public List<RoomResponseDTO> getRooms(Integer cinemaId, Integer status) {
+	    List<Room> rooms = repo.findWithFilter(cinemaId, status);
+
+	    if (rooms == null || rooms.isEmpty()) return List.of();
+
+	    return rooms.stream().map(this::toResponse).toList();
+	}
 
 	// ================= GET BY ID =================
 	public RoomResponseDTO getById(int id) {

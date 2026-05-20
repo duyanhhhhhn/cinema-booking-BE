@@ -27,11 +27,11 @@ public class RoomController {
     // ================= GET ROOMS (OPTIONAL BY CINEMA) =================
     @GetMapping("/rooms")
     public ResponseEntity<ApiResponse<List<RoomResponseDTO>>> getRooms(
-            @RequestParam(required = false) Integer cinemaId) {
+            @RequestParam(required = false) Integer cinemaId,
+            @RequestParam(required = false) Integer status) {
 
-        List<RoomResponseDTO> data = cinemaId == null
-                ? service.getAllRooms()
-                : service.getByCinema(cinemaId);
+        List<RoomResponseDTO> data = service.getRooms(cinemaId, status);
+
         return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
 
