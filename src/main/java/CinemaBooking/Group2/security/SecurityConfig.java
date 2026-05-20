@@ -41,7 +41,7 @@ public class SecurityConfig {
                 "DELETE",
                 "PATCH",
                 "OPTIONS"
-        ));
+            ));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Authorization"));
         config.setAllowCredentials(true);
@@ -78,7 +78,7 @@ public class SecurityConfig {
                                 "/api/auth/forgot/**",
                                 "/api/public/**",
                                 "/api/payment/**",
-                                "/api/vouchers/check", // Tích hợp từ HEAD
+                                "/api/vouchers/check",
                                 "/media/**"
                         ).permitAll()
 
@@ -97,7 +97,7 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 HttpMethod.GET, 
-                                "/api/concessions" // Tích hợp từ HEAD
+                                "/api/concessions"
                         ).permitAll()
 
                         // =====================================================
@@ -117,16 +117,23 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // =====================================================
+                        // AUTHENTICATED (Đã đưa lên trước để tránh bị nuốt bởi luật chung /api/users/**)
+                        // =====================================================
+                        .requestMatchers(
+                                "/api/auth/password/**",
+                                "/api/users/me",
+                                "/api/users/me/**",
+                                "/api/booking/**",
+                                "/api/bookings/**",
+                                "/api/debug/**"
+                        ).authenticated()
+
+                        // =====================================================
                         // SPECIFIC ADMIN/STAFF OVERRIDES (Phải đặt TRƯỚC /api/admin/**)
                         // =====================================================
-                        .requestMatchers(HttpMethod.POST, "/api/admin/bookings/walk-in")
-                        .hasAnyAuthority("ADMIN", "MANAGER", "STAFF") // Cho phép STAFF đặt vé vãng lai
-
-                        .requestMatchers(HttpMethod.GET, "/api/admin/invoices/*")
-                        .hasAnyAuthority("ADMIN", "MANAGER", "STAFF") // Cho phép STAFF xem hóa đơn công khai
-
-                        .requestMatchers("/api/admin/dashboard/**")
-                        .hasAnyAuthority("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/admin/bookings/walk-in").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/invoices/*").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers("/api/admin/dashboard/**").hasAnyAuthority("ADMIN", "MANAGER")
 
                         // =====================================================
                         // GENERAL ROLE BASED
@@ -140,17 +147,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/room/**").hasAnyAuthority("ADMIN", "MANAGER", "STAFF")
                         .requestMatchers("/api/vouchers/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/tickets/**").hasAnyAuthority("ADMIN", "STAFF", "MANAGER")
-
-                        // =====================================================
-                        // AUTHENTICATED
-                        // =====================================================
-                        .requestMatchers(
-                                "/api/auth/password/**",
-                                "/api/users/me/**",
-                                "/api/booking/**",
-                                "/api/bookings/**",
-                                "/api/debug/**"
-                        ).authenticated()
 
                         // =====================================================
                         // OTHER REQUESTS
