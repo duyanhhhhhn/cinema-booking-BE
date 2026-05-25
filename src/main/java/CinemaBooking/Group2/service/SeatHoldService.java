@@ -40,9 +40,9 @@ public class SeatHoldService {
         HoldResult result = new HoldResult();
         
         // Validate showtime exists
-        if (!showtimeRepository.exists(showtimeId)) {
+        if (!showtimeRepository.isBookable(showtimeId)) {
             result.setSuccess(false);
-            result.setMessage("Showtime not found");
+            result.setMessage("Showtime không khả dụng");
             return result;
         }
 

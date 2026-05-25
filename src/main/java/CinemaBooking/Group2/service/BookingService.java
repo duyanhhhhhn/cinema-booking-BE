@@ -104,9 +104,9 @@ public class BookingService {
     private SeatHoldRepository seatHoldRepository;
 
     public BookingCalculateResponse calculateBooking(BookingCalculateRequest request) {
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        Showtime showtime = showtimeRepository.findBookableById(request.getShowtimeId());
         if (showtime == null) {
-            throw new RuntimeException("Showtime not found");
+            throw new RuntimeException("Showtime không khả dụng");
         }
 
         BookingCalculateResponse response = new BookingCalculateResponse();
@@ -368,9 +368,9 @@ public class BookingService {
     @Transactional
     public BookingCreateResponse createBooking(BookingCreateRequest request) {
         // Validate showtime
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        Showtime showtime = showtimeRepository.findBookableById(request.getShowtimeId());
         if (showtime == null) {
-            throw new RuntimeException("Showtime not found");
+            throw new RuntimeException("Showtime không khả dụng");
         }
 
         // Validate seats availability
@@ -551,16 +551,16 @@ public class BookingService {
      * Phương thức này dành cho nhân viên tại quầy tạo booking cho khách hàng không có tài khoản
      */
     @Transactional
-    public WalkInBookingResponse createWalkInBooking(WalkInBookingRequest request) {
+    public WalkInBookingResponse createWalkInBooking(WalkInBookingRequest request, User actor) {
         // Validate payment method - chỉ cho phép CASH hoặc MOMO
         if (!request.getPaymentMethod().equals("CASH") && !request.getPaymentMethod().equals("MOMO")) {
             throw new RuntimeException("Walk-in customers can only use CASH or MOMO payment methods");
         }
         
         // Validate showtime
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId());
+        Showtime showtime = showtimeRepository.findBookableById(request.getShowtimeId());
         if (showtime == null) {
-            throw new RuntimeException("Showtime not found");
+            throw new RuntimeException("Showtime không khả dụng");
         }
 
         // Validate seats availability
@@ -619,7 +619,7 @@ public class BookingService {
         Booking booking = new Booking();
         booking.setBookingCode(bookingRepository.generateBookingCode());
         booking.setUserId(null); // Walk-in customers don't have user accounts
-        booking.setCreatedByStaffId(request.getStaffId()); // Track which staff created the booking
+        booking.setCreatedByStaffId(actor.getId()); // Track the authenticated user creating the booking
         booking.setShowtimeId(request.getShowtimeId());
         booking.setTotalPrice(calculation.getTotalPrice());
         booking.setDiscountAmount(calculation.getDiscountAmount());
@@ -766,8 +766,8 @@ public class BookingService {
         response.setPaymentMethod(request.getPaymentMethod());
         response.setPaymentStatus(booking.getPaymentStatus().name());
         response.setCreatedAt(booking.getCreatedAt());
-        response.setCreatedByStaffId(request.getStaffId());
-        response.setCreatedByStaffName("Staff ID: " + request.getStaffId());
+        response.setCreatedByStaffId(actor.getId());
+        response.setCreatedByStaffName(actor.getFullName());
 
         // Nếu thanh toán MOMO, generate payment URL để hiển thị QR
         if ("MOMO".equalsIgnoreCase(request.getPaymentMethod())) {
@@ -786,8 +786,8 @@ public class BookingService {
             }
         }
 
-        logger.info("Walk-in booking created successfully: {} by staff: {}", 
-            booking.getBookingCode(), request.getStaffId());
+        logger.info("Walk-in booking created successfully: {} by user: {}",
+            booking.getBookingCode(), actor.getId());
 
         return response;
     }

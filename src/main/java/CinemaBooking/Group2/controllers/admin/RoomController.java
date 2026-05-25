@@ -27,11 +27,10 @@ public class RoomController {
     // ================= GET ROOMS (OPTIONAL BY CINEMA) =================
     @GetMapping("/rooms")
     public ResponseEntity<ApiResponse<List<RoomResponseDTO>>> getRooms(
-            @RequestParam(required = false) Integer cinemaId) {
+            @RequestParam(required = false) Integer cinemaId,
+            @RequestParam(required = false) Integer status) {
 
-        List<RoomResponseDTO> data = cinemaId == null
-                ? service.getAllRooms()
-                : service.getByCinema(cinemaId);
+        List<RoomResponseDTO> data = service.getRooms(cinemaId, status);
 
         return ResponseEntity.ok(new ApiResponse<>("Success", data));
     }
@@ -106,5 +105,29 @@ public class RoomController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable int id) {
         service.delete(id);
         return ResponseEntity.ok(new ApiResponse<>("Room deleted", null));
+    }
+    
+ // ================= UPDATE STATUS =================
+    @PatchMapping("/rooms/{id}/status")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> updateStatus(
+            @PathVariable int id,
+            @RequestBody StatusRequest request) {
+
+        service.updateStatus(id, request.getStatus());
+        return ResponseEntity.ok(new ApiResponse<>("Status updated", null));
+    }
+
+    // DTO
+    public static class StatusRequest {
+        private int status;
+
+        public int getStatus() {
+            return status;
+        }
+
+        public void setStatus(int status) {
+            this.status = status;
+        }
     }
 }

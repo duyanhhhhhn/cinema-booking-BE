@@ -18,6 +18,7 @@ import CinemaBooking.Group2.models.StaffSchedule;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.models.Enum.StaffScheduleStatus;
 import CinemaBooking.Group2.ultis.StringValue;
+import jakarta.annotation.PostConstruct;
 
 @Repository
 public class ScheduleRepository implements Icrud<StaffSchedule> {
@@ -26,6 +27,23 @@ public class ScheduleRepository implements Icrud<StaffSchedule> {
 
     public ScheduleRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @PostConstruct
+    public void ensureScheduleColumns() {
+        String sql = """
+                select count(*)
+                from information_schema.columns
+                where table_schema = database()
+                  and table_name = ?
+                  and column_name = ?
+                """;
+
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, StringValue.tbl_schedule, "requested_by_role");
+        if (count != null && count == 0) {
+            jdbcTemplate.execute("alter table " + StringValue.tbl_schedule
+                    + " add column requested_by_role varchar(20) null after status");
+        }
     }
 
     @Override
@@ -167,7 +185,8 @@ public class ScheduleRepository implements Icrud<StaffSchedule> {
 
     @Override
     public int create(StaffSchedule item) {
-        String sql = "insert into " + StringValue.tbl_schedule + " (staff_id, shift_id, work_date, status) values (?, ?, ?, ?)";
+        String sql = "insert into " + StringValue.tbl_schedule
+                + " (staff_id, shift_id, work_date, status, requested_by_role) values (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -176,6 +195,7 @@ public class ScheduleRepository implements Icrud<StaffSchedule> {
             statement.setInt(2, item.getShiftId());
             statement.setObject(3, item.getWorkDate());
             statement.setString(4, item.getStatus().name());
+            statement.setString(5, item.getRequestedByRole());
             return statement;
         }, keyHolder);
 
@@ -190,13 +210,14 @@ public class ScheduleRepository implements Icrud<StaffSchedule> {
         }
 
         String sql = "update " + StringValue.tbl_schedule
-                + " set staff_id = ?, shift_id = ?, work_date = ?, status = ? where id = ?";
+                + " set staff_id = ?, shift_id = ?, work_date = ?, status = ?, requested_by_role = ? where id = ?";
 
         return jdbcTemplate.update(sql,
                 item.getStaffId(),
                 item.getShiftId(),
                 item.getWorkDate(),
                 item.getStatus().name(),
+                item.getRequestedByRole(),
                 item.getId());
     }
 

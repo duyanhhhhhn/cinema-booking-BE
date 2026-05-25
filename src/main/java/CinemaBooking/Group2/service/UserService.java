@@ -168,6 +168,15 @@ public class UserService {
 		return userRepo.findByEmail(email);
 	}
 
+	public User getCurrentAuthenticatedUser() {
+		AuthUserPrincipal principal = authService.getPrincipal();
+		User user = userRepo.findByEmail(principal.email());
+		if (user == null) {
+			throw new RuntimeException("User không tồn tại");
+		}
+		return user;
+	}
+
 	// ================= UPDATE PROFILE =================
 	public void updateMyProfile(UpdateProfileRequestDTO req) {
 		AuthUserPrincipal principal = (AuthUserPrincipal) SecurityContextHolder.getContext().getAuthentication()
@@ -428,6 +437,48 @@ public class UserService {
         // Chỉ ADMIN có thể chỉnh MANAGER
         if ("MANAGER".equals(principal.role()) && target.getRoleId() == 2)
             throw new RuntimeException("MANAGER không được chỉnh MANAGER");
+
+        if ("MANAGER".equals(principal.role())) {
+            if (req.getRoleId() != null && req.getRoleId() != target.getRoleId())
+                throw new RuntimeException("MANAGER không được đổi phân quyền");
+
+            if (req.getCinemaId() != null && !principal.cinemaId().equals(req.getCinemaId()))
+                throw new RuntimeException("MANAGER không được chuyển user sang rạp khác");
+
+            req.setCinemaId(principal.cinemaId());
+        }
+
+        Integer nextRoleId = req.getRoleId() != null ? req.getRoleId() : target.getRoleId();
+        if (nextRoleId != 2 && nextRoleId != 3)
+            throw new RuntimeException("Chỉ hỗ trợ cập nhật MANAGER hoặc STAFF");
+
+        Integer nextCinemaId = req.getCinemaId() != null
+                ? req.getCinemaId()
+                : (target.getCinemaId() > 0 ? target.getCinemaId() : null);
+
+        if (nextCinemaId == null || nextCinemaId <= 0)
+            throw new RuntimeException("Phải chọn rạp phụ trách");
+
+        req.setCinemaId(nextCinemaId);
+
+        if (nextRoleId == 2) {
+            if (!"ADMIN".equals(principal.role()))
+                throw new RuntimeException("Chỉ ADMIN được gán quyền MANAGER");
+
+            req.setRoleId(2);
+            req.setPosition("MANAGER");
+        } else {
+            String nextPosition = req.getPosition();
+            if (nextPosition == null || nextPosition.isBlank()) {
+                nextPosition = target.getPosition() != null ? target.getPosition().name() : null;
+            }
+
+            if (nextPosition == null || nextPosition.isBlank() || "MANAGER".equalsIgnoreCase(nextPosition))
+                throw new RuntimeException("STAFF phải có chức vụ hợp lệ");
+
+            req.setRoleId(3);
+            req.setPosition(nextPosition.toUpperCase(Locale.ROOT));
+        }
         
         if (req.getPassword() != null && !req.getPassword().isBlank()) {
             String hashedPassword = encoder.encode(req.getPassword());

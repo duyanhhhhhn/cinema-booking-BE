@@ -44,6 +44,16 @@ public class StaffMapper implements RowMapper<StaffSchedule>{
 		item.setStaffId(rs.getInt("staff_id"));
 		item.setWorkDate(rs.getDate("work_date").toLocalDate());
 		item.setStatus(StaffScheduleStatus.valueOf(rs.getString("status")));
+		try {
+			item.setRequestedByRole(rs.getString("requested_by_role"));
+		} catch (Exception ignored) {
+		}
+		try {
+			if (rs.getTimestamp("created_at") != null) {
+				item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+			}
+		} catch (Exception ignored) {
+		}
 		
 		return item;
 	}

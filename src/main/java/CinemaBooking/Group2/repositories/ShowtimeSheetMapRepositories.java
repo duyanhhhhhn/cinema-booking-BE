@@ -46,6 +46,8 @@ public class ShowtimeSheetMapRepositories {
         "JOIN room   r ON r.id = s.room_id " +
         "JOIN cinema c ON c.id = r.cinema_id " +
         "WHERE s.id = ? " +
+        "  AND (s.status = 'SCHEDULED' OR s.status IS NULL) " +
+        "  AND COALESCE(r.status, 1) = 1 " +
         "  AND c.is_active = 1;";
 
     private static final String SQL_SEATS =

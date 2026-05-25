@@ -16,6 +16,7 @@ import CinemaBooking.Group2.dtos.admin.CreateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UpdateUserRequestDTO;
 import CinemaBooking.Group2.dtos.admin.UserResponseDTO;
 import CinemaBooking.Group2.dtos.auth.UserDTO;
+import CinemaBooking.Group2.dtos.auth.UserPositionResponseDTO;
 import CinemaBooking.Group2.dtos.booking.BookingDetailResponse;
 import CinemaBooking.Group2.dtos.booking.BookingHistoryResponse;
 import CinemaBooking.Group2.dtos.client.UpdateAvatarRequestDTO;
@@ -24,10 +25,11 @@ import CinemaBooking.Group2.models.Booking;
 import CinemaBooking.Group2.models.User;
 import CinemaBooking.Group2.security.AuthUserPrincipal;
 import CinemaBooking.Group2.service.BookingService;
+import CinemaBooking.Group2.service.StaffScheduleService;
 import CinemaBooking.Group2.service.UserService;
 
 import org.springframework.http.MediaType;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -36,6 +38,8 @@ public class UserController {
     private BookingService bookingService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private StaffScheduleService staffScheduleService;
 
     // ================= CREATE USER =================
     @PostMapping
@@ -96,7 +100,15 @@ public class UserController {
 
         UserDTO dto = new UserDTO(user.getId(), user.getFullName(), user.getEmail(), user.getPhone(),
                 user.getAvatarUrl(), user.getRoleName(), user.getCreatedAt(), user.getCinemaId(), user.getIsActive());
+        dto.setPosition(user.getPosition() == null ? null : user.getPosition().name());
 
+        return ResponseEntity.ok(new ApiResponse<>("Success", dto));
+    }
+
+    @GetMapping("/position")
+    public ResponseEntity<ApiResponse<UserPositionResponseDTO>> getPosition() {
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        UserPositionResponseDTO dto = staffScheduleService.getCurrentUserPosition(currentUser);
         return ResponseEntity.ok(new ApiResponse<>("Success", dto));
     }
 
