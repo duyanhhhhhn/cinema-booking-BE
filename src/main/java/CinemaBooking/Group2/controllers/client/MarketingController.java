@@ -39,15 +39,16 @@ public class MarketingController {
 	@CrossOrigin
 	public ResponseEntity<ApiResponse<List<PostResponseDTO>>> getPost(
 			@RequestParam(value = "page", required = false, defaultValue = "1") int page,
-			@RequestParam(value = "perPage", required = false, defaultValue = "3") int size) {
+			@RequestParam(value = "perPage", required = false, defaultValue = "10") int size) {
 		List<PostResponseDTO> item;
 		try {
 			item = service.getPostPaging(page, size);
 			Map<String, Object> meta = new HashMap<>();
-			float totalItem = service.getPostCount();
+			float totalItem = service.getAllPost().getList().size();
 			meta.put("page", page);
 			meta.put("perPage", size);
 			meta.put("total", totalItem);
+			System.out.print(meta);
 			return ResponseEntity.ok(new ApiResponse<>("Success", item, meta));
 		} catch (Exception e) {
 			// TODO: handle exception

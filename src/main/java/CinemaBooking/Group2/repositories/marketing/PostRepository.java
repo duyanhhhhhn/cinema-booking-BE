@@ -1,5 +1,6 @@
 package CinemaBooking.Group2.repositories.marketing;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +24,13 @@ public class PostRepository implements Icrud<Post>{
 	public List<Post> getAll(){
 		List<Post> item = new ArrayList<>();
 		try {
-			item = db.query("select * from "+StringValue.tbl_post+" where is_published=1",new PostMapper());
+			item = db.query("select * from "+StringValue.tbl_post,new PostMapper());
+			return item;
 		}
 		catch(Exception e) {
+			System.out.print(e.getMessage());
 			throw new RuntimeException();
 		}
-		return item;
 	}
 	public int getPostCount() {
 		try {
@@ -72,9 +74,9 @@ public class PostRepository implements Icrud<Post>{
 	public int newPost(Post post) {
 		try {
 			post.setPublishedAt(LocalDateTime.now());
-			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published) values(?,?,?,?,?,?)"
+			int rs = db.update("insert into "+StringValue.tbl_post+"(title,slug,excerpt,content,cover_url,is_published,published_at) values(?,?,?,?,?,?,?)"
 					,new Object[] {post.getTitle(),post.getSlug(),post.getExcerpt(),post.getContent(),
-							post.getCoverUrl(),post.getPublished()});
+							post.getCoverUrl(),post.getPublished(),post.getPublishedAt()});
 			return rs;
 		}
 		catch (Exception e) {
